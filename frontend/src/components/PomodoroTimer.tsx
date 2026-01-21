@@ -1,4 +1,4 @@
-import React, { useReducer, useEffect, useCallback, useMemo, useState } from 'react';
+import React, { useReducer, useEffect, useCallback, useMemo, useState, useRef } from 'react';
 import { Settings as SettingsIcon } from 'lucide-react';
 import { motion, LayoutGroup } from 'framer-motion';
 import ThemeSelector from './ThemeSelector';
@@ -8,6 +8,7 @@ import TimerSettingsModal from './TimerSettingsModal';
 import { useTimer } from '../hooks/useTimer';
 import { DEFAULT_THEMES, DEFAULT_SETTINGS } from '../constants/pomodoro';
 import type { FocusTheme, TimerSettings, Phase } from '../types/pomodoro';
+import { saveSession, getDailyStats, SessionCreate, DailyStats } from '../api/client';
 
 const STORAGE_KEY = 'pomodoro-timer-state';
 
@@ -78,23 +79,112 @@ const PomodoroTimer: React.FC = () => {
 
   const { themes, activeThemeId, settings, phase, completedSessions } = state;
   const activeTheme = useMemo(() => themes.find(t => t.id === activeThemeId) || themes[0], [themes, activeThemeId]);
+  const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
+  const [todayStats, setTodayStats] = useState<DailyStats | null>(null);
+
+  const fetchDailyStats = useCallback(async () => {
+    try {
+      const stats = await getDailyStats();
+      setTodayStats(stats);
+    } catch (error) {
+      console.error('Failed to fetch daily stats', error);
+    }
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ themes, settings, completedSessions, activeThemeId }));
   }, [themes, settings, completedSessions, activeThemeId]);
+
+  useEffect(() => {
+    fetchDailyStats(); // Fetch stats on mount
+  }, [fetchDailyStats]);
 
   const totalTime = useMemo(() => {
     if (phase === 'focus') return activeTheme.focusDuration * 60;
     return (phase === 'shortBreak' ? settings.shortBreakDuration : settings.longBreakDuration) * 60;
   }, [phase, activeTheme, settings]);
 
-  const nextPhase = useCallback(() => dispatch({ type: 'NEXT_PHASE' }), []);
-  const { timeLeft, isActive, start, pause, reset } = useTimer({ initialSeconds: totalTime, onComplete: nextPhase });
+  const saveLearningSession = useCallback(async (status: SessionCreate['status'], duration: number, start: Date, end: Date) => {
+    const sessionData: SessionCreate = {
+      theme_name: activeTheme.name,
+      duration_seconds: duration,
+      phase_type: phase,
+      status: status,
+      start_time: start.toISOString(),
+      end_time: end.toISOString(),
+    };
+    try {
+      await saveSession(sessionData);
+      console.log('Session saved successfully', sessionData);
+      fetchDailyStats(); // Refresh stats after saving
+    } catch (error) {
+      console.error('Failed to save session', error);
+    }
+  }, [activeTheme.name, phase, fetchDailyStats]);
 
-  const handleToggle = useCallback(() => isActive ? pause() : start(), [isActive, pause, start]);
-  const handleSkip = useCallback(() => { reset(); nextPhase(); }, [reset, nextPhase]);
-  const handleThemeChange = useCallback((themeId: string) => { dispatch({ type: 'SET_ACTIVE_THEME', themeId }); reset(); }, [reset]);
-  const handleSaveSettings = useCallback((s: TimerSettings, t: FocusTheme[]) => { dispatch({ type: 'SAVE_SETTINGS', settings: s, themes: t }); reset(); }, [reset]);
+  const handleTimerComplete = useCallback((completedDuration: number) => {
+    if (sessionStartTime) {
+      saveLearningSession('completed', completedDuration, sessionStartTime, new Date());
+      setSessionStartTime(null);
+    }
+    dispatch({ type: 'NEXT_PHASE' });
+  }, [sessionStartTime, saveLearningSession]);
+
+  const { timeLeft, isActive, start, pause, reset } = useTimer({
+    initialSeconds: totalTime,
+    onComplete: handleTimerComplete,
+    autoStart: settings.autoStartNext && phase !== 'focus', // Auto-start breaks
+  });
+
+  const handleStart = useCallback(() => {
+    setSessionStartTime(new Date());
+    start();
+  }, [start]);
+
+  const handlePause = useCallback(() => {
+    if (sessionStartTime) {
+      // Optionally save interrupted session here if needed
+    }
+    pause();
+  }, [pause, sessionStartTime]);
+
+  const handleToggle = useCallback(() => isActive ? handlePause() : handleStart(), [isActive, handlePause, handleStart]);
+  
+  const handleReset = useCallback(() => {
+    if (isActive && sessionStartTime) {
+      const duration = totalTime - timeLeft;
+      saveLearningSession('interrupted', duration, sessionStartTime, new Date());
+    }
+    setSessionStartTime(null);
+    reset();
+    dispatch({ type: 'RESET_TO_FOCUS' }); // Ensure UI goes back to focus phase
+  }, [isActive, sessionStartTime, totalTime, timeLeft, saveLearningSession, reset]);
+
+  const handleSkip = useCallback(() => {
+    if (sessionStartTime) {
+      const duration = totalTime - timeLeft;
+      saveLearningSession('skipped', duration, sessionStartTime, new Date());
+    }
+    setSessionStartTime(null);
+    reset();
+    dispatch({ type: 'NEXT_PHASE' });
+  }, [sessionStartTime, totalTime, timeLeft, saveLearningSession, reset]);
+
+  const handleThemeChange = useCallback((themeId: string) => { 
+    if (isActive && sessionStartTime) {
+      const duration = totalTime - timeLeft;
+      saveLearningSession('interrupted', duration, sessionStartTime, new Date());
+    }
+    setSessionStartTime(null);
+    dispatch({ type: 'SET_ACTIVE_THEME', themeId }); reset(); 
+  }, [isActive, sessionStartTime, totalTime, timeLeft, saveLearningSession, reset]);
+
+  const handleSaveSettings = useCallback((s: TimerSettings, t: FocusTheme[]) => { 
+    dispatch({ type: 'SAVE_SETTINGS', settings: s, themes: t }); 
+    // If settings change, reset timer and phase to reflect new durations
+    reset();
+    dispatch({ type: 'RESET_TO_FOCUS' });
+  }, [reset]);
 
   return (
     <LayoutGroup>
@@ -146,8 +236,21 @@ const PomodoroTimer: React.FC = () => {
               Cycle #{completedSessions + 1}
             </motion.div>
             <div className="lg:pl-2">
-              <TimerControls isActive={isActive} onStartPause={handleToggle} onReset={reset} onSkip={handleSkip} />
+              <TimerControls isActive={isActive} onStartPause={handleToggle} onReset={handleReset} onSkip={handleSkip} />
             </div>
+
+            {todayStats && ( 
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="mt-8 text-sm text-cozy-text-light/80 text-center lg:text-left"
+              >
+                Today's Focus: <span className="font-bold text-cozy-orange">{todayStats.total_focus_minutes} min</span>
+                <br/>Total Sessions: <span className="font-bold text-cozy-orange">{todayStats.total_sessions}</span>
+              </motion.div>
+            )}
+
           </div>
         </motion.div>
 
@@ -164,3 +267,4 @@ const PomodoroTimer: React.FC = () => {
 };
 
 export default PomodoroTimer;
+

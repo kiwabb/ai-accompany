@@ -1,13 +1,2 @@
 /// <reference types="vitest" />
-import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react'
-
-// https://vite.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: './src/test/setup.ts',
-  },
-})
+import { defineConfig } from \'vitest/config\'\nimport react from \'@vitejs/plugin-react\'\n\n// https://vite.dev/config/\nexport default defineConfig({\n  plugins: [react()],\n  server: {\n    proxy: {\n      \'/api\': {\n        target: \'http://localhost:8000\',\n        changeOrigin: true,\n        rewrite: (path) => path.replace(/^\/api/, \'/api\'),\n      },\n    },\n  },\n  test: {\n    globals: true,\n    environment: \'jsdom\',\n    setupFiles: \'./src/test/setup.ts\',\n  },\n})\n
