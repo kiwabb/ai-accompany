@@ -1,10 +1,6 @@
 import React from 'react';
 
-interface FocusTheme {
-  id: string;
-  name: string;
-  // Add other theme properties as needed
-}
+import { FocusTheme } from '../types/pomodoro';
 
 interface ThemeSelectorProps {
   themes: FocusTheme[];
@@ -18,6 +14,8 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({ themes, activeThemeId, on
       {themes.map((theme) => (
         <button
           key={theme.id}
+          aria-pressed={activeThemeId === theme.id}
+          aria-label={`Select ${theme.name} theme`}
           className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200
             ${activeThemeId === theme.id
               ? 'bg-blue-600 text-white shadow-md'
