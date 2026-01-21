@@ -102,7 +102,7 @@ const PomodoroTimer: React.FC = () => {
         layout
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-[420px] md:max-w-[480px] lg:max-w-[880px] bg-white rounded-[56px] md:rounded-[72px] p-8 md:p-10 lg:p-16 shadow-cozy flex flex-col lg:flex-row items-center lg:items-center gap-10 lg:gap-20 relative transition-all duration-700"
+        className="w-full max-w-[420px] md:max-w-[480px] lg:max-w-[960px] xl:max-w-[1024px] bg-white rounded-[56px] md:rounded-[72px] p-8 md:p-10 lg:p-16 shadow-cozy flex flex-col lg:flex-row items-center lg:items-center gap-10 lg:gap-24 relative transition-all duration-700 mx-auto"
       >
         {/* Container for decorative shapes with internal overflow hidden to protect shadow */}
         <div className="absolute inset-0 rounded-[56px] md:rounded-[72px] overflow-hidden pointer-events-none">
@@ -115,8 +115,8 @@ const PomodoroTimer: React.FC = () => {
           <TimerDisplay timeLeft={timeLeft} totalTime={totalTime} phase={phase} />
         </motion.div>
 
-        {/* Right: Controls & Content */}
-        <motion.div layout className="flex-grow flex flex-col items-center lg:items-start justify-center relative z-10 w-full lg:pl-10 lg:pr-4">
+        {/* Right: Controls & Content - Constrained width container */}
+        <motion.div layout className="flex-grow flex flex-col items-center lg:items-start justify-center relative z-10 w-full lg:max-w-[420px]">
           <div className="w-full flex justify-between items-start mb-8 lg:mb-12">
             <div className="flex flex-col">
               <span className="text-[11px] md:text-xs font-black uppercase tracking-[0.3em] text-cozy-text-light/50 ml-1 mb-2">Focus Companion</span>
@@ -126,7 +126,7 @@ const PomodoroTimer: React.FC = () => {
               whileHover={{ rotate: 90, scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={() => setIsSettingsOpen(true)}
-              className="p-4 md:p-4.5 rounded-3xl bg-cozy-cream/60 text-cozy-text-light hover:text-cozy-orange transition-all shadow-cozy-inner border border-white"
+              className="p-4 md:p-4.5 rounded-3xl bg-cozy-cream/60 text-cozy-text-light hover:text-cozy-orange transition-all shadow-cozy-inner border border-white flex-shrink-0 ml-4"
             >
               <SettingsIcon size={24} strokeWidth={2.5} />
             </motion.button>
