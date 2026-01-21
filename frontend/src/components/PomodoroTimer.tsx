@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useReducer, useEffect, useCallback, useMemo } from 'react';
 import { Settings as SettingsIcon } from 'lucide-react';
 import ThemeSelector from './ThemeSelector';
 import { TimerDisplay } from './TimerDisplay';
@@ -9,40 +9,104 @@ import type { FocusTheme, TimerSettings, Phase } from '../types/pomodoro';
 
 const STORAGE_KEY = 'pomodoro-timer-state';
 
-const PomodoroTimer: React.FC = () => {
-  const [themes, setThemes] = useState<FocusTheme[]>(DEFAULT_THEMES);
-  const [activeTheme, setActiveTheme] = useState<FocusTheme>(DEFAULT_THEMES[0]);
-  const [settings, setSettings] = useState<TimerSettings>(DEFAULT_SETTINGS);
-  const [phase, setPhase] = useState<Phase>('focus');
-  const [completedSessions, setCompletedSessions] = useState(0);
+interface PomodoroState {
+  themes: FocusTheme[];
+  activeThemeId: string;
+  settings: TimerSettings;
+  phase: Phase;
+  completedSessions: number;
+}
 
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.themes) setThemes(parsed.themes);
-        if (parsed.settings) setSettings(parsed.settings);
-        if (parsed.completedSessions !== undefined) setCompletedSessions(parsed.completedSessions);
-        if (parsed.activeThemeId) {
-          const found = (parsed.themes || DEFAULT_THEMES).find((t: FocusTheme) => t.id === parsed.activeThemeId);
-          if (found) setActiveTheme(found);
-        }
-      } catch (e) {
-        console.error('Failed to parse saved state', e);
+type PomodoroAction =
+  | { type: 'SET_ACTIVE_THEME'; themeId: string }
+  | { type: 'UPDATE_SETTINGS'; settings: TimerSettings }
+  | { type: 'NEXT_PHASE' }
+  | { type: 'RESET_TO_FOCUS' };
+
+const initialState: PomodoroState = {
+  themes: DEFAULT_THEMES,
+  activeThemeId: DEFAULT_THEMES[0].id,
+  settings: DEFAULT_SETTINGS,
+  phase: 'focus',
+  completedSessions: 0,
+};
+
+function pomodoroReducer(state: PomodoroState, action: PomodoroAction): PomodoroState {
+  switch (action.type) {
+    case 'SET_ACTIVE_THEME':
+      return {
+        ...state,
+        activeThemeId: action.themeId,
+        phase: 'focus',
+      };
+    case 'UPDATE_SETTINGS':
+      return {
+        ...state,
+        settings: action.settings,
+      };
+    case 'NEXT_PHASE': {
+      if (state.phase === 'focus') {
+        const nextSessions = state.completedSessions + 1;
+        const nextPhase = nextSessions % state.settings.longBreakInterval === 0 ? 'longBreak' : 'shortBreak';
+        return {
+          ...state,
+          completedSessions: nextSessions,
+          phase: nextPhase,
+        };
       }
+      return {
+        ...state,
+        phase: 'focus',
+      };
     }
-  }, []);
+    case 'RESET_TO_FOCUS':
+      return {
+        ...state,
+        phase: 'focus',
+      };
+    default:
+      return state;
+  }
+}
+
+const PomodoroTimer: React.FC = () => {
+  const [state, dispatch] = useReducer(pomodoroReducer, initialState, (initial) => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          ...initial,
+          ...parsed,
+          themes: parsed.themes || initial.themes,
+          activeThemeId: parsed.activeThemeId || initial.activeThemeId,
+        };
+      }
+    } catch (e) {
+      console.error('Failed to load state from localStorage', e);
+    }
+    return initial;
+  });
+
+  const { themes, activeThemeId, settings, phase, completedSessions } = state;
+
+  const activeTheme = useMemo(() => 
+    themes.find(t => t.id === activeThemeId) || themes[0],
+  [themes, activeThemeId]);
 
   useEffect(() => {
-    const stateToSave = {
-      themes,
-      settings,
-      completedSessions,
-      activeThemeId: activeTheme.id,
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
-  }, [themes, settings, completedSessions, activeTheme.id]);
+    try {
+      const stateToSave = {
+        themes,
+        settings,
+        completedSessions,
+        activeThemeId,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+    } catch (e) {
+      console.error('Failed to save state to localStorage', e);
+    }
+  }, [themes, settings, completedSessions, activeThemeId]);
 
   const totalTime = useMemo(() => {
     switch (phase) {
@@ -58,14 +122,8 @@ const PomodoroTimer: React.FC = () => {
   }, [phase, activeTheme, settings]);
 
   const nextPhase = useCallback(() => {
-    if (phase === 'focus') {
-      const nextSessions = completedSessions + 1;
-      setCompletedSessions(nextSessions);
-      setPhase(nextSessions % settings.longBreakInterval === 0 ? 'longBreak' : 'shortBreak');
-    } else {
-      setPhase('focus');
-    }
-  }, [phase, completedSessions, settings.longBreakInterval]);
+    dispatch({ type: 'NEXT_PHASE' });
+  }, []);
 
   const { timeLeft, isActive, start, pause, reset } = useTimer({
     initialSeconds: totalTime,
@@ -86,13 +144,9 @@ const PomodoroTimer: React.FC = () => {
   }, [reset, nextPhase]);
 
   const handleThemeChange = useCallback((themeId: string) => {
-    const theme = themes.find((t) => t.id === themeId);
-    if (theme) {
-      setActiveTheme(theme);
-      setPhase('focus');
-      reset();
-    }
-  }, [themes, reset]);
+    dispatch({ type: 'SET_ACTIVE_THEME', themeId });
+    reset();
+  }, [reset]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[400px] w-full max-w-md mx-auto p-6 bg-white dark:bg-gray-900 rounded-3xl shadow-xl">
