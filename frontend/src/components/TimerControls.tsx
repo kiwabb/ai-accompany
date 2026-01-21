@@ -21,10 +21,10 @@ const TimerControls: React.FC<TimerControlsProps> = ({
         whileHover={{ scale: 1.15, rotate: -15 }}
         whileTap={{ scale: 0.9 }}
         onClick={onReset}
-        className="p-4 md:p-5 lg:p-6 rounded-3xl md:rounded-[2rem] bg-cozy-cream text-cozy-text-light hover:text-cozy-red transition-colors border border-cozy-text/5 shadow-sm"
+        className="p-4 md:p-5 lg:p-6 rounded-3xl md:rounded-[2rem] bg-cozy-cream text-cozy-text-light hover:text-cozy-red transition-colors border border-cozy-text/5 shadow-sm flex items-center justify-center"
         aria-label="Reset Timer"
       >
-        <RotateCcw className="w-5 h-5 md:w-6 md:h-6 lg:w-7 lg:h-7" strokeWidth={2.5} />
+        <RotateCcw className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8" strokeWidth={2.5} />
       </motion.button>
 
       <motion.button
@@ -49,10 +49,10 @@ const TimerControls: React.FC<TimerControlsProps> = ({
         whileHover={{ scale: 1.15, rotate: 15 }}
         whileTap={{ scale: 0.9 }}
         onClick={onSkip}
-        className="p-4 md:p-5 lg:p-6 rounded-3xl md:rounded-[2rem] bg-cozy-cream text-cozy-text-light hover:text-cozy-blue transition-colors border border-cozy-text/5 shadow-sm"
+        className="p-4 md:p-5 lg:p-6 rounded-3xl md:rounded-[2rem] bg-cozy-cream text-cozy-text-light hover:text-cozy-blue transition-colors border border-cozy-text/5 shadow-sm flex items-center justify-center"
         aria-label="Skip Period"
       >
-        <SkipForward className="w-5 h-5 md:w-6 md:h-6 lg:w-7 lg:h-7" strokeWidth={2.5} />
+        <SkipForward className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8" strokeWidth={2.5} />
       </motion.button>
     </div>
   );
