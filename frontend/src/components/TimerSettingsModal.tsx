@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, Plus, Trash2, Settings } from 'lucide-react';
-import { FocusTheme, TimerSettings } from '../types/pomodoro';
+import type { FocusTheme, TimerSettings } from '../types/pomodoro';
 
 interface TimerSettingsModalProps {
   isOpen: boolean;
