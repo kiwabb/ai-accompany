@@ -1,4 +1,4 @@
-import { FocusTheme, TimerSettings } from '../types/pomodoro';
+import type { FocusTheme, TimerSettings } from '../types/pomodoro';
 
 export const DEFAULT_THEMES: FocusTheme[] = [
   { id: 'english', name: 'English', focusDuration: 25, isDefault: true },

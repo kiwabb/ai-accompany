@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { FocusTheme } from '../types/pomodoro';
+import type { FocusTheme } from '../types/pomodoro';
 
 interface ThemeSelectorProps {
   themes: FocusTheme[];

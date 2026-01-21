@@ -1,5 +1,5 @@
 
-import { Phase } from '../types/pomodoro';
+import type { Phase } from '../types/pomodoro';
 
 interface TimerDisplayProps {
   timeLeft: number;
@@ -53,4 +53,4 @@ export const TimerDisplay = React.memo(({ timeLeft, totalTime, phase }: TimerDis
       </div>
     </div>
   );
-}
+});
