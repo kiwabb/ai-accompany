@@ -100,11 +100,13 @@ const PomodoroTimer: React.FC = () => {
     <motion.div 
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-[420px] md:max-w-[480px] lg:max-w-[860px] bg-white rounded-[48px] md:rounded-[60px] p-8 md:p-10 lg:p-14 shadow-cozy flex flex-col lg:flex-row items-center lg:items-stretch gap-10 lg:gap-20 relative overflow-hidden transition-all duration-700"
+      className="w-full max-w-[420px] md:max-w-[480px] lg:max-w-[900px] bg-white rounded-[48px] md:rounded-[60px] p-8 md:p-10 lg:p-14 shadow-cozy flex flex-col lg:flex-row items-center lg:items-stretch gap-10 lg:gap-20 relative transition-all duration-700"
     >
-      {/* Decorative background shapes */}
-      <div className="absolute -top-20 -right-20 w-40 h-40 bg-cozy-orange/5 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-cozy-green/5 rounded-full blur-3xl pointer-events-none" />
+      {/* Decorative background shapes - moved to a contained div with overflow hidden */}
+      <div className="absolute inset-0 rounded-[48px] md:rounded-[60px] overflow-hidden pointer-events-none">
+        <div className="absolute -top-20 -right-20 w-40 h-40 bg-cozy-orange/5 rounded-full blur-3xl" />
+        <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-cozy-green/5 rounded-full blur-3xl" />
+      </div>
 
       {/* Left Column: Timer Display (Focus) */}
       <div className="flex-shrink-0 flex items-center justify-center">
