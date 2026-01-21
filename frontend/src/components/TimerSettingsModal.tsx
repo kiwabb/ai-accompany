@@ -18,16 +18,18 @@ const TimerSettingsModal: React.FC<TimerSettingsModalProps> = React.memo(
     const [localThemes, setLocalThemes] = useState<FocusTheme[]>(initialThemes);
 
     useEffect(() => {
-      setLocalSettings(initialSettings);
-      setLocalThemes(initialThemes);
-    }, [initialSettings, initialThemes]);
+      if (isOpen) {
+        setLocalSettings(initialSettings);
+        setLocalThemes(initialThemes);
+      }
+    }, [isOpen, initialSettings, initialThemes]);
 
     const handleSettingChange = useCallback(
       (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type, checked } = e.target;
         setLocalSettings((prev) => ({
           ...prev,
-          [name]: type === 'checkbox' ? checked : Number(value),
+          [name]: type === 'checkbox' ? checked : Math.max(1, Number(value)),
         }));
       },
       []
@@ -36,7 +38,18 @@ const TimerSettingsModal: React.FC<TimerSettingsModalProps> = React.memo(
     const handleThemeChange = useCallback(
       (id: string, field: keyof FocusTheme, value: any) => {
         setLocalThemes((prev) =>
-          prev.map((theme) => (theme.id === id ? { ...theme, [field]: value } : theme))
+          prev.map((theme) => {
+            if (theme.id === id) {
+              if (field === 'name' && !value.trim()) {
+                return theme; 
+              }
+              if (field === 'focusDuration') {
+                return { ...theme, [field]: Math.max(1, Number(value)) };
+              }
+              return { ...theme, [field]: value };
+            }
+            return theme;
+          })
         );
       },
       []
@@ -65,13 +78,14 @@ const TimerSettingsModal: React.FC<TimerSettingsModalProps> = React.memo(
 
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-        <div className="relative w-full max-w-2xl transform rounded-2xl border border-zinc-700 bg-zinc-800 p-8 text-white shadow-2xl transition-all duration-300 ease-out">
+        <div role="dialog" aria-modal="true" aria-labelledby="settings-title" className="relative w-full max-w-2xl transform rounded-2xl border border-zinc-700 bg-zinc-800 p-4 sm:p-8 text-white shadow-2xl transition-all duration-300 ease-out">
           <div className="mb-6 flex items-center justify-between">
-            <h2 className="flex items-center text-3xl font-bold tracking-tight text-white">
+            <h2 id="settings-title" className="flex items-center text-3xl font-bold tracking-tight text-white">
               <Settings className="mr-3 h-7 w-7 text-indigo-400" />
               Settings
             </h2>
             <button
+              aria-label="Close settings"
               onClick={onClose}
               className="group rounded-full p-2 transition-colors duration-200 hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
