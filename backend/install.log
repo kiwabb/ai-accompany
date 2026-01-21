@@ -1,0 +1,32 @@
+Collecting fastapi
+  Downloading fastapi-0.128.0-py3-none-any.whl (103 kB)
+Collecting uvicorn
+  Downloading uvicorn-0.39.0-py3-none-any.whl (68 kB)
+Collecting pydantic>=2.7.0
+  Downloading pydantic-2.12.5-py3-none-any.whl (463 kB)
+Collecting typing-extensions>=4.8.0
+  Downloading typing_extensions-4.15.0-py3-none-any.whl (44 kB)
+Collecting annotated-doc>=0.0.2
+  Downloading annotated_doc-0.0.4-py3-none-any.whl (5.3 kB)
+Collecting starlette<0.51.0,>=0.40.0
+  Downloading starlette-0.49.3-py3-none-any.whl (74 kB)
+Collecting click>=7.0
+  Downloading click-8.1.8-py3-none-any.whl (98 kB)
+Collecting h11>=0.8
+  Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+Collecting typing-inspection>=0.4.2
+  Downloading typing_inspection-0.4.2-py3-none-any.whl (14 kB)
+Collecting annotated-types>=0.6.0
+  Downloading annotated_types-0.7.0-py3-none-any.whl (13 kB)
+Collecting pydantic-core==2.41.5
+  Downloading pydantic_core-2.41.5-cp39-cp39-macosx_11_0_arm64.whl (1.9 MB)
+Collecting anyio<5,>=3.6.2
+  Downloading anyio-4.12.1-py3-none-any.whl (113 kB)
+Collecting exceptiongroup>=1.0.2
+  Downloading exceptiongroup-1.3.1-py3-none-any.whl (16 kB)
+Collecting idna>=2.8
+  Downloading idna-3.11-py3-none-any.whl (71 kB)
+Installing collected packages: typing-extensions, idna, exceptiongroup, typing-inspection, pydantic-core, anyio, annotated-types, starlette, pydantic, h11, click, annotated-doc, uvicorn, fastapi
+Successfully installed annotated-doc-0.0.4 annotated-types-0.7.0 anyio-4.12.1 click-8.1.8 exceptiongroup-1.3.1 fastapi-0.128.0 h11-0.16.0 idna-3.11 pydantic-2.12.5 pydantic-core-2.41.5 starlette-0.49.3 typing-extensions-4.15.0 typing-inspection-0.4.2 uvicorn-0.39.0
+WARNING: You are using pip version 21.2.4; however, version 25.3 is available.
+You should consider upgrading via the '/Users/zhoujiaangyao/zhoujiangyao/AI/ai-accompany/backend/venv/bin/python -m pip install --upgrade pip' command.
