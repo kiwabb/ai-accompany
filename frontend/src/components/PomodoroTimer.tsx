@@ -1,8 +1,9 @@
-import React, { useReducer, useEffect, useCallback, useMemo } from 'react';
+import React, { useReducer, useEffect, useCallback, useMemo, useState } from 'react';
 import { Settings as SettingsIcon } from 'lucide-react';
 import ThemeSelector from './ThemeSelector';
 import { TimerDisplay } from './TimerDisplay';
 import TimerControls from './TimerControls';
+import TimerSettingsModal from './TimerSettingsModal';
 import { useTimer } from '../hooks/useTimer';
 import { DEFAULT_THEMES, DEFAULT_SETTINGS } from '../constants/pomodoro';
 import type { FocusTheme, TimerSettings, Phase } from '../types/pomodoro';
@@ -19,7 +20,7 @@ interface PomodoroState {
 
 type PomodoroAction =
   | { type: 'SET_ACTIVE_THEME'; themeId: string }
-  | { type: 'UPDATE_SETTINGS'; settings: TimerSettings }
+  | { type: 'SAVE_SETTINGS'; settings: TimerSettings; themes: FocusTheme[] }
   | { type: 'NEXT_PHASE' }
   | { type: 'RESET_TO_FOCUS' };
 
@@ -39,10 +40,14 @@ function pomodoroReducer(state: PomodoroState, action: PomodoroAction): Pomodoro
         activeThemeId: action.themeId,
         phase: 'focus',
       };
-    case 'UPDATE_SETTINGS':
+    case 'SAVE_SETTINGS':
       return {
         ...state,
         settings: action.settings,
+        themes: action.themes,
+        activeThemeId: action.themes.some(t => t.id === state.activeThemeId) 
+          ? state.activeThemeId 
+          : action.themes[0].id,
       };
     case 'NEXT_PHASE': {
       if (state.phase === 'focus') {
@@ -70,6 +75,7 @@ function pomodoroReducer(state: PomodoroState, action: PomodoroAction): Pomodoro
 }
 
 const PomodoroTimer: React.FC = () => {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [state, dispatch] = useReducer(pomodoroReducer, initialState, (initial) => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -148,6 +154,11 @@ const PomodoroTimer: React.FC = () => {
     reset();
   }, [reset]);
 
+  const handleSaveSettings = useCallback((newSettings: TimerSettings, newThemes: FocusTheme[]) => {
+    dispatch({ type: 'SAVE_SETTINGS', settings: newSettings, themes: newThemes });
+    reset();
+  }, [reset]);
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[400px] w-full max-w-md mx-auto p-6 bg-white dark:bg-gray-900 rounded-3xl shadow-xl">
       <div className="w-full flex justify-between items-center mb-8">
@@ -155,6 +166,7 @@ const PomodoroTimer: React.FC = () => {
         <button 
           className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           aria-label="Settings"
+          onClick={() => setIsSettingsOpen(true)}
         >
           <SettingsIcon className="text-gray-600 dark:text-gray-400" size={24} />
         </button>
@@ -185,6 +197,14 @@ const PomodoroTimer: React.FC = () => {
           onSkip={handleSkip} 
         />
       </div>
+
+      <TimerSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        initialSettings={settings}
+        initialThemes={themes}
+        onSave={handleSaveSettings}
+      />
     </div>
   );
 };
