@@ -60,7 +60,7 @@
 │ PostgreSQL + pgvector │ │  - 文档处理 (Doc Processing) │
 │ (Unified Data Store) │ │  - 向量化 (Embedding)        │
 │                      │ │  - 检索 (Retrieval)         │
-│  Tables:             │ │  - LLM 调用 (OpenAI API)     │
+│  Tables:             │ │  - LLM 调用 (Google Gemini API)     │
 │  - users             │ │                              │
 │  - learning_sessions  │ │  Vector Database (ChromaDB)  │
 │  - tasks            │ │  (知识库向量存储)              │
@@ -87,8 +87,8 @@
     *   **决策理由 (来自 Oracle)**: 采用 `PostgreSQL + pgvector` 的统一存储方案，可以避免引入一个独立的向量数据库服务（如 Pinecone）。这大大降低了架构的复杂度和运维成本，同时也能满足我们初期和中期的所有需求。
 
 #### 3.2.4 AI 服务 (AI Services)
-*   **LLM 提供商**: **OpenAI API**。使用 `gpt-4` 或 `gpt-3.5-turbo` 模型来生成 AI 回复。
-*   **RAG 编排框架**: **LangChain**。一个强大的 Python 框架，用于构建 LLM 应用。它提供了文档加载、文本切分、嵌入生成、向量数据库集成、提示模板管理等一系列现成组件，能极大地加速 RAG 功能的开发。
+*   **LLM 提供商**: **Google Gemini API**。使用 `Gemini Pro` 或 `Gemini Flash` 模型来生成 AI 回复。
+*   **RAG 编排框架**: **LangChain** (推荐使用 `langchain-google-genai`)。一个强大的 Python 框架，用于构建 LLM 应用。它提供了文档加载、文本切分、嵌入生成、向量数据库集成、提示模板管理等一系列现成组件，能极大地加速 RAG 功能的开发。
 *   **文档处理**: **`PyPDF2`**、**`BeautifulSoup4`** 等库，用于处理用户上传的 PDF、网页等不同格式的学习材料。
 
 ---
@@ -176,7 +176,7 @@ CREATE TABLE chat_history (
     *   用户通过“学习资料库”上传文件（PDF、网页 URL、Markdown 笔记）。
     *   后端使用 `LangChain` 的 `DocumentLoaders` 加载并解析这些文件。
     *   使用 `RecursiveCharacterTextSplitter` 将长文档切分成小的文本块（例如，每块 1000 个字符）。
-    *   调用 OpenAI 的 Embedding 模型，为每个文本块生成一个向量表示。
+    *   调用 Google Gemini 的 Embedding 模型 (例如 `text-embedding-004`)，为每个文本块生成一个向量表示。
     *   将每个文本块的向量存储到 `materials` 表的 `embedding` 列中。
 
 2.  **智能问答 (在线/实时)**:
@@ -190,7 +190,7 @@ CREATE TABLE chat_history (
 
         用户的问题是：{user_query}
         ```
-    *   调用 OpenAI 的 LLM，让它根据提供的上下文材料生成回答。
+    *   调用 Google Gemini 的 LLM，让它根据提供的上下文材料生成回答。
     *   将 LLM 的回答返回给用户，并在 `chat_history` 表中记录整个交互，包括使用了哪些 `material_id`，以便后续分析和展示。
 
 ---
@@ -269,7 +269,7 @@ CREATE TABLE chat_history (
 
 2.  **隐私和合规要求？**
     *   **严格合规**: 如果是面向教育机构，数据可能需要本地化部署或使用符合特定合规标准（如 GDPR）的云服务。
-    *   **一般**: 可以使用 OpenAI、Supabase 等第三方云服务。我们假设是“一般”情况。
+    *   **一般**: 可以使用 Google Gemini Platform、Supabase 等第三方云服务。我们假设是“一般”情况。
 
 3.  **目标用户规模预期？**
     *   **< 1000 用户**: MVP 架构即可，无需过早考虑扩展性。
