@@ -116,7 +116,7 @@ const PomodoroTimer: React.FC = () => {
         </motion.div>
 
         {/* Right: Controls & Content */}
-        <motion.div layout className="flex-grow flex flex-col items-center lg:items-start justify-center relative z-10 w-full lg:px-6">
+        <motion.div layout className="flex-grow flex flex-col items-center lg:items-start justify-center relative z-10 w-full lg:pl-10 lg:pr-4">
           <div className="w-full flex justify-between items-start mb-8 lg:mb-12">
             <div className="flex flex-col">
               <span className="text-[11px] md:text-xs font-black uppercase tracking-[0.3em] text-cozy-text-light/50 ml-1 mb-2">Focus Companion</span>
