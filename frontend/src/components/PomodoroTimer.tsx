@@ -1,6 +1,6 @@
 import React, { useReducer, useEffect, useCallback, useMemo, useState } from 'react';
 import { Settings as SettingsIcon } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, LayoutGroup } from 'framer-motion';
 import ThemeSelector from './ThemeSelector';
 import { TimerDisplay } from './TimerDisplay';
 import TimerControls from './TimerControls';
@@ -97,56 +97,69 @@ const PomodoroTimer: React.FC = () => {
   const handleSaveSettings = useCallback((s: TimerSettings, t: FocusTheme[]) => { dispatch({ type: 'SAVE_SETTINGS', settings: s, themes: t }); reset(); }, [reset]);
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-[420px] bg-white rounded-[48px] p-10 shadow-cozy flex flex-col items-center relative overflow-hidden"
-    >
-      {/* Decorative background shapes */}
-      <div className="absolute -top-20 -right-20 w-40 h-40 bg-cozy-orange/5 rounded-full blur-3xl" />
-      <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-cozy-green/5 rounded-full blur-3xl" />
-
-      <div className="w-full flex justify-between items-center mb-8 relative z-10">
-        <div className="flex flex-col">
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-cozy-text-light/60 ml-1 mb-0.5">Companion</span>
-          <h1 className="text-2xl font-bold tracking-tight text-cozy-text/90">Study Buddy</h1>
+    <LayoutGroup>
+      <motion.div 
+        layout
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-[420px] md:max-w-[480px] lg:max-w-[960px] xl:max-w-[1024px] bg-white rounded-[56px] md:rounded-[72px] p-8 md:p-10 lg:p-16 shadow-cozy flex flex-col lg:flex-row items-center lg:items-center gap-10 lg:gap-24 relative transition-all duration-700 mx-auto"
+      >
+        {/* Container for decorative shapes with internal overflow hidden to protect shadow */}
+        <div className="absolute inset-0 rounded-[56px] md:rounded-[72px] overflow-hidden pointer-events-none">
+          <div className="absolute -top-24 -right-24 w-48 h-48 bg-cozy-orange/5 rounded-full blur-3xl" />
+          <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-cozy-green/5 rounded-full blur-3xl" />
         </div>
-        <motion.button 
-          whileHover={{ rotate: 90, scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setIsSettingsOpen(true)}
-          className="p-3 rounded-2xl bg-cozy-cream/80 text-cozy-text-light hover:text-cozy-orange transition-colors shadow-sm"
-        >
-          <SettingsIcon size={20} strokeWidth={2.5} />
-        </motion.button>
-      </div>
 
-      <ThemeSelector themes={themes} activeThemeId={activeThemeId} onSelect={handleThemeChange} />
-
-      <div className="my-12 relative">
-        <TimerDisplay timeLeft={timeLeft} totalTime={totalTime} phase={phase} />
-      </div>
-
-      <div className="w-full flex flex-col items-center relative z-10">
-        <motion.div 
-          key={completedSessions}
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="mb-8 px-5 py-2 bg-cozy-cream/50 rounded-full text-xs font-bold uppercase tracking-widest text-cozy-text-light/80 border border-white shadow-sm"
-        >
-          Session #{completedSessions + 1}
+        {/* Left: Timer */}
+        <motion.div layout className="flex-shrink-0 flex items-center justify-center">
+          <TimerDisplay timeLeft={timeLeft} totalTime={totalTime} phase={phase} />
         </motion.div>
-        <TimerControls isActive={isActive} onStartPause={handleToggle} onReset={reset} onSkip={handleSkip} />
-      </div>
 
-      <TimerSettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        initialSettings={settings}
-        initialThemes={themes}
-        onSave={handleSaveSettings}
-      />
-    </motion.div>
+        {/* Right: Controls & Content - Constrained width container */}
+        <motion.div layout className="flex-grow flex flex-col items-center lg:items-start justify-center relative z-10 w-full lg:max-w-[420px]">
+          <div className="w-full flex justify-between items-start mb-8 lg:mb-12">
+            <div className="flex flex-col">
+              <span className="text-[11px] md:text-xs font-black uppercase tracking-[0.3em] text-cozy-text-light/50 ml-1 mb-2">Focus Companion</span>
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tighter text-cozy-text/90 leading-tight">Study Buddy</h1>
+            </div>
+            <motion.button 
+              whileHover={{ rotate: 90, scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setIsSettingsOpen(true)}
+              className="p-4 md:p-4.5 rounded-3xl bg-cozy-cream/60 text-cozy-text-light hover:text-cozy-orange transition-all shadow-cozy-inner border border-white flex-shrink-0 ml-4"
+            >
+              <SettingsIcon size={24} strokeWidth={2.5} />
+            </motion.button>
+          </div>
+
+          <div className="w-full mb-10 lg:mb-16">
+            <ThemeSelector themes={themes} activeThemeId={activeThemeId} onSelect={handleThemeChange} />
+          </div>
+
+          <div className="w-full flex flex-col items-center lg:items-start">
+            <motion.div 
+              key={completedSessions}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mb-10 lg:mb-14 px-8 py-2.5 bg-cozy-cream/50 rounded-full text-xs md:text-sm font-black uppercase tracking-[0.2em] text-cozy-text-light/70 border border-white shadow-sm"
+            >
+              Cycle #{completedSessions + 1}
+            </motion.div>
+            <div className="lg:pl-2">
+              <TimerControls isActive={isActive} onStartPause={handleToggle} onReset={reset} onSkip={handleSkip} />
+            </div>
+          </div>
+        </motion.div>
+
+        <TimerSettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          initialSettings={settings}
+          initialThemes={themes}
+          onSave={handleSaveSettings}
+        />
+      </motion.div>
+    </LayoutGroup>
   );
 };
 
