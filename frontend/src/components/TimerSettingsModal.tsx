@@ -1,7 +1,8 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Plus, Trash2, Settings } from 'lucide-react';
+import { X, Plus, Trash2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { FocusTheme, TimerSettings } from '../types/pomodoro';
+import { v4 as uuidv4 } from 'uuid';
 
 interface TimerSettingsModalProps {
   isOpen: boolean;
@@ -11,251 +12,207 @@ interface TimerSettingsModalProps {
   onSave: (settings: TimerSettings, themes: FocusTheme[]) => void;
 }
 
-const TimerSettingsModal: React.FC<TimerSettingsModalProps> = React.memo(
-  ({ isOpen, onClose, initialSettings, initialThemes, onSave }) => {
-    const [activeTab, setActiveTab] = useState<'general' | 'themes'>('general');
-    const [localSettings, setLocalSettings] = useState<TimerSettings>(initialSettings);
-    const [localThemes, setLocalThemes] = useState<FocusTheme[]>(initialThemes);
+const TimerSettingsModal: React.FC<TimerSettingsModalProps> = ({
+  isOpen,
+  onClose,
+  initialSettings,
+  initialThemes,
+  onSave,
+}) => {
+  const [settings, setSettings] = useState<TimerSettings>(initialSettings);
+  const [themes, setThemes] = useState<FocusTheme[]>(initialThemes);
+  const [newThemeName, setNewThemeName] = useState('');
+  const [newThemeDuration, setNewThemeDuration] = useState(25);
 
-    useEffect(() => {
-      if (isOpen) {
-        setLocalSettings(initialSettings);
-        setLocalThemes(initialThemes);
-      }
-    }, [isOpen, initialSettings, initialThemes]);
+  useEffect(() => {
+    if (isOpen) {
+      setSettings(initialSettings);
+      setThemes(initialThemes);
+    }
+  }, [isOpen, initialSettings, initialThemes]);
 
-    const handleSettingChange = useCallback(
-      (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value, type, checked } = e.target;
-        setLocalSettings((prev) => ({
-          ...prev,
-          [name]: type === 'checkbox' ? checked : Math.max(1, Number(value)),
-        }));
-      },
-      []
-    );
+  const handleSettingChange = useCallback((key: keyof TimerSettings, value: number | boolean) => {
+    setSettings((prev) => ({ ...prev, [key]: value }));
+  }, []);
 
-    const handleThemeChange = useCallback(
-      (id: string, field: keyof FocusTheme, value: any) => {
-        setLocalThemes((prev) =>
-          prev.map((theme) => {
-            if (theme.id === id) {
-              if (field === 'name' && !value.trim()) {
-                return theme; 
-              }
-              if (field === 'focusDuration') {
-                return { ...theme, [field]: Math.max(1, Number(value)) };
-              }
-              return { ...theme, [field]: value };
-            }
-            return theme;
-          })
-        );
-      },
-      []
-    );
+  const handleThemeNameChange = useCallback((id: string, name: string) => {
+    setThemes((prev) => prev.map((theme) => (theme.id === id ? { ...theme, name } : theme)));
+  }, []);
 
-    const addTheme = useCallback(() => {
-      const newTheme: FocusTheme = {
-        id: `custom-${Date.now()}`,
-        name: 'New Custom Theme',
-        focusDuration: 25,
-        isDefault: false,
-      };
-      setLocalThemes((prev) => [...prev, newTheme]);
-    }, []);
+  const handleThemeDurationChange = useCallback((id: string, duration: number) => {
+    setThemes((prev) => prev.map((theme) => (theme.id === id ? { ...theme, focusDuration: Math.max(1, duration) } : theme)));
+  }, []);
 
-    const deleteTheme = useCallback((id: string) => {
-      setLocalThemes((prev) => prev.filter((theme) => theme.id !== id));
-    }, []);
+  const handleAddTheme = useCallback(() => {
+    if (newThemeName.trim() && newThemeDuration > 0) {
+      setThemes((prev) => [
+        ...prev,
+        { id: uuidv4(), name: newThemeName.trim(), focusDuration: newThemeDuration, isDefault: false },
+      ]);
+      setNewThemeName('');
+      setNewThemeDuration(25);
+    }
+  }, [newThemeName, newThemeDuration]);
 
-    const handleSave = useCallback(() => {
-      onSave(localSettings, localThemes);
-      onClose();
-    }, [localSettings, localThemes, onSave, onClose]);
+  const handleRemoveTheme = useCallback((id: string) => {
+    setThemes((prev) => prev.filter((theme) => theme.id !== id));
+  }, []);
 
-    if (!isOpen) return null;
+  const handleSave = useCallback(() => {
+    onSave(settings, themes);
+    onClose();
+  }, [settings, themes, onSave, onClose]);
 
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-        <div role="dialog" aria-modal="true" aria-labelledby="settings-title" className="relative w-full max-w-2xl transform rounded-2xl border border-zinc-700 bg-zinc-800 p-4 sm:p-8 text-white shadow-2xl transition-all duration-300 ease-out">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 id="settings-title" className="flex items-center text-3xl font-bold tracking-tight text-white">
-              <Settings className="mr-3 h-7 w-7 text-indigo-400" />
-              Settings
-            </h2>
-            <button
-              aria-label="Close settings"
-              onClick={onClose}
-              className="group rounded-full p-2 transition-colors duration-200 hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <X className="h-6 w-6 text-zinc-400 group-hover:text-white" />
-            </button>
-          </div>
-
-          <div className="mb-6 border-b border-zinc-700">
-            <nav className="-mb-px flex space-x-8">
-              <button
-                className={`whitespace-nowrap border-b-2 px-1 pb-3 text-lg font-medium transition-colors duration-200 ${
-                  activeTab === 'general'
-                    ? 'border-indigo-500 text-indigo-400'
-                    : 'border-transparent text-zinc-400 hover:border-zinc-500 hover:text-zinc-300'
-                }`}
-                onClick={() => setActiveTab('general')}
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-cozy-text/40 backdrop-blur-md"
+          />
+          
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            className="relative w-full max-w-lg bg-cozy-cream rounded-[3rem] p-10 shadow-2xl overflow-hidden max-h-[85vh] flex flex-col"
+          >
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-3xl font-bold text-cozy-text">Preferences</h2>
+              <motion.button
+                whileHover={{ rotate: 90, scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={onClose}
+                className="p-2.5 rounded-2xl bg-white/50 text-cozy-text-light hover:text-cozy-red transition-colors shadow-sm"
               >
-                General Settings
-              </button>
-              <button
-                className={`whitespace-nowrap border-b-2 px-1 pb-3 text-lg font-medium transition-colors duration-200 ${
-                  activeTab === 'themes'
-                    ? 'border-indigo-500 text-indigo-400'
-                    : 'border-transparent text-zinc-400 hover:border-zinc-500 hover:text-zinc-300'
-                }`}
-                onClick={() => setActiveTab('themes')}
-              >
-                Themes
-              </button>
-            </nav>
-          </div>
+                <X size={20} strokeWidth={2.5} />
+              </motion.button>
+            </div>
 
-          <div className="max-h-[60vh] overflow-y-auto pr-4 scrollbar-thin scrollbar-track-zinc-700 scrollbar-thumb-zinc-500">
-            {activeTab === 'general' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <label htmlFor="shortBreakDuration" className="text-lg text-zinc-200">
-                    Short Break Duration (minutes)
-                  </label>
-                  <input
-                    type="number"
-                    id="shortBreakDuration"
-                    name="shortBreakDuration"
-                    value={localSettings.shortBreakDuration}
-                    onChange={handleSettingChange}
-                    min="1"
-                    className="w-24 rounded-md border border-zinc-600 bg-zinc-700 p-2 text-right text-lg text-white focus:border-indigo-500 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <label htmlFor="longBreakDuration" className="text-lg text-zinc-200">
-                    Long Break Duration (minutes)
-                  </label>
-                  <input
-                    type="number"
-                    id="longBreakDuration"
-                    name="longBreakDuration"
-                    value={localSettings.longBreakDuration}
-                    onChange={handleSettingChange}
-                    min="1"
-                    className="w-24 rounded-md border border-zinc-600 bg-zinc-700 p-2 text-right text-lg text-white focus:border-indigo-500 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <label htmlFor="longBreakInterval" className="text-lg text-zinc-200">
-                    Long Break Interval (sessions)
-                  </label>
-                  <input
-                    type="number"
-                    id="longBreakInterval"
-                    name="longBreakInterval"
-                    value={localSettings.longBreakInterval}
-                    onChange={handleSettingChange}
-                    min="1"
-                    className="w-24 rounded-md border border-zinc-600 bg-zinc-700 p-2 text-right text-lg text-white focus:border-indigo-500 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <label htmlFor="autoStartNext" className="text-lg text-zinc-200">
-                    Auto start next timer
-                  </label>
-                  <input
-                    type="checkbox"
-                    id="autoStartNext"
-                    name="autoStartNext"
-                    checked={localSettings.autoStartNext}
-                    onChange={handleSettingChange}
-                    className="h-6 w-6 cursor-pointer rounded border-zinc-600 bg-zinc-700 text-indigo-500 focus:ring-indigo-500"
-                  />
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'themes' && (
-              <div className="space-y-4">
-                {localThemes.map((theme) => (
-                  <div
-                    key={theme.id}
-                    className="flex items-center justify-between rounded-lg border border-zinc-700 bg-zinc-700 p-4 shadow-md"
-                  >
-                    <div className="flex-grow pr-4">
-                      <label htmlFor={`theme-name-${theme.id}`} className="sr-only">
-                        Theme Name
-                      </label>
-                      <input
-                        type="text"
-                        id={`theme-name-${theme.id}`}
-                        value={theme.name}
-                        onChange={(e) => handleThemeChange(theme.id, 'name', e.target.value)}
-                        className="w-full rounded-md border border-zinc-600 bg-zinc-800 p-2 text-lg font-medium text-white focus:border-indigo-500 focus:ring-indigo-500"
-                      />
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <label htmlFor={`theme-duration-${theme.id}`} className="sr-only">
-                        Focus Duration
-                      </label>
+            <div className="flex-grow overflow-y-auto space-y-10 pr-2 custom-scrollbar">
+              <section>
+                <h3 className="text-xs font-black uppercase tracking-[0.25em] text-cozy-text-light/50 mb-6 flex items-center">
+                  <span className="w-8 h-px bg-cozy-text-light/20 mr-3" />
+                  Durations
+                </h3>
+                <div className="space-y-4">
+                  {[ 
+                    { key: 'shortBreakDuration', label: 'Short Break' },
+                    { key: 'longBreakDuration', label: 'Long Break' },
+                    { key: 'longBreakInterval', label: 'Interval' },
+                  ].map(({ key, label }) => (
+                    <div key={key} className="flex items-center justify-between p-4 bg-white/40 rounded-[1.5rem] border border-white">
+                      <label className="text-sm font-bold text-cozy-text-light">{label}</label>
                       <input
                         type="number"
-                        id={`theme-duration-${theme.id}`}
-                        value={theme.focusDuration}
-                        onChange={(e) =>
-                          handleThemeChange(theme.id, 'focusDuration', Number(e.target.value))
-                        }
-                        min="1"
-                        className="w-24 rounded-md border border-zinc-600 bg-zinc-800 p-2 text-right text-lg text-white focus:border-indigo-500 focus:ring-indigo-500"
+                        min={1}
+                        value={settings[key as keyof TimerSettings] as number}
+                        onChange={(e) => handleSettingChange(key as keyof TimerSettings, parseInt(e.target.value))}
+                        className="w-16 bg-transparent text-right font-bold text-cozy-orange focus:outline-none"
                       />
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between p-4 bg-white/40 rounded-[1.5rem] border border-white">
+                    <label className="text-sm font-bold text-cozy-text-light">Auto start next period</label>
+                    <button 
+                      onClick={() => handleSettingChange('autoStartNext', !settings.autoStartNext)}
+                      className={`w-12 h-6 rounded-full transition-colors relative ${settings.autoStartNext ? 'bg-cozy-green' : 'bg-gray-300'}`}
+                    >
+                      <motion.div 
+                        animate={{ x: settings.autoStartNext ? 26 : 4 }}
+                        className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm" 
+                      />
+                    </button>
+                  </div>
+                </div>
+              </section>
+
+              <section>
+                <h3 className="text-xs font-black uppercase tracking-[0.25em] text-cozy-text-light/50 mb-6 flex items-center">
+                  <span className="w-8 h-px bg-cozy-text-light/20 mr-3" />
+                  Themes
+                </h3>
+                <div className="space-y-3">
+                  {themes.map((theme) => (
+                    <div key={theme.id} className="flex items-center space-x-3 p-3 bg-white/60 rounded-[1.5rem] shadow-sm border border-white">
+                      <input
+                        type="text"
+                        value={theme.name}
+                        onChange={(e) => handleThemeNameChange(theme.id, e.target.value)}
+                        className="flex-grow bg-transparent font-bold text-cozy-text focus:outline-none disabled:opacity-50"
+                        disabled={theme.isDefault}
+                      />
+                      <div className="flex items-center bg-cozy-cream rounded-xl px-2 py-1">
+                        <input
+                          type="number"
+                          min={1}
+                          value={theme.focusDuration}
+                          onChange={(e) => handleThemeDurationChange(theme.id, parseInt(e.target.value))}
+                          className="w-10 bg-transparent text-center font-bold text-cozy-orange focus:outline-none"
+                        />
+                        <span className="text-[10px] font-bold text-cozy-text-light/50 mr-1">m</span>
+                      </div>
                       {!theme.isDefault && (
                         <button
-                          onClick={() => deleteTheme(theme.id)}
-                          className="group rounded-full p-2 transition-colors duration-200 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
-                          aria-label={`Delete ${theme.name} theme`}
+                          onClick={() => handleRemoveTheme(theme.id)}
+                          className="p-2 text-cozy-text-light/30 hover:text-cozy-red transition-colors"
                         >
-                          <Trash2 className="h-5 w-5 text-zinc-400 group-hover:text-white" />
+                          <Trash2 size={18} />
                         </button>
                       )}
                     </div>
-                  </div>
-                ))}
-                <button
-                  onClick={addTheme}
-                  className="mt-4 flex w-full items-center justify-center rounded-md border border-indigo-600 bg-indigo-700 py-3 text-lg font-semibold text-white transition-colors duration-200 hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <Plus className="mr-2 h-5 w-5" />
-                  Add New Theme
-                </button>
-              </div>
-            )}
-          </div>
+                  ))}
+                </div>
 
-          <div className="mt-8 flex justify-end space-x-4 border-t border-zinc-700 pt-6">
-            <button
-              onClick={onClose}
-              className="rounded-md border border-zinc-600 bg-zinc-700 px-6 py-3 text-lg font-medium text-white transition-colors duration-200 hover:bg-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-500"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              className="rounded-md bg-indigo-600 px-6 py-3 text-lg font-semibold text-white transition-colors duration-200 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              Save Changes
-            </button>
-          </div>
+                <div className="mt-6 p-4 bg-cozy-orange/10 rounded-[2rem] border border-dashed border-cozy-orange/30">
+                  <div className="flex space-x-2">
+                    <input
+                      placeholder="New Theme"
+                      value={newThemeName}
+                      onChange={(e) => setNewThemeName(e.target.value)}
+                      className="flex-grow bg-transparent font-bold text-cozy-text focus:outline-none placeholder:text-cozy-orange/30"
+                    />
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="number"
+                        min={1}
+                        value={newThemeDuration}
+                        onChange={(e) => setNewThemeDuration(parseInt(e.target.value))}
+                        className="w-12 bg-white/50 rounded-xl px-2 py-1 text-center font-bold text-cozy-orange focus:outline-none"
+                      />
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={handleAddTheme}
+                        className="p-2 bg-cozy-orange text-white rounded-xl shadow-lg shadow-cozy-orange/20"
+                      >
+                        <Plus size={18} strokeWidth={3} />
+                      </motion.button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <div className="mt-10 pt-6 border-t border-cozy-text/5 flex justify-end">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleSave}
+                className="px-10 py-4 bg-cozy-text text-white rounded-[1.5rem] font-bold shadow-xl transition-all"
+              >
+                Save Preferences
+              </motion.button>
+            </div>
+          </motion.div>
         </div>
-      </div>
-    );
-  }
-);
+      )}
+    </AnimatePresence>
+  );
+};
 
 export default TimerSettingsModal;

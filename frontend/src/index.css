@@ -1,22 +1,46 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@theme {
+  --font-sans: "Fredoka", system-ui, sans-serif;
+  
+  --color-cozy-cream: #FDF7E4;
+  --color-cozy-pink: #FBF0F6;
+  --color-cozy-green: #D4EDDA;
+  --color-cozy-blue: #D7EBF8;
+  --color-cozy-orange: #FFB766;
+  --color-cozy-red: #FF6B6B;
+  --color-cozy-text: #4A4439;
+  --color-cozy-text-light: #8E8575;
+  
+  --shadow-cozy: 0 10px 30px -5px rgba(74, 68, 57, 0.1), 0 4px 15px -5px rgba(74, 68, 57, 0.05);
+  --shadow-cozy-inner: inset 0 2px 4px 0 rgba(74, 68, 57, 0.05);
 }
 
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+@layer base {
+  body {
+    @apply bg-cozy-cream text-cozy-text font-sans antialiased;
+    margin: 0;
+    display: flex;
+    place-items: center;
+    min-width: 320px;
+    min-height: 100vh;
+  }
+}
+
+/* Custom transitions */
+.transition-soft {
+  @apply transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)];
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #E2DDD0;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: transparent;
 }

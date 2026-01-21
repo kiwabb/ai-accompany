@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { Play, Pause, RotateCcw, SkipForward } from 'lucide-react';
 
 interface TimerControlsProps {
@@ -8,39 +9,50 @@ interface TimerControlsProps {
   onSkip: () => void;
 }
 
-const TimerControls: React.FC<TimerControlsProps> = ({ isActive, onStartPause, onReset, onSkip }) => {
+const TimerControls: React.FC<TimerControlsProps> = ({
+  isActive,
+  onStartPause,
+  onReset,
+  onSkip,
+}) => {
   return (
-    <div className="flex items-center justify-center space-x-4 mt-8">
-      {/* Reset Button */}
-      <button
+    <div className="flex items-center space-x-8">
+      <motion.button
+        whileHover={{ scale: 1.1, rotate: -15 }}
+        whileTap={{ scale: 0.9 }}
         onClick={onReset}
-        className="p-3 rounded-full bg-gray-200 text-gray-700 shadow-md hover:bg-gray-300 hover:shadow-lg transition-all duration-200
-                   dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+        className="p-4 rounded-3xl bg-cozy-cream text-cozy-text-light hover:text-cozy-red transition-colors border border-cozy-text/5"
         aria-label="Reset Timer"
       >
-        <RotateCcw size={20} />
-      </button>
+        <RotateCcw size={22} strokeWidth={2.5} />
+      </motion.button>
 
-      {/* Play/Pause Button */}
-      <button
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
         onClick={onStartPause}
-        className="w-20 h-20 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all duration-200"
+        className={`
+          w-24 h-24 rounded-[2.5rem] flex items-center justify-center transition-all duration-500
+          ${isActive 
+            ? 'bg-white text-cozy-orange border-4 border-cozy-orange shadow-inner' 
+            : 'bg-cozy-orange text-white shadow-xl shadow-cozy-orange/40'}
+        `}
         aria-label={isActive ? "Pause Timer" : "Start Timer"}
       >
-        {isActive ? <Pause size={32} /> : <Play size={32} />}
-      </button>
+        {isActive ? <Pause size={40} fill="currentColor" /> : <Play size={40} fill="currentColor" className="ml-1" />}
+      </motion.button>
 
-      {/* Skip Button */}
-      <button
+      <motion.button
+        whileHover={{ scale: 1.1, rotate: 15 }}
+        whileTap={{ scale: 0.9 }}
         onClick={onSkip}
-        className="p-3 rounded-full bg-gray-200 text-gray-700 shadow-md hover:bg-gray-300 hover:shadow-lg transition-all duration-200
-                   dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+        className="p-4 rounded-3xl bg-cozy-cream text-cozy-text-light hover:text-cozy-blue transition-colors border border-cozy-text/5"
         aria-label="Skip Period"
       >
-        <SkipForward size={20} />
-      </button>
+        <SkipForward size={22} strokeWidth={2.5} />
+      </motion.button>
     </div>
   );
 };
 
-export default React.memo(TimerControls);
+export default TimerControls;
