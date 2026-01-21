@@ -1,18 +1,29 @@
 
+import { Phase } from '../types/pomodoro';
+
 interface TimerDisplayProps {
   timeLeft: number;
   totalTime: number;
-  phase: string;
+  phase: Phase;
 }
 
-export function TimerDisplay({ timeLeft, totalTime, phase }: TimerDisplayProps) {
+import React from 'react';
+
+export const TimerDisplay = React.memo(({ timeLeft, totalTime, phase }: TimerDisplayProps) => {
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
   const progress = ((totalTime - timeLeft) / totalTime) * 100;
 
   return (
     <div className="relative flex items-center justify-center w-64 h-64">
-      <svg className="w-full h-full -rotate-90">
+            <svg 
+        className="w-full h-full -rotate-90"
+        role="progressbar"
+        aria-valuenow={timeLeft}
+        aria-valuemin={0}
+        aria-valuemax={totalTime}
+      >
+        <title>Pomodoro Timer Progress</title>
         <circle
           cx="128"
           cy="128"
