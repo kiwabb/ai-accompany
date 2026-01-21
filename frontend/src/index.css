@@ -18,13 +18,13 @@
 }
 
 @layer base {
+  html, body, #root {
+    @apply h-full w-full overflow-hidden bg-cozy-cream;
+  }
+
   body {
-    @apply bg-cozy-cream text-cozy-text font-sans antialiased;
+    @apply text-cozy-text font-sans antialiased;
     margin: 0;
-    display: flex;
-    place-items: center;
-    min-width: 320px;
-    min-height: 100vh;
   }
 
   h1, h2, h3, h4, h5, h6 {

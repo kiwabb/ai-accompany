@@ -98,45 +98,51 @@ const PomodoroTimer: React.FC = () => {
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-[420px] bg-white rounded-[48px] p-10 shadow-cozy flex flex-col items-center relative overflow-hidden"
+      className="w-full max-w-[420px] md:max-w-[480px] lg:max-w-[860px] bg-white rounded-[48px] md:rounded-[60px] p-8 md:p-10 lg:p-14 shadow-cozy flex flex-col lg:flex-row items-center lg:items-stretch gap-10 lg:gap-20 relative overflow-hidden transition-all duration-700"
     >
       {/* Decorative background shapes */}
-      <div className="absolute -top-20 -right-20 w-40 h-40 bg-cozy-orange/5 rounded-full blur-3xl" />
-      <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-cozy-green/5 rounded-full blur-3xl" />
+      <div className="absolute -top-20 -right-20 w-40 h-40 bg-cozy-orange/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-cozy-green/5 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full flex justify-between items-center mb-8 relative z-10">
-        <div className="flex flex-col">
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-cozy-text-light/60 ml-1 mb-0.5">Companion</span>
-          <h1 className="text-2xl font-bold tracking-tight text-cozy-text/90">Study Buddy</h1>
-        </div>
-        <motion.button 
-          whileHover={{ rotate: 90, scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setIsSettingsOpen(true)}
-          className="p-3 rounded-2xl bg-cozy-cream/80 text-cozy-text-light hover:text-cozy-orange transition-colors shadow-sm"
-        >
-          <SettingsIcon size={20} strokeWidth={2.5} />
-        </motion.button>
-      </div>
-
-      <ThemeSelector themes={themes} activeThemeId={activeThemeId} onSelect={handleThemeChange} />
-
-      <div className="my-12 relative">
+      {/* Left Column: Timer Display (Focus) */}
+      <div className="flex-shrink-0 flex items-center justify-center">
         <TimerDisplay timeLeft={timeLeft} totalTime={totalTime} phase={phase} />
       </div>
 
-      <div className="w-full flex flex-col items-center relative z-10">
-        <motion.div 
-          key={completedSessions}
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="mb-8 px-5 py-2 bg-cozy-cream/50 rounded-full text-xs font-bold uppercase tracking-widest text-cozy-text-light/80 border border-white shadow-sm"
-        >
-          Session #{completedSessions + 1}
-        </motion.div>
-        <TimerControls isActive={isActive} onStartPause={handleToggle} onReset={reset} onSkip={handleSkip} />
+      {/* Right Column: Controls & Info */}
+      <div className="flex-grow flex flex-col items-center lg:items-start justify-center relative z-10 w-full">
+        <div className="w-full flex justify-between items-center mb-8 lg:mb-12">
+          <div className="flex flex-col">
+            <span className="text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] text-cozy-text-light/60 ml-1 mb-1">Companion</span>
+            <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-cozy-text/90">Study Buddy</h1>
+          </div>
+          <motion.button 
+            whileHover={{ rotate: 90, scale: 1.15 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setIsSettingsOpen(true)}
+            className="p-3 md:p-4 rounded-2xl md:rounded-3xl bg-cozy-cream/80 text-cozy-text-light hover:text-cozy-orange transition-colors shadow-sm"
+          >
+            <SettingsIcon size={24} strokeWidth={2.5} />
+          </motion.button>
+        </div>
+
+        <div className="w-full mb-8 lg:mb-12">
+          <ThemeSelector themes={themes} activeThemeId={activeThemeId} onSelect={handleThemeChange} />
+        </div>
+
+        <div className="w-full flex flex-col items-center lg:items-start">
+          <motion.div 
+            key={completedSessions}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="mb-8 lg:mb-10 px-6 py-2 bg-cozy-cream/50 rounded-full text-xs md:text-sm font-bold uppercase tracking-widest text-cozy-text-light/80 border border-white shadow-sm self-center lg:self-start"
+          >
+            Session #{completedSessions + 1}
+          </motion.div>
+          <TimerControls isActive={isActive} onStartPause={handleToggle} onReset={reset} onSkip={handleSkip} />
+        </div>
       </div>
 
       <TimerSettingsModal
