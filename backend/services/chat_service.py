@@ -1,6 +1,7 @@
 import os
-import google.generativeai as genai
-from typing import AsyncGenerator
+from google.generativeai import configure, GenerativeModel
+from typing import AsyncGenerator, Optional
+from .. import schemas
 import logging
 
 logger = logging.getLogger(__name__)
@@ -19,16 +20,20 @@ class GeminiService:
 
     def _configure_model(self, api_key: str):
         try:
-            genai.configure(api_key=api_key)
+            configure(api_key=api_key)
             # Fallback to gemini-2.0-flash which is the latest stable.
             # If that fails, the list_models script would be needed to debug further.
-            self.model = genai.GenerativeModel("gemini-2.0-flash")
+            self.model = GenerativeModel("gemini-2.0-flash")
         except Exception as e:
             logger.error(f"Failed to configure Gemini: {e}")
             self.model = None
 
     async def stream_chat(
-        self, message: str, system_prompt: str, api_key: str = None
+        self,
+        message: str,
+        system_prompt: str,
+        chat_history: Optional[list[schemas.ChatMessage]] = None,
+        api_key: Optional[str] = None,
     ) -> AsyncGenerator[str, None]:
         # Determine which key to use
         current_key = api_key or self.default_api_key
@@ -50,10 +55,14 @@ class GeminiService:
             yield "Error: Failed to initialize AI model."
             return
 
-        # Combine system prompt and user message
-        # Gemini Pro doesn't enforce a strict system/user role structure like OpenAI
-        # but supports it via context or just prepending.
-        full_prompt = f"{system_prompt}\n\nUser: {message}\nAI:"
+        # Construct full prompt with history
+        history_context = ""
+        if chat_history:
+            history_context = "\nRecent History:\n" + "\n".join(
+                [f"{msg.role}: {msg.content}" for msg in chat_history]
+            )
+
+        full_prompt = f"{system_prompt}\n{history_context}\n\nUser: {message}\nAI:"
 
         try:
             # stream=True returns a generator

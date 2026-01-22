@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import CozyAvatar from './CozyAvatar';
 
 interface Message {
   sender: 'user' | 'ai';
@@ -12,28 +13,66 @@ interface CozyPalProps {
   phase: string;
   timeLeft: number;
   apiKey?: string;
+  currentLanguage: string;
+  aiPersona: string;
 }
 
-const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey }) => {
+const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey, currentLanguage, aiPersona }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [avatarState, setAvatarState] = useState<'idle' | 'thinking' | 'speaking' | 'focused'>('idle');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
 
+  // Fetch chat history on mount
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const response = await fetch('/api/chat/history?limit=10');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.messages && data.messages.length > 0) {
+            setMessages(data.messages.map((msg: any) => ({
+              sender: msg.role,
+              text: msg.content
+            })));
+          } else {
+             // Only set greeting if no history
+             setMessages([{ sender: 'ai', text: t('cozyPal.greeting') }]);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch chat history', error);
+      }
+    };
+    
+    // Only fetch if messages are empty (initial load)
+    if (messages.length === 0) {
+        fetchHistory();
+    }
+  }, []); // Run once on mount
+
+  // Manage avatar state based on external props and internal loading state
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (phase === 'focus' && timeLeft > 0 && !isOpen && !isLoading) {
+      setAvatarState('focused');
+    } else if (!isLoading && avatarState !== 'thinking' && avatarState !== 'speaking') {
+      setAvatarState('idle');
+    }
+  }, [messages, phase, timeLeft, isOpen, isLoading, avatarState]);
 
-  const toggleChat = () => {
-    setIsOpen(!isOpen);
+  const toggleChat = useCallback(() => {
+    setIsOpen(prev => !prev);
+    // If messages are still empty when toggling (and fetch failed or returned nothing), show greeting
     if (!isOpen && messages.length === 0) {
       setMessages([{ sender: 'ai', text: t('cozyPal.greeting') }]);
     }
-  };
+  }, [isOpen, messages.length, t]);
 
-  const sendMessage = async (e: React.FormEvent | React.KeyboardEvent) => {
+  const sendMessage = useCallback(async (e: React.FormEvent | React.KeyboardEvent) => {
     if ('key' in e && e.key !== 'Enter') return;
     e.preventDefault();
 
@@ -43,8 +82,9 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey })
     setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
     setIsLoading(true);
+    setAvatarState('thinking');
 
-    setMessages((prev) => [...prev, { sender: 'ai', text: '' }]);
+    setMessages((prev) => [...prev, { sender: 'ai', text: '' }]); // Add an empty message for streaming
 
     try {
       const headers: HeadersInit = {
@@ -62,7 +102,9 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey })
           context: {
             theme_name: themeName,
             phase: phase,
-            time_left: timeLeft
+            time_left: timeLeft,
+            language: currentLanguage,
+            ai_persona: aiPersona
           }
         }),
       });
@@ -73,6 +115,8 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey })
       const decoder = new TextDecoder();
       let done = false;
       let accumulatedResponse = '';
+      
+      setAvatarState('speaking'); // Start speaking animation when stream begins
 
       while (!done && reader) {
         const { value, done: doneReading } = await reader.read();
@@ -86,6 +130,7 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey })
           return newMessages;
         });
       }
+      setAvatarState('idle'); // Stream finished, reset avatar state
     } catch (error) {
       console.error('Chat error:', error);
       setMessages((prev) => {
@@ -93,27 +138,28 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey })
         newMessages[newMessages.length - 1] = { sender: 'ai', text: t('cozyPal.errorMessage') };
         return newMessages;
       });
+      setAvatarState('idle'); // Reset avatar state on error
     } finally {
       setIsLoading(false);
+      // Ensure avatar is idle if it was thinking/speaking and no other state overrides
+      if (avatarState === 'thinking' || avatarState === 'speaking') {
+          setAvatarState('idle');
+      }
     }
-  };
+  }, [inputValue, isLoading, apiKey, themeName, phase, timeLeft, t, messages, isOpen, avatarState, currentLanguage, aiPersona]); // Added missing dependencies
+
 
   return (
     <div className="fixed bottom-6 right-6 z-50">
       {/* 悬浮头像按钮 */}
       <motion.button
         aria-label={t('cozyPal.avatarDescription')}
-        className="w-16 h-16 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full shadow-2xl flex items-center justify-center cursor-pointer border-4 border-white/50"
+        className="w-20 h-20 rounded-full shadow-2xl flex items-center justify-center cursor-pointer hover:shadow-cozy-orange/50 transition-shadow"
         whileHover={{ scale: 1.1, rotate: 5 }}
         whileTap={{ scale: 0.9 }}
         onClick={toggleChat}
       >
-        <span className="text-3xl" role="img" aria-label="AI Avatar">✨</span>
-        <motion.div
-            className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 border-2 border-white rounded-full"
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ repeat: Infinity, duration: 2 }}
-        />
+        <CozyAvatar state={avatarState} size={80} />
       </motion.button>
 
       {/* 聊天窗口 */}
@@ -130,8 +176,8 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey })
           >
             {/* 头部 */}
             <div className="bg-indigo-500/10 p-4 border-b border-indigo-100 flex items-center gap-3">
-              <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center">
-                <span className="text-sm">✨</span>
+              <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-white/50">
+                 <CozyAvatar state={avatarState === 'focused' ? 'idle' : avatarState} size={40} />
               </div>
               <div>
                 <h3 className="font-bold text-indigo-900 text-sm">Cozy Pal</h3>

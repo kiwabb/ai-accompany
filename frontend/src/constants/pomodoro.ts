@@ -12,4 +12,5 @@ export const DEFAULT_SETTINGS: TimerSettings = {
   longBreakInterval: 4,
   autoStartNext: false,
   googleApiKey: '',
+  aiPersona: 'gentle_encourager',
 };

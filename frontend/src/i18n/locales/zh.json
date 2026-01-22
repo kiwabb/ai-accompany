@@ -27,7 +27,14 @@
     "autoStart": "自动开始下一阶段",
     "themes": "专注主题",
     "newThemeName": "新主题名称",
-    "language": "语言"
+    "language": "语言",
+    "aiPersona": "AI 人格",
+    "personas": {
+      "gentle_encourager": "温柔鼓励者",
+      "strict_coach": "严厉教练",
+      "logical_analyst": "理性分析师",
+      "humorous_buddy": "幽默搭子"
+    }
   },
   "themes": {
     "english": "英语",
