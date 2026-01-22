@@ -1,6 +1,7 @@
 import os
-import google.generativeai as genai
-from typing import AsyncGenerator
+from google.generativeai import configure, GenerativeModel
+from typing import AsyncGenerator, Optional
+from .. import schemas
 import logging
 
 logger = logging.getLogger(__name__)
@@ -19,10 +20,10 @@ class GeminiService:
 
     def _configure_model(self, api_key: str):
         try:
-            genai.configure(api_key=api_key)
+            configure(api_key=api_key)
             # Fallback to gemini-2.0-flash which is the latest stable.
             # If that fails, the list_models script would be needed to debug further.
-            self.model = genai.GenerativeModel("gemini-2.0-flash")
+            self.model = GenerativeModel("gemini-2.0-flash")
         except Exception as e:
             logger.error(f"Failed to configure Gemini: {e}")
             self.model = None
@@ -31,8 +32,8 @@ class GeminiService:
         self,
         message: str,
         system_prompt: str,
-        chat_history: list = None,
-        api_key: str = None,
+        chat_history: Optional[list[schemas.ChatMessage]] = None,
+        api_key: Optional[str] = None,
     ) -> AsyncGenerator[str, None]:
         # Determine which key to use
         current_key = api_key or self.default_api_key

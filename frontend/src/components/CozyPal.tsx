@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import CozyAvatar from './CozyAvatar';
@@ -13,9 +13,10 @@ interface CozyPalProps {
   phase: string;
   timeLeft: number;
   apiKey?: string;
+  currentLanguage: string;
 }
 
-const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey }) => {
+const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey, currentLanguage }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -52,31 +53,25 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey })
     }
   }, []); // Run once on mount
 
+  // Manage avatar state based on external props and internal loading state
   useEffect(() => {
-    // Update avatar state based on context
-    if (phase === 'focus' && timeLeft > 0 && !isOpen) {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (phase === 'focus' && timeLeft > 0 && !isOpen && !isLoading) {
       setAvatarState('focused');
-    } else if (isLoading) {
-      setAvatarState('thinking');
-    } else if (messages.length > 0 && messages[messages.length - 1].sender === 'ai' && isOpen) {
-       // Simple heuristic: if AI just sent a message, maybe it's "speaking" briefly? 
-       // For now, let's keep it 'idle' or reset to 'idle' after speaking.
-       // We'll handle 'speaking' during streaming.
-       setAvatarState('idle');
-    } else {
+    } else if (!isLoading && avatarState !== 'thinking' && avatarState !== 'speaking') {
       setAvatarState('idle');
     }
-  }, [phase, timeLeft, isOpen, isLoading, messages]);
+  }, [messages, phase, timeLeft, isOpen, isLoading, avatarState]);
 
-  const toggleChat = () => {
-    setIsOpen(!isOpen);
+  const toggleChat = useCallback(() => {
+    setIsOpen(prev => !prev);
     // If messages are still empty when toggling (and fetch failed or returned nothing), show greeting
     if (!isOpen && messages.length === 0) {
       setMessages([{ sender: 'ai', text: t('cozyPal.greeting') }]);
     }
-  };
+  }, [isOpen, messages.length, t]);
 
-  const sendMessage = async (e: React.FormEvent | React.KeyboardEvent) => {
+  const sendMessage = useCallback(async (e: React.FormEvent | React.KeyboardEvent) => {
     if ('key' in e && e.key !== 'Enter') return;
     e.preventDefault();
 
@@ -88,7 +83,7 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey })
     setIsLoading(true);
     setAvatarState('thinking');
 
-    setMessages((prev) => [...prev, { sender: 'ai', text: '' }]);
+    setMessages((prev) => [...prev, { sender: 'ai', text: '' }]); // Add an empty message for streaming
 
     try {
       const headers: HeadersInit = {
@@ -106,7 +101,8 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey })
           context: {
             theme_name: themeName,
             phase: phase,
-            time_left: timeLeft
+            time_left: timeLeft,
+            language: currentLanguage
           }
         }),
       });
@@ -132,6 +128,7 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey })
           return newMessages;
         });
       }
+      setAvatarState('idle'); // Stream finished, reset avatar state
     } catch (error) {
       console.error('Chat error:', error);
       setMessages((prev) => {
@@ -139,10 +136,16 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey })
         newMessages[newMessages.length - 1] = { sender: 'ai', text: t('cozyPal.errorMessage') };
         return newMessages;
       });
+      setAvatarState('idle'); // Reset avatar state on error
     } finally {
       setIsLoading(false);
+      // Ensure avatar is idle if it was thinking/speaking and no other state overrides
+      if (avatarState === 'thinking' || avatarState === 'speaking') {
+          setAvatarState('idle');
+      }
     }
-  };
+  }, [inputValue, isLoading, apiKey, themeName, phase, timeLeft, t, messages, isOpen, avatarState, currentLanguage]); // Added missing dependencies
+
 
   return (
     <div className="fixed bottom-6 right-6 z-50">

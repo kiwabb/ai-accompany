@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, update
 from . import models, schemas
 from datetime import date
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 
 async def create_session(db: AsyncSession, session_in: schemas.SessionCreate):
@@ -27,7 +27,9 @@ async def update_session(db: AsyncSession, session_id: int, session_data: dict):
     return result.scalar_one_or_none()
 
 
-async def get_daily_stats(db: AsyncSession, target_date: date) -> schemas.DailyStats:
+async def get_daily_stats(
+    db: AsyncSession, target_date: date
+) -> Optional[schemas.DailyStats]:
     # 计算总专注分钟数 (只计算 phase_type == 'focus' 的 session)
     total_focus_seconds_result = await db.execute(
         select(func.sum(models.LearningSession.duration_seconds)).where(
@@ -64,7 +66,7 @@ async def get_daily_stats(db: AsyncSession, target_date: date) -> schemas.DailyS
 
 
 async def create_chat_message(
-    db: AsyncSession, role: str, content: str, session_id: int = None
+    db: AsyncSession, role: str, content: str, session_id: Optional[int] = None
 ):
     db_message = models.ChatHistory(role=role, content=content, session_id=session_id)
     db.add(db_message)

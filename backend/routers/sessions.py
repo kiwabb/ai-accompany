@@ -4,12 +4,34 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import date
 import asyncio
 import json
+from typing import List, Optional
 
-from ..database import get_db
+from ..database import get_db, AsyncSessionLocal
 from .. import crud, schemas
 from ..services.chat_service import chat_service
 
+
 router = APIRouter(prefix="/api", tags=["sessions"])
+
+
+# Helper for streaming and saving - Defined outside the route
+async def response_generator_with_save(
+    message: str,
+    system_prompt: str,
+    chat_history: List[schemas.ChatMessage],
+    api_key: Optional[str],
+    db_session: AsyncSession,
+):
+    full_response = ""
+    async for chunk in chat_service.stream_chat(
+        message, system_prompt, chat_history=chat_history, api_key=api_key
+    ):
+        full_response += chunk
+        yield chunk
+
+    if full_response:
+        async with AsyncSessionLocal() as session:
+            await crud.create_chat_message(session, role="ai", content=full_response)
 
 
 @router.post("/sessions", response_model=schemas.SessionResponse, status_code=201)
@@ -37,7 +59,7 @@ async def update_learning_session(
 async def chat_completions(
     request: schemas.ChatRequest,
     db: AsyncSession = Depends(get_db),
-    x_google_api_key: str = Header(None),
+    x_google_api_key: Optional[str] = Header(None),
 ):
     """
     AI 聊天伴侣的对话接口，集成 Gemini Pro。
@@ -48,7 +70,15 @@ async def chat_completions(
     daily_sessions = daily_stats.total_sessions if daily_stats else 0
 
     # 2. Fetch Recent Chat History
-    chat_history = await crud.get_recent_chat_history(db, limit=10)
+    raw_chat_history = await crud.get_recent_chat_history(db, limit=10)
+    chat_history_for_llm = [
+        schemas.ChatMessage(
+            role=str(msg.role),
+            content=str(msg.content),
+            created_at=msg.created_at.isoformat(),
+        )
+        for msg in raw_chat_history
+    ]
 
     # 3. Extract real-time context from request
     context = request.context or {}
@@ -56,6 +86,7 @@ async def chat_completions(
     task_name = context.get("theme_name", "Focus")
     phase = context.get("phase", "focus")
     time_left = context.get("time_left", 0)  # seconds
+    language = context.get("language", "en")
 
     # 4. Construct System Prompt
     system_prompt = (
@@ -64,29 +95,17 @@ async def chat_completions(
         f"User Context: Currently in '{phase}' phase (Theme: {task_name}). "
         f"Time Remaining: ~{time_left // 60} minutes. "
         f"Today's Progress: {daily_focus} mins focused ({daily_sessions} sessions). "
-        f"Instructions: Be concise (1-3 sentences). Match the persona. Encourage the user."
+        f"Instructions: Be concise (1-3 sentences). Match the persona. Encourage the user. Respond in {language}."
     )
 
     # 5. Save User Message
     await crud.create_chat_message(db, role="user", content=request.message)
 
-    # 6. Stream Response & Save AI Message
-    async def response_generator():
-        full_response = ""
-        async for chunk in chat_service.stream_chat(
-            request.message,
-            system_prompt,
-            chat_history=chat_history,
-            api_key=x_google_api_key,
-        ):
-            full_response += chunk
-            yield chunk
-
     return StreamingResponse(
         response_generator_with_save(
             request.message,
             system_prompt,
-            chat_history,
+            chat_history_for_llm,
             x_google_api_key,
             db,
         ),
@@ -94,33 +113,20 @@ async def chat_completions(
     )
 
 
-# Helper for streaming and saving
-async def response_generator_with_save(
-    message, system_prompt, chat_history, api_key, db_session
-):
-    full_response = ""
-    # Create a new session for saving to avoid 'session is closed' errors if main request finishes
-    # Actually, we can't easily create a new session here without the sessionmaker.
-    # Let's import the sessionmaker
-    from ..database import AsyncSessionLocal
-
-    async for chunk in chat_service.stream_chat(
-        message, system_prompt, chat_history=chat_history, api_key=api_key
-    ):
-        full_response += chunk
-        yield chunk
-
-    if full_response:
-        async with AsyncSessionLocal() as session:
-            await crud.create_chat_message(session, role="ai", content=full_response)
-
-
 @router.get("/chat/history", response_model=schemas.ChatHistoryResponse)
 async def get_chat_history(
     limit: int = Query(50, ge=1, le=100), db: AsyncSession = Depends(get_db)
 ):
     messages = await crud.get_recent_chat_history(db, limit=limit)
-    return schemas.ChatHistoryResponse(messages=messages)
+    formatted_messages = [
+        schemas.ChatMessage(
+            role=str(msg.role),
+            content=str(msg.content),
+            created_at=msg.created_at.isoformat(),
+        )
+        for msg in messages
+    ]
+    return schemas.ChatHistoryResponse(messages=formatted_messages)
 
 
 @router.get("/stats/daily", response_model=schemas.DailyStats)
@@ -140,7 +146,7 @@ async def get_daily_learning_stats(
 
 
 # 可以添加一个获取所有session的路由 (可选，用于调试或未来数据展示)
-@router.get("/sessions", response_model=list[schemas.SessionResponse])
+@router.get("/sessions", response_model=List[schemas.SessionResponse])
 async def get_all_sessions(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=0),

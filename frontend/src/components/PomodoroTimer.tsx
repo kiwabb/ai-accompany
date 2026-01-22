@@ -66,7 +66,8 @@ function pomodoroReducer(state: PomodoroState, action: PomodoroAction): Pomodoro
 }
 
 const PomodoroTimer: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const currentLanguage = i18n.language;
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [state, dispatch] = useReducer(pomodoroReducer, initialState, (initial) => {
     try {
@@ -262,8 +263,9 @@ const PomodoroTimer: React.FC = () => {
           onSave={handleSaveSettings}
         />
       </motion.div>
-      <CozyPal themeName={activeTheme.name} phase={phase} timeLeft={timeLeft} apiKey={settings.googleApiKey} />
+       <CozyPal themeName={activeTheme.name} phase={phase} timeLeft={timeLeft} apiKey={settings.googleApiKey} currentLanguage={currentLanguage} />
     </LayoutGroup>
+
   );
 };
 
