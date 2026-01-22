@@ -15,6 +15,20 @@ async def create_learning_session(
     return await crud.create_session(db=db, session_in=session_in)
 
 
+@router.patch("/sessions/{session_id}", response_model=schemas.SessionResponse)
+async def update_learning_session(
+    session_id: int,
+    session_update: schemas.SessionCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    updated_session = await crud.update_session(
+        db, session_id, session_update.model_dump(exclude_unset=True)
+    )
+    if not updated_session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return updated_session
+
+
 @router.get("/stats/daily", response_model=schemas.DailyStats)
 async def get_daily_learning_stats(
     target_date: date = Query(default_factory=date.today),
