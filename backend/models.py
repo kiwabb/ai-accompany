@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, func
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, func
 from .database import Base
 
 
@@ -13,3 +13,8 @@ class LearningSession(Base):
     start_time = Column(DateTime(timezone=True), nullable=False)
     end_time = Column(DateTime(timezone=True), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # AI 聊天伴侣设置
+    ai_persona = Column(String, default="gentle_encourager")
+    ai_proactivity = Column(Boolean, default=True)
+    ai_actionable = Column(Boolean, default=False)

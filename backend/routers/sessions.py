@@ -1,6 +1,9 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import date
+import asyncio
+import json
 
 from ..database import get_db
 from .. import crud, schemas
@@ -13,6 +16,39 @@ async def create_learning_session(
     session_in: schemas.SessionCreate, db: AsyncSession = Depends(get_db)
 ):
     return await crud.create_session(db=db, session_in=session_in)
+
+
+@router.patch("/sessions/{session_id}", response_model=schemas.SessionResponse)
+async def update_learning_session(
+    session_id: int,
+    session_update: schemas.SessionCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    updated_session = await crud.update_session(
+        db, session_id, session_update.model_dump(exclude_unset=True)
+    )
+    if not updated_session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return updated_session
+
+
+@router.post("/chat/completions")
+async def chat_completions(request: schemas.ChatRequest):
+    """
+    AI 聊天伴侣的对话接口，目前返回 Mock 的流式数据。
+    未来将集成真实的 LLM (如 Gemini/OpenAI)。
+    """
+
+    async def event_generator():
+        # 模拟 AI 思考过程和打字感
+        full_response = f"I heard you say: '{request.message}'. I'm here to accompany you on your learning journey! Keep up the great work. ✨"
+
+        # 模拟流式输出
+        for char in full_response:
+            yield char
+            await asyncio.sleep(0.03)
+
+    return StreamingResponse(event_generator(), media_type="text/plain")
 
 
 @router.get("/stats/daily", response_model=schemas.DailyStats)

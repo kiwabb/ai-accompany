@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Dict
+from typing import Dict, Optional
 
 
 class SessionBase(BaseModel):
@@ -10,6 +10,11 @@ class SessionBase(BaseModel):
     status: str  # 'completed', 'skipped', 'interrupted'
     start_time: datetime
     end_time: datetime
+
+    # AI 聊天伴侣设置
+    ai_persona: Optional[str] = "gentle_encourager"
+    ai_proactivity: Optional[bool] = True
+    ai_actionable: Optional[bool] = False
 
 
 class SessionCreate(SessionBase):
@@ -29,3 +34,8 @@ class DailyStats(BaseModel):
     total_focus_minutes: int
     total_sessions: int
     sessions_by_theme: Dict[str, int]
+
+
+class ChatRequest(BaseModel):
+    message: str
+    context: Optional[Dict] = None
