@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import CozyAvatar from './CozyAvatar';
@@ -17,16 +17,42 @@ interface CozyPalProps {
   aiPersona: string;
 }
 
-const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey, currentLanguage, aiPersona }) => {
+export interface CozyPalHandle {
+  triggerProactiveMessage: (type: 'focus_start' | 'focus_end' | 'break_start' | 'break_end' | 'focus_near_end' | 'break_near_end' | 'focus_completed', durationOverride?: number) => void;
+}
+
+const CozyPal = forwardRef<CozyPalHandle, CozyPalProps>(({ themeName, phase, timeLeft, apiKey, currentLanguage, aiPersona }, ref) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [hasUnread, setHasUnread] = useState(false);
   const [avatarState, setAvatarState] = useState<'idle' | 'thinking' | 'speaking' | 'focused'>('idle');
+  const [speechBubble, setSpeechBubble] = useState<string | null>(null);
+  const [isSpeakingProactive, setIsSpeakingProactive] = useState(false);
+  const speechBubbleTimerRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
 
-  // Fetch chat history on mount
+  useEffect(() => {
+    if (isOpen) {
+      setHasUnread(false);
+      if (speechBubbleTimerRef.current) {
+        clearTimeout(speechBubbleTimerRef.current);
+        speechBubbleTimerRef.current = null;
+      }
+      setSpeechBubble(null);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (speechBubbleTimerRef.current) {
+        clearTimeout(speechBubbleTimerRef.current);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     const fetchHistory = async () => {
       try {
@@ -39,7 +65,6 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey, c
               text: msg.content
             })));
           } else {
-             // Only set greeting if no history
              setMessages([{ sender: 'ai', text: t('cozyPal.greeting') }]);
           }
         }
@@ -48,13 +73,11 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey, c
       }
     };
     
-    // Only fetch if messages are empty (initial load)
     if (messages.length === 0) {
         fetchHistory();
     }
-  }, []); // Run once on mount
+  }, [t, messages.length]);
 
-  // Manage avatar state based on external props and internal loading state
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     if (phase === 'focus' && timeLeft > 0 && !isOpen && !isLoading) {
@@ -64,27 +87,33 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey, c
     }
   }, [messages, phase, timeLeft, isOpen, isLoading, avatarState]);
 
-  const toggleChat = useCallback(() => {
-    setIsOpen(prev => !prev);
-    // If messages are still empty when toggling (and fetch failed or returned nothing), show greeting
-    if (!isOpen && messages.length === 0) {
-      setMessages([{ sender: 'ai', text: t('cozyPal.greeting') }]);
+  const sendMessage = useCallback(async (e?: React.FormEvent | React.KeyboardEvent, proactiveTrigger?: string, durationOverride?: number) => {
+    if (e && 'key' in e && e.key !== 'Enter') return;
+    if (e) e.preventDefault();
+
+    const textToSend = proactiveTrigger || inputValue.trim();
+    if (!textToSend || isLoading) return;
+
+    // Clear any existing speech bubble timer if a new proactive message is coming
+    if (proactiveTrigger && speechBubbleTimerRef.current) {
+      clearTimeout(speechBubbleTimerRef.current);
+      speechBubbleTimerRef.current = null;
     }
-  }, [isOpen, messages.length, t]);
 
-  const sendMessage = useCallback(async (e: React.FormEvent | React.KeyboardEvent) => {
-    if ('key' in e && e.key !== 'Enter') return;
-    e.preventDefault();
+    if (!proactiveTrigger) {
+      const userMessage: Message = { sender: 'user', text: textToSend };
+      setMessages((prev) => [...prev, userMessage]);
+      setInputValue('');
+    } else {
+      setIsSpeakingProactive(true);
+      setSpeechBubble('');
+    }
 
-    if (inputValue.trim() === '' || isLoading) return;
-
-    const userMessage: Message = { sender: 'user', text: inputValue.trim() };
-    setMessages((prev) => [...prev, userMessage]);
-    setInputValue('');
     setIsLoading(true);
     setAvatarState('thinking');
-
-    setMessages((prev) => [...prev, { sender: 'ai', text: '' }]); // Add an empty message for streaming
+    if (!proactiveTrigger) {
+      setMessages((prev) => [...prev, { sender: 'ai', text: '' }]);
+    }
 
     try {
       const headers: HeadersInit = {
@@ -98,11 +127,11 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey, c
         method: 'POST',
         headers: headers,
         body: JSON.stringify({
-          message: userMessage.text,
+          message: proactiveTrigger ? `[SYSTEM_TRIGGER:${proactiveTrigger}]` : textToSend,
           context: {
             theme_name: themeName,
             phase: phase,
-            time_left: timeLeft,
+            time_left: durationOverride !== undefined ? durationOverride : timeLeft,
             language: currentLanguage,
             ai_persona: aiPersona
           }
@@ -116,7 +145,7 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey, c
       let done = false;
       let accumulatedResponse = '';
       
-      setAvatarState('speaking'); // Start speaking animation when stream begins
+      setAvatarState('speaking');
 
       while (!done && reader) {
         const { value, done: doneReading } = await reader.read();
@@ -124,45 +153,102 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey, c
         const chunkValue = decoder.decode(value);
         accumulatedResponse += chunkValue;
 
+        if (proactiveTrigger) {
+          setSpeechBubble(accumulatedResponse);
+        } else {
+          setMessages((prev) => {
+            const newMessages = [...prev];
+            newMessages[newMessages.length - 1] = { sender: 'ai', text: accumulatedResponse };
+            return newMessages;
+          });
+        }
+      }
+      
+      if (proactiveTrigger) {
+        speechBubbleTimerRef.current = setTimeout(() => {
+          setSpeechBubble(null);
+          speechBubbleTimerRef.current = null;
+        }, 10000);
+      } else if (!isOpen) {
+        setHasUnread(true);
+      }
+      setAvatarState('idle');
+    } catch (error) {
+      console.error('Chat error:', error);
+      if (proactiveTrigger) {
+        setSpeechBubble(t('cozyPal.errorMessage'));
+        speechBubbleTimerRef.current = setTimeout(() => {
+          setSpeechBubble(null);
+          speechBubbleTimerRef.current = null;
+        }, 5000);
+      } else {
         setMessages((prev) => {
           const newMessages = [...prev];
-          newMessages[newMessages.length - 1] = { sender: 'ai', text: accumulatedResponse };
+          newMessages[newMessages.length - 1] = { sender: 'ai', text: t('cozyPal.errorMessage') };
           return newMessages;
         });
       }
-      setAvatarState('idle'); // Stream finished, reset avatar state
-    } catch (error) {
-      console.error('Chat error:', error);
-      setMessages((prev) => {
-        const newMessages = [...prev];
-        newMessages[newMessages.length - 1] = { sender: 'ai', text: t('cozyPal.errorMessage') };
-        return newMessages;
-      });
-      setAvatarState('idle'); // Reset avatar state on error
+      setAvatarState('idle');
     } finally {
       setIsLoading(false);
-      // Ensure avatar is idle if it was thinking/speaking and no other state overrides
-      if (avatarState === 'thinking' || avatarState === 'speaking') {
-          setAvatarState('idle');
+      if (proactiveTrigger) {
+        setIsSpeakingProactive(false);
       }
+      setAvatarState('idle');
     }
-  }, [inputValue, isLoading, apiKey, themeName, phase, timeLeft, t, messages, isOpen, avatarState, currentLanguage, aiPersona]); // Added missing dependencies
+  }, [inputValue, isLoading, apiKey, themeName, phase, timeLeft, t, isOpen, currentLanguage, aiPersona, proactiveTrigger]);
 
+  useImperativeHandle(ref, () => ({
+    triggerProactiveMessage: (type, durationOverride) => {
+      sendMessage(undefined, type, durationOverride);
+    }
+  }));
+
+  const toggleChat = useCallback(() => {
+    setIsOpen(prev => !prev);
+    if (!isOpen && messages.length === 0) {
+      setMessages([{ sender: 'ai', text: t('cozyPal.greeting') }]);
+    }
+  }, [isOpen, messages.length, t]);
 
   return (
     <div className="fixed bottom-6 right-6 z-50">
-      {/* 悬浮头像按钮 */}
       <motion.button
         aria-label={t('cozyPal.avatarDescription')}
-        className="w-20 h-20 rounded-full shadow-2xl flex items-center justify-center cursor-pointer hover:shadow-cozy-orange/50 transition-shadow"
+        className="w-20 h-20 rounded-full shadow-2xl flex items-center justify-center cursor-pointer hover:shadow-cozy-orange/50 transition-shadow relative"
         whileHover={{ scale: 1.1, rotate: 5 }}
         whileTap={{ scale: 0.9 }}
         onClick={toggleChat}
       >
         <CozyAvatar state={avatarState} size={80} />
+        <AnimatePresence>
+          {hasUnread && (
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0 }}
+              className="absolute top-0 right-0 w-6 h-6 bg-red-500 rounded-full border-2 border-white shadow-lg flex items-center justify-center"
+            >
+              <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.button>
 
-      {/* 聊天窗口 */}
+      <AnimatePresence>
+        {speechBubble && !isOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: 20, transformOrigin: 'bottom right' }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 20 }}
+            transition={{ type: "spring", damping: 20, stiffness: 300 }}
+            className="absolute bottom-24 right-20 w-64 p-4 bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/40 text-sm text-indigo-800 break-words"
+          >
+            {speechBubble}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -174,7 +260,6 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey, c
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="absolute bottom-20 right-0 w-80 sm:w-96 max-h-[500px] bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-white/40"
           >
-            {/* 头部 */}
             <div className="bg-indigo-500/10 p-4 border-b border-indigo-100 flex items-center gap-3">
               <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-white/50">
                  <CozyAvatar state={avatarState === 'focused' ? 'idle' : avatarState} size={40} />
@@ -190,7 +275,6 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey, c
               </button>
             </div>
 
-            {/* 消息区域 */}
             <div className="flex-grow overflow-y-auto p-4 space-y-4 min-h-[300px] flex flex-col custom-scrollbar">
               {messages.map((msg, idx) => (
                 <motion.div
@@ -209,14 +293,12 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey, c
               <div ref={messagesEndRef} />
             </div>
 
-            {/* 输入区域 */}
-            <form onSubmit={sendMessage} className="p-4 bg-gray-50/50 border-t border-gray-100">
+            <form onSubmit={(e) => sendMessage(e)} className="p-4 bg-gray-50/50 border-t border-gray-100">
               <div className="relative">
                 <input
                   type="text"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && sendMessage(e)}
                   disabled={isLoading}
                   placeholder={t('cozyPal.typeMessagePlaceholder')}
                   className="w-full pl-4 pr-12 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all text-sm shadow-inner disabled:bg-gray-100"
@@ -237,6 +319,6 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey, c
       </AnimatePresence>
     </div>
   );
-};
+});
 
 export default CozyPal;
