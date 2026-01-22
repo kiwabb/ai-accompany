@@ -29,6 +29,9 @@
     "newThemeName": "新主题名称",
     "language": "语言",
     "aiPersona": "AI 人格",
+    "aiBehavior": "AI 行为",
+    "aiProactivity": "AI 主动交互",
+    "aiActionable": "AI 任务执行建议",
     "personas": {
       "gentle_encourager": "温柔鼓励者",
       "strict_coach": "严厉教练",

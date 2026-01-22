@@ -3,7 +3,7 @@ from fastapi import FastAPI
 
 from .database import Base, engine
 from . import models  # 确保导入模型，以便Base.metadata知道它们
-from .routers import sessions
+from .routers import sessions, users
 
 
 @asynccontextmanager
@@ -18,6 +18,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 app.include_router(sessions.router)
+app.include_router(users.router)
 
 
 @app.get("/hello")

@@ -113,19 +113,40 @@ async def chat_completions(
         ai_persona, persona_instructions["gentle_encourager"]
     )
 
+    is_proactive = request.message.startswith("[SYSTEM_TRIGGER:")
+    proactive_context = ""
+    if is_proactive:
+        trigger_type = request.message.split(":")[1].rstrip("]")
+        proactive_context = f"IMPORTANT: This is a proactive message triggered by a state change: {trigger_type}. "
+        if trigger_type == "focus_start":
+            proactive_context += (
+                "The user just started a focus session. Give them a quick boost!"
+            )
+        elif trigger_type == "break_start":
+            proactive_context += "The user just started a break. Remind them to rest."
+        elif trigger_type == "focus_near_end":
+            proactive_context += "The focus session is almost over (1 minute left). Give them a final push!"
+        elif trigger_type == "focus_completed":
+            proactive_context += "The user just successfully finished a focus session! Celebrate their accomplishment."
+        elif trigger_type == "break_near_end":
+            proactive_context += (
+                "The break is almost over. Gently prepare them to get back to focus."
+            )
+
     system_prompt = (
         f"You are CozyPal, a supportive AI study companion. "
         f"Current Persona: {ai_persona}. Style: {persona_inst} "
         f"User State: The user is currently {phase_desc} for the topic '{task_name}'. "
         f"Timer: There are approximately {time_left // 60} minutes left in this period. "
         f"Today's Progress: User has already completed {daily_focus} minutes of deep focus across {daily_sessions} sessions today. "
+        f"{proactive_context} "
         f"Your Task: Provide a very brief, encouraging response (1-2 sentences) matching your persona's style. "
         f"If the user is focusing, keep them on track. If they are on a break, remind them to recharge. "
         f"Always respond in {language}."
     )
 
-    # 5. Save User Message
-    await crud.create_chat_message(db, role="user", content=request.message)
+    if not is_proactive:
+        await crud.create_chat_message(db, role="user", content=request.message)
 
     return StreamingResponse(
         response_generator_with_save(

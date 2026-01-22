@@ -29,6 +29,9 @@
     "newThemeName": "New Theme Name",
     "language": "Language",
     "aiPersona": "AI Persona",
+    "aiBehavior": "AI Behavior",
+    "aiProactivity": "AI Proactivity",
+    "aiActionable": "AI Actionable Suggestions",
     "personas": {
       "gentle_encourager": "Gentle Encourager",
       "strict_coach": "Strict Coach",

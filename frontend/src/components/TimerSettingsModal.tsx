@@ -4,13 +4,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import type { FocusTheme, TimerSettings } from '../types/pomodoro';
 import { v4 as uuidv4 } from 'uuid';
+import { createUserTheme, deleteUserTheme } from '../api/client';
 
 interface TimerSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialSettings: TimerSettings;
   initialThemes: FocusTheme[];
-  onSave: (settings: TimerSettings, themes: FocusTheme[]) => void;
+  onSave: (settings: TimerSettings) => void;
+  onThemesChange: (themes: FocusTheme[]) => void;
 }
 
 const TimerSettingsModal: React.FC<TimerSettingsModalProps> = ({
@@ -19,6 +21,7 @@ const TimerSettingsModal: React.FC<TimerSettingsModalProps> = ({
   initialSettings,
   initialThemes,
   onSave,
+  onThemesChange,
 }) => {
   const { t, i18n } = useTranslation();
   const [settings, setSettings] = useState<TimerSettings>(initialSettings);
@@ -45,25 +48,44 @@ const TimerSettingsModal: React.FC<TimerSettingsModalProps> = ({
     setThemes((prev) => prev.map((theme) => (theme.id === id ? { ...theme, focusDuration: Math.max(1, duration) } : theme)));
   }, []);
 
-  const handleAddTheme = useCallback(() => {
+  const handleAddTheme = useCallback(async () => {
     if (newThemeName.trim() && newThemeDuration > 0) {
-      setThemes((prev) => [
-        ...prev,
-        { id: uuidv4(), name: newThemeName.trim(), focusDuration: newThemeDuration, isDefault: false },
-      ]);
-      setNewThemeName('');
-      setNewThemeDuration(25);
+      const newTheme: FocusTheme = { 
+        id: uuidv4(), 
+        name: newThemeName.trim(), 
+        focusDuration: newThemeDuration, 
+        isDefault: false 
+      };
+      
+      try {
+        await createUserTheme(newTheme);
+        const updatedThemes = [...themes, newTheme];
+        setThemes(updatedThemes);
+        onThemesChange(updatedThemes);
+        setNewThemeName('');
+        setNewThemeDuration(25);
+      } catch (error) {
+        console.error("Failed to create theme:", error);
+      }
     }
-  }, [newThemeName, newThemeDuration]);
+  }, [newThemeName, newThemeDuration, themes, onThemesChange]);
 
-  const handleRemoveTheme = useCallback((id: string) => {
-    setThemes((prev) => prev.filter((theme) => theme.id !== id));
-  }, []);
+  const handleRemoveTheme = useCallback(async (id: string) => {
+    try {
+      await deleteUserTheme(id);
+      const updatedThemes = themes.filter((theme) => theme.id !== id);
+      setThemes(updatedThemes);
+      onThemesChange(updatedThemes);
+    } catch (error) {
+      console.error("Failed to delete theme:", error);
+    }
+  }, [themes, onThemesChange]);
+
 
   const handleSave = useCallback(() => {
-    onSave(settings, themes);
+    onSave(settings);
     onClose();
-  }, [settings, themes, onSave, onClose]);
+  }, [settings, onSave, onClose]);
 
   return (
     <AnimatePresence>
@@ -173,6 +195,39 @@ const TimerSettingsModal: React.FC<TimerSettingsModalProps> = ({
                       <div className="font-bold text-sm">{t(`settings.personas.${persona}`)}</div>
                     </motion.button>
                   ))}
+                </div>
+              </section>
+
+              <section>
+                <h3 className="text-xs font-black uppercase tracking-[0.25em] text-cozy-text-light/50 mb-6 flex items-center">
+                  <span className="w-8 h-px bg-cozy-text-light/20 mr-3" />
+                  {t('settings.aiBehavior')}
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-white/40 rounded-[1.5rem] border border-white">
+                    <label className="text-sm font-bold text-cozy-text-light">{t('settings.aiProactivity')}</label>
+                    <button 
+                      onClick={() => handleSettingChange('aiProactivity', !settings.aiProactivity)}
+                      className={`w-12 h-6 rounded-full transition-colors relative ${settings.aiProactivity ? 'bg-cozy-green' : 'bg-gray-300'}`}
+                    >
+                      <motion.div 
+                        animate={{ x: settings.aiProactivity ? 26 : 4 }}
+                        className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm" 
+                      />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-white/40 rounded-[1.5rem] border border-white">
+                    <label className="text-sm font-bold text-cozy-text-light">{t('settings.aiActionable')}</label>
+                    <button 
+                      onClick={() => handleSettingChange('aiActionable', !settings.aiActionable)}
+                      className={`w-12 h-6 rounded-full transition-colors relative ${settings.aiActionable ? 'bg-cozy-green' : 'bg-gray-300'}`}
+                    >
+                      <motion.div 
+                        animate={{ x: settings.aiActionable ? 26 : 4 }}
+                        className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm" 
+                      />
+                    </button>
+                  </div>
                 </div>
               </section>
 
