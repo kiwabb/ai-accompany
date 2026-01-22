@@ -42,3 +42,6 @@
 9:42:54 AM [vite] (client) page reload index.html
 9:44:07 AM [vite] (client) hmr update /src/index.css
 9:44:13 AM [vite] (client) hmr update /src/components/PomodoroTimer.tsx, /src/index.css
+9:45:31 AM [vite] (client) page reload index.html
+9:45:38 AM [vite] (client) hmr update /src/index.css
+9:45:50 AM [vite] (client) hmr update /src/components/PomodoroTimer.tsx, /src/index.css

@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --font-heading: "Fredoka", "Varela Round", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Arial Rounded MT Bold", system-ui, sans-serif;
-  --font-sans: "Nunito", "Varela Round", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Arial Rounded MT Bold", system-ui, sans-serif; 
+  --font-heading: "Fredoka", "ZCOOL KuaiLe", "Varela Round", "STYuanti-SC-Regular", "YouYuan", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-sans: "Nunito", "Varela Round", "STYuanti-SC-Regular", "YouYuan", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; 
   
   --color-cozy-cream: #FDF7E4;
   --color-cozy-pink: #FBF0F6;

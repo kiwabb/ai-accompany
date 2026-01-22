@@ -210,7 +210,7 @@ const PomodoroTimer: React.FC = () => {
            <div className="w-full flex flex-wrap justify-between items-start gap-4 mb-8 lg:mb-12">
             <div className="flex flex-col">
               <span className="text-[11px] md:text-xs font-black uppercase tracking-[0.3em] text-cozy-text-light/50 ml-1 mb-2">{t('timer.focusCompanion')}</span>
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tighter text-cozy-text/90 leading-tight font-heading">{t('timer.studyBuddy')}</h1>
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-normal text-cozy-text/90 leading-tight font-heading">{t('timer.studyBuddy')}</h1>
             </div>
             <motion.button 
               whileHover={{ rotate: 90, scale: 1.1 }}
