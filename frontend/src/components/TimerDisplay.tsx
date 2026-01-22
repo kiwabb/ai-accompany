@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import type { Phase } from '../types/pomodoro';
 
 interface TimerDisplayProps {
@@ -8,19 +9,28 @@ interface TimerDisplayProps {
   phase: Phase;
 }
 
-const phaseConfig: Record<Phase, { emoji: string; color: string; label: string }> = {
-  focus: { emoji: '✍️', color: 'var(--color-cozy-red)', label: 'Focus' },
-  shortBreak: { emoji: '☕', color: 'var(--color-cozy-green)', label: 'Short Break' },
-  longBreak: { emoji: '🧘', color: 'var(--color-cozy-blue)', label: 'Long Break' },
+const phaseColors: Record<Phase, string> = {
+  focus: 'var(--color-cozy-red)',
+  shortBreak: 'var(--color-cozy-green)',
+  longBreak: 'var(--color-cozy-blue)',
+};
+
+const phaseEmojis: Record<Phase, string> = {
+  focus: '✍️',
+  shortBreak: '☕',
+  longBreak: '🧘',
 };
 
 export const TimerDisplay = React.memo(({ timeLeft, totalTime, phase }: TimerDisplayProps) => {
+  const { t } = useTranslation();
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
   const progress = timeLeft / totalTime;
   const circumference = 2 * Math.PI * 120;
   
-  const current = phaseConfig[phase];
+  const color = phaseColors[phase];
+  const emoji = phaseEmojis[phase];
+  const label = t(`common.${phase}`);
 
   return (
     <div className="relative flex items-center justify-center w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 lg:w-[380px] lg:h-[380px] transition-all duration-500">
@@ -28,8 +38,8 @@ export const TimerDisplay = React.memo(({ timeLeft, totalTime, phase }: TimerDis
       <motion.div 
         animate={{ 
           boxShadow: [
-            `0 0 0 0px ${current.color}15`,
-            `0 0 0 25px ${current.color}00`
+            `0 0 0 0px ${color}15`,
+            `0 0 0 25px ${color}00`
           ]
         }}
         transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
@@ -50,7 +60,7 @@ export const TimerDisplay = React.memo(({ timeLeft, totalTime, phase }: TimerDis
           cy="128"
           r="120"
           fill="transparent"
-          stroke={current.color}
+          stroke={color}
           strokeWidth="10"
           strokeDasharray={circumference}
           animate={{ strokeDashoffset: circumference * (1 - progress) }}
@@ -69,7 +79,7 @@ export const TimerDisplay = React.memo(({ timeLeft, totalTime, phase }: TimerDis
             exit={{ opacity: 0, scale: 0.5 }}
             className="text-3xl md:text-5xl lg:text-6xl mb-2 lg:mb-4"
           >
-            {current.emoji}
+            {emoji}
           </motion.div>
         </AnimatePresence>
         
@@ -86,12 +96,12 @@ export const TimerDisplay = React.memo(({ timeLeft, totalTime, phase }: TimerDis
         </div>
 
         <motion.span 
-          key={current.label}
+          key={label}
           initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-[10px] md:text-xs lg:text-sm font-bold uppercase tracking-[0.3em] text-cozy-text-light/70 mt-3 lg:mt-6 ml-1"
         >
-          {current.label}
+          {label}
         </motion.span>
       </div>
     </div>

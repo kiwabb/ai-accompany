@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import type { FocusTheme, TimerSettings } from '../types/pomodoro';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -19,6 +20,7 @@ const TimerSettingsModal: React.FC<TimerSettingsModalProps> = ({
   initialThemes,
   onSave,
 }) => {
+  const { t, i18n } = useTranslation();
   const [settings, setSettings] = useState<TimerSettings>(initialSettings);
   const [themes, setThemes] = useState<FocusTheme[]>(initialThemes);
   const [newThemeName, setNewThemeName] = useState('');
@@ -82,7 +84,7 @@ const TimerSettingsModal: React.FC<TimerSettingsModalProps> = ({
             className="relative w-full max-w-lg bg-cozy-cream rounded-[3rem] p-10 shadow-2xl overflow-hidden max-h-[85vh] flex flex-col"
           >
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-3xl font-bold text-cozy-text">Preferences</h2>
+              <h2 className="text-3xl font-bold text-cozy-text">{t('common.settings')}</h2>
               <motion.button
                 whileHover={{ rotate: 90, scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -97,13 +99,38 @@ const TimerSettingsModal: React.FC<TimerSettingsModalProps> = ({
               <section>
                 <h3 className="text-xs font-black uppercase tracking-[0.25em] text-cozy-text-light/50 mb-6 flex items-center">
                   <span className="w-8 h-px bg-cozy-text-light/20 mr-3" />
-                  Durations
+                  {t('settings.language')}
+                </h3>
+                <div className="flex gap-3">
+                  {[
+                    { code: 'en', label: 'English' },
+                    { code: 'zh', label: '中文' },
+                  ].map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => i18n.changeLanguage(lang.code)}
+                      className={`flex-1 py-3 px-4 rounded-2xl font-bold transition-all border-2 ${
+                        i18n.language.startsWith(lang.code)
+                          ? 'bg-cozy-orange border-cozy-orange text-white shadow-lg shadow-cozy-orange/20'
+                          : 'bg-white/40 border-white text-cozy-text-light hover:bg-white/60'
+                      }`}
+                    >
+                      {lang.label}
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              <section>
+                <h3 className="text-xs font-black uppercase tracking-[0.25em] text-cozy-text-light/50 mb-6 flex items-center">
+                  <span className="w-8 h-px bg-cozy-text-light/20 mr-3" />
+                  {t('settings.durations')}
                 </h3>
                 <div className="space-y-4">
                   {[ 
-                    { key: 'shortBreakDuration', label: 'Short Break' },
-                    { key: 'longBreakDuration', label: 'Long Break' },
-                    { key: 'longBreakInterval', label: 'Interval' },
+                    { key: 'shortBreakDuration', label: t('common.shortBreak') },
+                    { key: 'longBreakDuration', label: t('common.longBreak') },
+                    { key: 'longBreakInterval', label: t('settings.longBreakInterval') },
                   ].map(({ key, label }) => (
                     <div key={key} className="flex items-center justify-between p-4 bg-white/40 rounded-[1.5rem] border border-white">
                       <label className="text-sm font-bold text-cozy-text-light">{label}</label>
@@ -117,7 +144,7 @@ const TimerSettingsModal: React.FC<TimerSettingsModalProps> = ({
                     </div>
                   ))}
                   <div className="flex items-center justify-between p-4 bg-white/40 rounded-[1.5rem] border border-white">
-                    <label className="text-sm font-bold text-cozy-text-light">Auto start next period</label>
+                    <label className="text-sm font-bold text-cozy-text-light">{t('settings.autoStart')}</label>
                     <button 
                       onClick={() => handleSettingChange('autoStartNext', !settings.autoStartNext)}
                       className={`w-12 h-6 rounded-full transition-colors relative ${settings.autoStartNext ? 'bg-cozy-green' : 'bg-gray-300'}`}
@@ -134,7 +161,7 @@ const TimerSettingsModal: React.FC<TimerSettingsModalProps> = ({
               <section>
                 <h3 className="text-xs font-black uppercase tracking-[0.25em] text-cozy-text-light/50 mb-6 flex items-center">
                   <span className="w-8 h-px bg-cozy-text-light/20 mr-3" />
-                  Themes
+                  {t('settings.themes')}
                 </h3>
                 <div className="space-y-3">
                   {themes.map((theme) => (
@@ -171,7 +198,7 @@ const TimerSettingsModal: React.FC<TimerSettingsModalProps> = ({
                 <div className="mt-6 p-4 bg-cozy-orange/10 rounded-[2rem] border border-dashed border-cozy-orange/30">
                   <div className="flex space-x-2">
                     <input
-                      placeholder="New Theme"
+                      placeholder={t('settings.newThemeName')}
                       value={newThemeName}
                       onChange={(e) => setNewThemeName(e.target.value)}
                       className="flex-grow bg-transparent font-bold text-cozy-text focus:outline-none placeholder:text-cozy-orange/30"
@@ -205,7 +232,7 @@ const TimerSettingsModal: React.FC<TimerSettingsModalProps> = ({
                 onClick={handleSave}
                 className="px-10 py-4 bg-cozy-text text-white rounded-[1.5rem] font-bold shadow-xl transition-all"
               >
-                Save Preferences
+                {t('common.save')}
               </motion.button>
             </div>
           </motion.div>

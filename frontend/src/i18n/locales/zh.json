@@ -1,0 +1,35 @@
+{
+  "common": {
+    "focus": "专注",
+    "shortBreak": "短休",
+    "longBreak": "长休",
+    "save": "保存设置",
+    "settings": "设置",
+    "cancel": "取消",
+    "reset": "重置",
+    "skip": "跳过"
+  },
+  "timer": {
+    "focusCompanion": "专注伴侣",
+    "studyBuddy": "学习搭子",
+    "cycle": "周期",
+    "todayFocus": "今日专注",
+    "totalSessions": "总会话数",
+    "minutes": "分钟"
+  },
+  "settings": {
+    "durations": "计时器时长",
+    "shortBreak": "短休时长 (分钟)",
+    "longBreak": "长休时长 (分钟)",
+    "longBreakInterval": "长休间隔 (次数)",
+    "autoStart": "自动开始下一阶段",
+    "themes": "专注主题",
+    "newThemeName": "新主题名称",
+    "language": "语言"
+  },
+  "themes": {
+    "english": "英语",
+    "408": "专业课408",
+    "math": "数学"
+  }
+}

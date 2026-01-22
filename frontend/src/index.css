@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --font-heading: "Fredoka", system-ui, sans-serif;
-  --font-sans: "Nunito", system-ui, sans-serif; 
+  --font-heading: "Fredoka", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  --font-sans: "Nunito", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif; 
   
   --color-cozy-cream: #FDF7E4;
   --color-cozy-pink: #FBF0F6;
@@ -26,6 +26,9 @@
     @apply text-cozy-text font-sans antialiased;
     margin: 0;
     overflow-x: hidden;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, h5, h6 {

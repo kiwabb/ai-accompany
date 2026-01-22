@@ -8,3 +8,25 @@
   ➜  Local:   http://localhost:5173/
   ➜  Network: use --host to expose
 9:25:27 AM [vite] (client) hmr update /src/components/PomodoroTimer.tsx, /src/index.css
+9:29:04 AM [vite] (client) hmr update /src/index.css
+9:29:39 AM [vite] (client) page reload src/main.tsx
+9:29:40 AM [vite] (client) ✨ new dependencies optimized: i18next, react-i18next, i18next-browser-languagedetector
+9:29:40 AM [vite] (client) ✨ optimized dependencies changed. reloading
+9:29:51 AM [vite] (client) hmr update /src/index.css
+9:29:57 AM [vite] (client) hmr update /src/index.css
+9:30:36 AM [vite] (client) hmr update /src/index.css
+9:30:53 AM [vite] (client) hmr update /src/components/TimerSettingsModal.tsx, /src/index.css
+9:30:57 AM [vite] (client) hmr update /src/components/TimerSettingsModal.tsx, /src/index.css
+9:31:06 AM [vite] (client) hmr update /src/components/TimerSettingsModal.tsx, /src/index.css
+9:31:13 AM [vite] (client) hmr update /src/components/TimerSettingsModal.tsx, /src/index.css
+9:31:25 AM [vite] (client) hmr update /src/components/PomodoroTimer.tsx, /src/index.css
+9:31:30 AM [vite] (client) hmr update /src/components/PomodoroTimer.tsx, /src/index.css
+9:31:39 AM [vite] (client) hmr update /src/components/PomodoroTimer.tsx, /src/index.css
+9:31:50 AM [vite] (client) hmr update /src/components/TimerDisplay.tsx, /src/index.css
+9:31:58 AM [vite] (client) hmr update /src/components/TimerDisplay.tsx, /src/index.css
+9:32:41 AM [vite] (client) hmr update /src/components/ThemeSelector.tsx, /src/index.css
+9:32:53 AM [vite] (client) hmr update /src/components/TimerControls.tsx, /src/index.css
+9:32:58 AM [vite] (client) hmr update /src/components/TimerControls.tsx, /src/index.css
+9:33:40 AM [vite] (client) page reload src/i18n/locales/en.json
+9:33:44 AM [vite] (client) page reload src/i18n/locales/zh.json
+9:33:55 AM [vite] (client) hmr update /src/components/TimerSettingsModal.tsx, /src/index.css

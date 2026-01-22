@@ -1,0 +1,35 @@
+{
+  "common": {
+    "focus": "Focus",
+    "shortBreak": "Short Break",
+    "longBreak": "Long Break",
+    "save": "Save Changes",
+    "settings": "Settings",
+    "cancel": "Cancel",
+    "reset": "Reset",
+    "skip": "Skip"
+  },
+  "timer": {
+    "focusCompanion": "Focus Companion",
+    "studyBuddy": "Study Buddy",
+    "cycle": "Cycle",
+    "todayFocus": "Today's Focus",
+    "totalSessions": "Total Sessions",
+    "minutes": "min"
+  },
+  "settings": {
+    "durations": "Timer Durations",
+    "shortBreak": "Short Break (minutes)",
+    "longBreak": "Long Break (minutes)",
+    "longBreakInterval": "Long Break Interval (sessions)",
+    "autoStart": "Auto Start Next Period",
+    "themes": "Focus Themes",
+    "newThemeName": "New Theme Name",
+    "language": "Language"
+  },
+  "themes": {
+    "english": "English",
+    "408": "408",
+    "math": "Math"
+  }
+}

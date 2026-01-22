@@ -1,6 +1,7 @@
 import React, { useReducer, useEffect, useCallback, useMemo, useState } from 'react';
 import { Settings as SettingsIcon } from 'lucide-react';
 import { motion, LayoutGroup } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import ThemeSelector from './ThemeSelector';
 import { TimerDisplay } from './TimerDisplay';
 import TimerControls from './TimerControls';
@@ -64,6 +65,7 @@ function pomodoroReducer(state: PomodoroState, action: PomodoroAction): Pomodoro
 }
 
 const PomodoroTimer: React.FC = () => {
+  const { t } = useTranslation();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [state, dispatch] = useReducer(pomodoroReducer, initialState, (initial) => {
     try {
@@ -207,8 +209,8 @@ const PomodoroTimer: React.FC = () => {
         <motion.div layout className="flex-grow flex flex-col items-center lg:items-start justify-center relative z-10 w-full lg:max-w-[420px] min-w-0">
            <div className="w-full flex flex-wrap justify-between items-start gap-4 mb-8 lg:mb-12">
             <div className="flex flex-col">
-              <span className="text-[11px] md:text-xs font-black uppercase tracking-[0.3em] text-cozy-text-light/50 ml-1 mb-2">Focus Companion</span>
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tighter text-cozy-text/90 leading-tight">Study Buddy</h1>
+              <span className="text-[11px] md:text-xs font-black uppercase tracking-[0.3em] text-cozy-text-light/50 ml-1 mb-2">{t('timer.focusCompanion')}</span>
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tighter text-cozy-text/90 leading-tight">{t('timer.studyBuddy')}</h1>
             </div>
             <motion.button 
               whileHover={{ rotate: 90, scale: 1.1 }}
@@ -231,7 +233,7 @@ const PomodoroTimer: React.FC = () => {
               animate={{ opacity: 1, scale: 1 }}
               className="mb-10 lg:mb-14 px-8 py-2.5 bg-cozy-cream/50 rounded-full text-xs md:text-sm font-black uppercase tracking-[0.2em] text-cozy-text-light/70 border border-white shadow-sm"
             >
-              Cycle #{completedSessions + 1}
+              {t('timer.cycle')} #{completedSessions + 1}
             </motion.div>
             <div className="lg:pl-2">
               <TimerControls isActive={isActive} onStartPause={handleToggle} onReset={handleReset} onSkip={handleSkip} />
@@ -244,8 +246,8 @@ const PomodoroTimer: React.FC = () => {
                 transition={{ delay: 0.6 }}
                 className="mt-8 text-sm text-cozy-text-light/80 text-center lg:text-left"
               >
-                Today's Focus: <span className="font-bold text-cozy-orange">{todayStats.total_focus_minutes} min</span>
-                <br/>Total Sessions: <span className="font-bold text-cozy-orange">{todayStats.total_sessions}</span>
+                {t('timer.todayFocus')}: <span className="font-bold text-cozy-orange">{todayStats.total_focus_minutes} {t('timer.minutes')}</span>
+                <br/>{t('timer.totalSessions')}: <span className="font-bold text-cozy-orange">{todayStats.total_sessions}</span>
               </motion.div>
             )}
 
