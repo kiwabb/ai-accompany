@@ -77,3 +77,21 @@ async def test_create_and_update_session_via_api():
         updated_session = response.json()
         assert updated_session["ai_persona"] == "hardcore_motivator"
         assert updated_session["ai_proactivity"] is False
+
+
+@pytest.mark.asyncio
+async def test_chat_completions_streaming():
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as ac:
+        chat_data = {"message": "Hello AI"}
+        response = await ac.post("/api/chat/completions", json=chat_data)
+        assert response.status_code == 200
+
+        # 验证流式响应
+        content = ""
+        async for chunk in response.aiter_text():
+            content += chunk
+
+        assert "Hello AI" in content
+        assert "accompany" in content

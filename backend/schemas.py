@@ -34,3 +34,8 @@ class DailyStats(BaseModel):
     total_focus_minutes: int
     total_sessions: int
     sessions_by_theme: Dict[str, int]
+
+
+class ChatRequest(BaseModel):
+    message: str
+    context: Optional[Dict] = None
