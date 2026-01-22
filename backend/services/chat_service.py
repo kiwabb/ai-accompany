@@ -20,7 +20,9 @@ class GeminiService:
     def _configure_model(self, api_key: str):
         try:
             genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel("gemini-pro")
+            # Fallback to gemini-2.0-flash which is the latest stable.
+            # If that fails, the list_models script would be needed to debug further.
+            self.model = genai.GenerativeModel("gemini-2.0-flash")
         except Exception as e:
             logger.error(f"Failed to configure Gemini: {e}")
             self.model = None
