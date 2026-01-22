@@ -33,5 +33,13 @@
     "english": "英语",
     "408": "专业课408",
     "math": "数学"
+  },
+  "cozyPal": {
+    "avatarDescription": "温馨伙伴AI头像",
+    "chatDescription": "温馨伙伴聊天窗口",
+    "greeting": "你好，今天有什么可以帮你的吗？",
+    "typeMessagePlaceholder": "输入你的消息...",
+    "thinkingMessage": "温馨伙伴正在思考...",
+    "errorMessage": "哎呀！出了点问题。请再试一次。"
   }
 }

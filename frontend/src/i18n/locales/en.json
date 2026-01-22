@@ -33,5 +33,13 @@
     "english": "English",
     "408": "408",
     "math": "Math"
+  },
+  "cozyPal": {
+    "avatarDescription": "Cozy Pal AI Avatar",
+    "chatDescription": "Cozy Pal Chat Window",
+    "greeting": "Hello, how can I help you today?",
+    "typeMessagePlaceholder": "Type your message...",
+    "thinkingMessage": "Cozy Pal is thinking...",
+    "errorMessage": "Oops! Something went wrong. Please try again."
   }
 }
