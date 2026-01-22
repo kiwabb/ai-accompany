@@ -4,7 +4,7 @@ from sqlalchemy.orm import declarative_base
 
 # 从环境变量获取数据库URL，如果不存在则使用默认值
 DATABASE_URL = os.getenv(
-    "DATABASE_URL", "postgresql+asyncpg://user:password@localhost:5432/ai_accompany_db"
+    "DATABASE_URL", "postgresql+asyncpg://myuser:mypassword@localhost:5432/mydatabase"
 )
 
 # 创建异步引擎

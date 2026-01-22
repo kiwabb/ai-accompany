@@ -1,4 +1,4 @@
-import React, { useReducer, useEffect, useCallback, useMemo, useState, useRef } from 'react';
+import React, { useReducer, useEffect, useCallback, useMemo, useState } from 'react';
 import { Settings as SettingsIcon } from 'lucide-react';
 import { motion, LayoutGroup } from 'framer-motion';
 import ThemeSelector from './ThemeSelector';
@@ -8,7 +8,8 @@ import TimerSettingsModal from './TimerSettingsModal';
 import { useTimer } from '../hooks/useTimer';
 import { DEFAULT_THEMES, DEFAULT_SETTINGS } from '../constants/pomodoro';
 import type { FocusTheme, TimerSettings, Phase } from '../types/pomodoro';
-import { saveSession, getDailyStats, SessionCreate, DailyStats } from '../api/client';
+import { saveSession, getDailyStats } from '../api/client';
+import type { SessionCreate, DailyStats } from '../api/client';
 
 const STORAGE_KEY = 'pomodoro-timer-state';
 
@@ -122,18 +123,17 @@ const PomodoroTimer: React.FC = () => {
     }
   }, [activeTheme.name, phase, fetchDailyStats]);
 
-  const handleTimerComplete = useCallback((completedDuration: number) => {
+  const handleTimerComplete = useCallback(() => {
     if (sessionStartTime) {
-      saveLearningSession('completed', completedDuration, sessionStartTime, new Date());
+      saveLearningSession('completed', totalTime, sessionStartTime, new Date());
       setSessionStartTime(null);
     }
     dispatch({ type: 'NEXT_PHASE' });
-  }, [sessionStartTime, saveLearningSession]);
+  }, [sessionStartTime, saveLearningSession, totalTime]);
 
   const { timeLeft, isActive, start, pause, reset } = useTimer({
     initialSeconds: totalTime,
     onComplete: handleTimerComplete,
-    autoStart: settings.autoStartNext && phase !== 'focus', // Auto-start breaks
   });
 
   const handleStart = useCallback(() => {
@@ -142,11 +142,8 @@ const PomodoroTimer: React.FC = () => {
   }, [start]);
 
   const handlePause = useCallback(() => {
-    if (sessionStartTime) {
-      // Optionally save interrupted session here if needed
-    }
     pause();
-  }, [pause, sessionStartTime]);
+  }, [pause]);
 
   const handleToggle = useCallback(() => isActive ? handlePause() : handleStart(), [isActive, handlePause, handleStart]);
   
@@ -176,7 +173,8 @@ const PomodoroTimer: React.FC = () => {
       saveLearningSession('interrupted', duration, sessionStartTime, new Date());
     }
     setSessionStartTime(null);
-    dispatch({ type: 'SET_ACTIVE_THEME', themeId }); reset(); 
+    dispatch({ type: 'SET_ACTIVE_THEME', themeId }); 
+    reset(); 
   }, [isActive, sessionStartTime, totalTime, timeLeft, saveLearningSession, reset]);
 
   const handleSaveSettings = useCallback((s: TimerSettings, t: FocusTheme[]) => { 
@@ -267,4 +265,3 @@ const PomodoroTimer: React.FC = () => {
 };
 
 export default PomodoroTimer;
-
