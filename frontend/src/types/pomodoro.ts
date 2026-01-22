@@ -11,6 +11,7 @@ export interface TimerSettings {
   longBreakInterval: number;
   autoStartNext: boolean;
   googleApiKey?: string;
+  aiPersona?: string;
 }
 
 export type Phase = 'focus' | 'shortBreak' | 'longBreak';

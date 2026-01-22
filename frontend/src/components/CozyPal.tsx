@@ -14,9 +14,10 @@ interface CozyPalProps {
   timeLeft: number;
   apiKey?: string;
   currentLanguage: string;
+  aiPersona: string;
 }
 
-const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey, currentLanguage }) => {
+const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey, currentLanguage, aiPersona }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -102,7 +103,8 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey, c
             theme_name: themeName,
             phase: phase,
             time_left: timeLeft,
-            language: currentLanguage
+            language: currentLanguage,
+            ai_persona: aiPersona
           }
         }),
       });
@@ -144,7 +146,7 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey, c
           setAvatarState('idle');
       }
     }
-  }, [inputValue, isLoading, apiKey, themeName, phase, timeLeft, t, messages, isOpen, avatarState, currentLanguage]); // Added missing dependencies
+  }, [inputValue, isLoading, apiKey, themeName, phase, timeLeft, t, messages, isOpen, avatarState, currentLanguage, aiPersona]); // Added missing dependencies
 
 
   return (

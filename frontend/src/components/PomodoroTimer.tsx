@@ -263,7 +263,14 @@ const PomodoroTimer: React.FC = () => {
           onSave={handleSaveSettings}
         />
       </motion.div>
-       <CozyPal themeName={activeTheme.name} phase={phase} timeLeft={timeLeft} apiKey={settings.googleApiKey} currentLanguage={currentLanguage} />
+       <CozyPal 
+         themeName={activeTheme.name} 
+         phase={phase} 
+         timeLeft={timeLeft} 
+         apiKey={settings.googleApiKey} 
+         currentLanguage={currentLanguage} 
+         aiPersona={settings.aiPersona || 'gentle_encourager'} 
+       />
     </LayoutGroup>
 
   );

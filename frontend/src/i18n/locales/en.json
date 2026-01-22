@@ -27,7 +27,14 @@
     "autoStart": "Auto Start Next Period",
     "themes": "Focus Themes",
     "newThemeName": "New Theme Name",
-    "language": "Language"
+    "language": "Language",
+    "aiPersona": "AI Persona",
+    "personas": {
+      "gentle_encourager": "Gentle Encourager",
+      "strict_coach": "Strict Coach",
+      "logical_analyst": "Logical Analyst",
+      "humorous_buddy": "Humorous Buddy"
+    }
   },
   "themes": {
     "english": "English",

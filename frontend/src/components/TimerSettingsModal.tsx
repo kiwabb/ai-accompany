@@ -115,7 +115,69 @@ const TimerSettingsModal: React.FC<TimerSettingsModalProps> = ({
 
               <section>
                 <h3 className="text-xs font-black uppercase tracking-[0.25em] text-cozy-text-light/50 mb-6 flex items-center">
+                  <span className="w-8 h-px bg-cozy-text-light/20 mr-3" />
+                  {t('settings.language')}
+                </h3>
+                <div className="flex items-center justify-between p-4 bg-white/40 rounded-[1.5rem] border border-white">
+                  <label className="text-sm font-bold text-cozy-text-light">{t('settings.language')}</label>
+                  <div className="relative">
+                    <div className="flex space-x-2">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => i18n.changeLanguage('en')}
+                        className={`px-4 py-2 rounded-xl font-bold transition-colors ${
+                          i18n.language === 'en' ? 'bg-cozy-orange text-white shadow-lg' : 'bg-cozy-cream text-cozy-text-light hover:bg-white'
+                        }`}
+                      >
+                        English
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => i18n.changeLanguage('zh')}
+                        className={`px-4 py-2 rounded-xl font-bold transition-colors ${
+                          i18n.language === 'zh' ? 'bg-cozy-orange text-white shadow-lg' : 'bg-cozy-cream text-cozy-text-light hover:bg-white'
+                        }`}
+                      >
+                        中文
+                      </motion.button>
+                    </div>
+                  </div>
+                </div>
+              </section>
 
+              <section>
+                <h3 className="text-xs font-black uppercase tracking-[0.25em] text-cozy-text-light/50 mb-6 flex items-center">
+                  <span className="w-8 h-px bg-cozy-text-light/20 mr-3" />
+                  {t('settings.aiPersona')}
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    'gentle_encourager',
+                    'strict_coach',
+                    'logical_analyst',
+                    'humorous_buddy'
+                  ].map((persona) => (
+                    <motion.button
+                      key={persona}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleSettingChange('aiPersona', persona)}
+                      className={`p-4 rounded-2xl border text-left transition-all ${
+                        settings.aiPersona === persona
+                          ? 'bg-cozy-orange border-cozy-orange text-white shadow-lg shadow-cozy-orange/20'
+                          : 'bg-white/40 border-white text-cozy-text-light hover:bg-white/60'
+                      }`}
+                    >
+                      <div className="font-bold text-sm">{t(`settings.personas.${persona}`)}</div>
+                    </motion.button>
+                  ))}
+                </div>
+              </section>
+
+              <section>
+                <h3 className="text-xs font-black uppercase tracking-[0.25em] text-cozy-text-light/50 mb-6 flex items-center">
                   <span className="w-8 h-px bg-cozy-text-light/20 mr-3" />
                   {t('settings.durations')}
                 </h3>

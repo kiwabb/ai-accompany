@@ -81,21 +81,47 @@ async def chat_completions(
     ]
 
     # 3. Extract real-time context from request
-    context = request.context or {}
-    ai_persona = context.get("ai_persona", "gentle_encourager")
-    task_name = context.get("theme_name", "Focus")
-    phase = context.get("phase", "focus")
-    time_left = context.get("time_left", 0)  # seconds
-    language = context.get("language", "en")
+    context = request.context
+    if context:
+        ai_persona = context.ai_persona or "gentle_encourager"
+        task_name = context.theme_name or "Focus"
+        phase = context.phase or "focus"
+        time_left = context.time_left or 0
+        language = context.language or "en"
+    else:
+        ai_persona = "gentle_encourager"
+        task_name = "Focus"
+        phase = "focus"
+        time_left = 0
+        language = "en"
 
     # 4. Construct System Prompt
+    phase_descriptions = {
+        "focus": "working hard in a FOCUS session",
+        "shortBreak": "taking a SHORT BREAK",
+        "longBreak": "taking a LONG BREAK",
+    }
+    phase_desc = phase_descriptions.get(phase, "studying")
+
+    persona_instructions = {
+        "gentle_encourager": "Be warm, empathetic, and use supportive language. Focus on the user's emotional well-being.",
+        "strict_coach": "Be firm, direct, and focus on discipline. Push the user to stay committed and avoid excuses.",
+        "logical_analyst": "Be objective, analytical, and provide structured advice. Focus on efficiency and productivity techniques.",
+        "humorous_buddy": "Be playful, witty, and use light humor. Help the user relax and enjoy the process.",
+    }
+    persona_inst = persona_instructions.get(
+        ai_persona, persona_instructions["gentle_encourager"]
+    )
+
     system_prompt = (
         f"You are CozyPal, a supportive AI study companion. "
-        f"Persona: {ai_persona}. "
-        f"User Context: Currently in '{phase}' phase (Theme: {task_name}). "
-        f"Time Remaining: ~{time_left // 60} minutes. "
-        f"Today's Progress: {daily_focus} mins focused ({daily_sessions} sessions). "
-        f"Instructions: Be concise (1-3 sentences). Match the persona. Encourage the user. Respond in {language}."
+        f"Current Persona: {ai_persona}. Style: {persona_inst} "
+        f"User State: The user is currently {phase_desc} for the topic '{task_name}'. "
+        f"Timer: There are approximately {time_left // 60} minutes left in this period. "
+        f"Today's Progress: User has already completed {daily_focus} minutes of deep focus across {daily_sessions} sessions today. "
+        f"Your Task: Provide a very brief, encouraging response (1-2 sentences) matching your persona's style. "
+        f"If the user is focusing, keep them on track. If they are on a break, remind them to recharge. "
+        f"Always respond in {language}."
     )
 
     # 5. Save User Message
