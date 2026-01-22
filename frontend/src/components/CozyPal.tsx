@@ -7,7 +7,14 @@ interface Message {
   text: string;
 }
 
-const CozyPal: React.FC = () => {
+interface CozyPalProps {
+  themeName: string;
+  phase: string;
+  timeLeft: number;
+  apiKey?: string;
+}
+
+const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -40,10 +47,24 @@ const CozyPal: React.FC = () => {
     setMessages((prev) => [...prev, { sender: 'ai', text: '' }]);
 
     try {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      if (apiKey) {
+        headers['x-google-api-key'] = apiKey;
+      }
+
       const response = await fetch('/api/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage.text }),
+        headers: headers,
+        body: JSON.stringify({
+          message: userMessage.text,
+          context: {
+            theme_name: themeName,
+            phase: phase,
+            time_left: timeLeft
+          }
+        }),
       });
 
       if (!response.ok) throw new Error('Failed to fetch');
@@ -136,7 +157,7 @@ const CozyPal: React.FC = () => {
                       : 'bg-indigo-50 text-indigo-800 self-start rounded-tl-none border border-indigo-100'
                   } p-3 rounded-2xl text-sm shadow-sm max-w-[85%] break-words`}
                 >
-                  {msg.text || (idx === messages.length - 1 && isLoading ? '...' : '')}
+                  {msg.text || (idx === messages.length - 1 && isLoading ? <span className="animate-pulse italic text-indigo-400">Typing...</span> : '')}
                 </motion.div>
               ))}
               <div ref={messagesEndRef} />

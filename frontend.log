@@ -47,3 +47,23 @@
 9:45:50 AM [vite] (client) hmr update /src/components/PomodoroTimer.tsx, /src/index.css
 9:47:53 AM [vite] (client) page reload index.html
 9:48:00 AM [vite] (client) hmr update /src/index.css
+10:44:08 AM [vite] (client) hmr update /src/App.tsx, /src/index.css
+10:44:08 AM [vite] (client) page reload src/i18n/locales/en.json
+10:44:08 AM [vite] (client) page reload src/i18n/locales/zh.json
+10:47:17 AM [vite] (client) hmr update /src/App.tsx, /src/index.css
+10:47:18 AM [vite] (client) hmr update /src/App.tsx, /src/index.css
+10:47:35 AM [vite] (client) hmr update /src/index.css, /src/components/CozyPal.tsx
+10:47:36 AM [vite] (client) hmr update /src/index.css, /src/components/CozyPal.tsx
+10:47:43 AM [vite] (client) hmr update /src/components/PomodoroTimer.tsx, /src/index.css
+10:47:44 AM [vite] (client) hmr update /src/components/PomodoroTimer.tsx, /src/index.css
+10:47:45 AM [vite] (client) hmr update /src/components/PomodoroTimer.tsx, /src/index.css
+10:48:21 AM [vite] (client) hmr update /src/index.css, /src/components/CozyPal.tsx
+10:48:39 AM [vite] (client) hmr update /src/index.css
+10:48:40 AM [vite] (client) hmr update /src/index.css
+10:51:57 AM [vite] (client) hmr update /src/index.css
+10:52:02 AM [vite] (client) hmr update /src/components/PomodoroTimer.tsx, /src/index.css
+10:52:08 AM [vite] (client) hmr update /src/components/TimerSettingsModal.tsx, /src/index.css
+10:52:11 AM [vite] (client) hmr update /src/components/TimerSettingsModal.tsx, /src/index.css
+10:52:21 AM [vite] (client) hmr update /src/components/PomodoroTimer.tsx, /src/index.css
+10:52:27 AM [vite] (client) hmr update /src/index.css, /src/components/CozyPal.tsx
+10:52:28 AM [vite] (client) hmr update /src/index.css, /src/components/CozyPal.tsx
