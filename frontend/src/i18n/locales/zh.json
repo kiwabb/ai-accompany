@@ -7,7 +7,9 @@
     "settings": "设置",
     "cancel": "取消",
     "reset": "重置",
-    "skip": "跳过"
+    "skip": "跳过",
+    "start": "开始",
+    "pause": "暂停"
   },
   "timer": {
     "focusCompanion": "专注伴侣",

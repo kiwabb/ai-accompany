@@ -30,3 +30,6 @@
 9:33:40 AM [vite] (client) page reload src/i18n/locales/en.json
 9:33:44 AM [vite] (client) page reload src/i18n/locales/zh.json
 9:33:55 AM [vite] (client) hmr update /src/components/TimerSettingsModal.tsx, /src/index.css
+9:35:13 AM [vite] (client) page reload src/i18n/locales/en.json
+9:35:17 AM [vite] (client) page reload src/i18n/locales/zh.json
+9:35:23 AM [vite] (client) hmr update /src/components/TimerControls.tsx, /src/index.css

@@ -7,7 +7,9 @@
     "settings": "Settings",
     "cancel": "Cancel",
     "reset": "Reset",
-    "skip": "Skip"
+    "skip": "Skip",
+    "start": "Start",
+    "pause": "Pause"
   },
   "timer": {
     "focusCompanion": "Focus Companion",

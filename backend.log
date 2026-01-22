@@ -251,3 +251,63 @@ WHERE date(learning_sessions.start_time) = $1::DATE AND learning_sessions.phase_
 2026-01-22 09:33:45,113 INFO sqlalchemy.engine.Engine [cached since 459.5s ago] (datetime.date(2026, 1, 22), 'focus')
 INFO:     127.0.0.1:61858 - "GET /api/stats/daily HTTP/1.1" 200 OK
 2026-01-22 09:33:45,115 INFO sqlalchemy.engine.Engine ROLLBACK
+2026-01-22 09:35:13,205 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-22 09:35:13,207 INFO sqlalchemy.engine.Engine SELECT sum(learning_sessions.duration_seconds) AS sum_1 
+FROM learning_sessions 
+WHERE date(learning_sessions.start_time) = $1::DATE AND learning_sessions.phase_type = $2::VARCHAR
+2026-01-22 09:35:13,207 INFO sqlalchemy.engine.Engine [cached since 547.6s ago] (datetime.date(2026, 1, 22), 'focus')
+2026-01-22 09:35:13,212 INFO sqlalchemy.engine.Engine SELECT count(learning_sessions.id) AS count_1 
+FROM learning_sessions 
+WHERE date(learning_sessions.start_time) = $1::DATE
+2026-01-22 09:35:13,212 INFO sqlalchemy.engine.Engine [cached since 547.6s ago] (datetime.date(2026, 1, 22),)
+2026-01-22 09:35:13,213 INFO sqlalchemy.engine.Engine SELECT learning_sessions.theme_name, sum(learning_sessions.duration_seconds) AS sum_1 
+FROM learning_sessions 
+WHERE date(learning_sessions.start_time) = $1::DATE AND learning_sessions.phase_type = $2::VARCHAR GROUP BY learning_sessions.theme_name
+2026-01-22 09:35:13,213 INFO sqlalchemy.engine.Engine [cached since 547.6s ago] (datetime.date(2026, 1, 22), 'focus')
+INFO:     127.0.0.1:63429 - "GET /api/stats/daily HTTP/1.1" 200 OK
+2026-01-22 09:35:13,215 INFO sqlalchemy.engine.Engine ROLLBACK
+2026-01-22 09:35:13,261 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-22 09:35:13,262 INFO sqlalchemy.engine.Engine SELECT sum(learning_sessions.duration_seconds) AS sum_1 
+FROM learning_sessions 
+WHERE date(learning_sessions.start_time) = $1::DATE AND learning_sessions.phase_type = $2::VARCHAR
+2026-01-22 09:35:13,262 INFO sqlalchemy.engine.Engine [cached since 547.7s ago] (datetime.date(2026, 1, 22), 'focus')
+2026-01-22 09:35:13,272 INFO sqlalchemy.engine.Engine SELECT count(learning_sessions.id) AS count_1 
+FROM learning_sessions 
+WHERE date(learning_sessions.start_time) = $1::DATE
+2026-01-22 09:35:13,272 INFO sqlalchemy.engine.Engine [cached since 547.6s ago] (datetime.date(2026, 1, 22),)
+2026-01-22 09:35:13,273 INFO sqlalchemy.engine.Engine SELECT learning_sessions.theme_name, sum(learning_sessions.duration_seconds) AS sum_1 
+FROM learning_sessions 
+WHERE date(learning_sessions.start_time) = $1::DATE AND learning_sessions.phase_type = $2::VARCHAR GROUP BY learning_sessions.theme_name
+2026-01-22 09:35:13,274 INFO sqlalchemy.engine.Engine [cached since 547.6s ago] (datetime.date(2026, 1, 22), 'focus')
+INFO:     127.0.0.1:63433 - "GET /api/stats/daily HTTP/1.1" 200 OK
+2026-01-22 09:35:13,276 INFO sqlalchemy.engine.Engine ROLLBACK
+2026-01-22 09:35:17,945 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-22 09:35:17,946 INFO sqlalchemy.engine.Engine SELECT sum(learning_sessions.duration_seconds) AS sum_1 
+FROM learning_sessions 
+WHERE date(learning_sessions.start_time) = $1::DATE AND learning_sessions.phase_type = $2::VARCHAR
+2026-01-22 09:35:17,946 INFO sqlalchemy.engine.Engine [cached since 552.3s ago] (datetime.date(2026, 1, 22), 'focus')
+2026-01-22 09:35:17,965 INFO sqlalchemy.engine.Engine SELECT count(learning_sessions.id) AS count_1 
+FROM learning_sessions 
+WHERE date(learning_sessions.start_time) = $1::DATE
+2026-01-22 09:35:17,965 INFO sqlalchemy.engine.Engine [cached since 552.3s ago] (datetime.date(2026, 1, 22),)
+2026-01-22 09:35:17,966 INFO sqlalchemy.engine.Engine SELECT learning_sessions.theme_name, sum(learning_sessions.duration_seconds) AS sum_1 
+FROM learning_sessions 
+WHERE date(learning_sessions.start_time) = $1::DATE AND learning_sessions.phase_type = $2::VARCHAR GROUP BY learning_sessions.theme_name
+2026-01-22 09:35:17,966 INFO sqlalchemy.engine.Engine [cached since 552.3s ago] (datetime.date(2026, 1, 22), 'focus')
+INFO:     127.0.0.1:63574 - "GET /api/stats/daily HTTP/1.1" 200 OK
+2026-01-22 09:35:17,967 INFO sqlalchemy.engine.Engine ROLLBACK
+2026-01-22 09:35:17,973 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-22 09:35:17,973 INFO sqlalchemy.engine.Engine SELECT sum(learning_sessions.duration_seconds) AS sum_1 
+FROM learning_sessions 
+WHERE date(learning_sessions.start_time) = $1::DATE AND learning_sessions.phase_type = $2::VARCHAR
+2026-01-22 09:35:17,973 INFO sqlalchemy.engine.Engine [cached since 552.4s ago] (datetime.date(2026, 1, 22), 'focus')
+2026-01-22 09:35:17,975 INFO sqlalchemy.engine.Engine SELECT count(learning_sessions.id) AS count_1 
+FROM learning_sessions 
+WHERE date(learning_sessions.start_time) = $1::DATE
+2026-01-22 09:35:17,975 INFO sqlalchemy.engine.Engine [cached since 552.3s ago] (datetime.date(2026, 1, 22),)
+2026-01-22 09:35:17,976 INFO sqlalchemy.engine.Engine SELECT learning_sessions.theme_name, sum(learning_sessions.duration_seconds) AS sum_1 
+FROM learning_sessions 
+WHERE date(learning_sessions.start_time) = $1::DATE AND learning_sessions.phase_type = $2::VARCHAR GROUP BY learning_sessions.theme_name
+2026-01-22 09:35:17,976 INFO sqlalchemy.engine.Engine [cached since 552.3s ago] (datetime.date(2026, 1, 22), 'focus')
+INFO:     127.0.0.1:63578 - "GET /api/stats/daily HTTP/1.1" 200 OK
+2026-01-22 09:35:17,978 INFO sqlalchemy.engine.Engine ROLLBACK
