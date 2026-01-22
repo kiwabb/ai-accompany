@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import CozyAvatar from './CozyAvatar';
 
 interface Message {
   sender: 'user' | 'ai';
@@ -19,12 +20,25 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey })
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [avatarState, setAvatarState] = useState<'idle' | 'thinking' | 'speaking' | 'focused'>('idle');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    // Update avatar state based on context
+    if (phase === 'focus' && timeLeft > 0 && !isOpen) {
+      setAvatarState('focused');
+    } else if (isLoading) {
+      setAvatarState('thinking');
+    } else if (messages.length > 0 && messages[messages.length - 1].sender === 'ai' && isOpen) {
+       // Simple heuristic: if AI just sent a message, maybe it's "speaking" briefly? 
+       // For now, let's keep it 'idle' or reset to 'idle' after speaking.
+       // We'll handle 'speaking' during streaming.
+       setAvatarState('idle');
+    } else {
+      setAvatarState('idle');
+    }
+  }, [phase, timeLeft, isOpen, isLoading, messages]);
 
   const toggleChat = () => {
     setIsOpen(!isOpen);
@@ -43,6 +57,7 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey })
     setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
     setIsLoading(true);
+    setAvatarState('thinking');
 
     setMessages((prev) => [...prev, { sender: 'ai', text: '' }]);
 
@@ -73,6 +88,8 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey })
       const decoder = new TextDecoder();
       let done = false;
       let accumulatedResponse = '';
+      
+      setAvatarState('speaking'); // Start speaking animation when stream begins
 
       while (!done && reader) {
         const { value, done: doneReading } = await reader.read();
@@ -103,17 +120,12 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey })
       {/* 悬浮头像按钮 */}
       <motion.button
         aria-label={t('cozyPal.avatarDescription')}
-        className="w-16 h-16 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full shadow-2xl flex items-center justify-center cursor-pointer border-4 border-white/50"
+        className="w-20 h-20 rounded-full shadow-2xl flex items-center justify-center cursor-pointer hover:shadow-cozy-orange/50 transition-shadow"
         whileHover={{ scale: 1.1, rotate: 5 }}
         whileTap={{ scale: 0.9 }}
         onClick={toggleChat}
       >
-        <span className="text-3xl" role="img" aria-label="AI Avatar">✨</span>
-        <motion.div
-            className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 border-2 border-white rounded-full"
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ repeat: Infinity, duration: 2 }}
-        />
+        <CozyAvatar state={avatarState} size={80} />
       </motion.button>
 
       {/* 聊天窗口 */}
@@ -130,8 +142,8 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey })
           >
             {/* 头部 */}
             <div className="bg-indigo-500/10 p-4 border-b border-indigo-100 flex items-center gap-3">
-              <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center">
-                <span className="text-sm">✨</span>
+              <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-white/50">
+                 <CozyAvatar state={avatarState === 'focused' ? 'idle' : avatarState} size={40} />
               </div>
               <div>
                 <h3 className="font-bold text-indigo-900 text-sm">Cozy Pal</h3>
