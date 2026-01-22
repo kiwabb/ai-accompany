@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  --font-heading: "Fredoka", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  --font-heading: "Fredoka", "ZCOOL KuaiLe", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
   --font-sans: "Nunito", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif; 
   
   --color-cozy-cream: #FDF7E4;
@@ -32,7 +32,7 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heading;
+    @apply font-heading tracking-normal;
   }
 }
 
