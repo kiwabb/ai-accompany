@@ -207,7 +207,7 @@ const PomodoroTimer: React.FC = () => {
 
         {/* Right: Controls & Content - Constrained width container */}
         <motion.div layout className="flex-grow flex flex-col items-center lg:items-start justify-center relative z-10 w-full lg:max-w-[420px]">
-          <div className="w-full flex justify-between items-start mb-8 lg:mb-12">
+           <div className="w-full flex flex-wrap justify-between items-start gap-4 mb-8 lg:mb-12">
             <div className="flex flex-col">
               <span className="text-[11px] md:text-xs font-black uppercase tracking-[0.3em] text-cozy-text-light/50 ml-1 mb-2">Focus Companion</span>
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tighter text-cozy-text/90 leading-tight">Study Buddy</h1>
@@ -216,7 +216,7 @@ const PomodoroTimer: React.FC = () => {
               whileHover={{ rotate: 90, scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={() => setIsSettingsOpen(true)}
-              className="p-4 md:p-4.5 rounded-3xl bg-cozy-cream/60 text-cozy-text-light hover:text-cozy-orange transition-all shadow-cozy-inner border border-white flex-shrink-0 ml-4"
+              className="p-4 md:p-4.5 rounded-3xl bg-cozy-cream/60 text-cozy-text-light hover:text-cozy-orange transition-all shadow-cozy-inner border border-white flex-shrink-0"
             >
               <SettingsIcon size={24} strokeWidth={2.5} />
             </motion.button>
