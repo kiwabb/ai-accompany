@@ -52,7 +52,7 @@ async def get_daily_stats(
     sessions_by_theme_result = await db.execute(
         select(
             models.LearningSession.theme_name,
-            func.sum(models.LearningSession.duration_seconds),
+            func.sum(models.LearningSession.duration_seconds).label("total_seconds"),
         )
         .where(
             func.date(models.LearningSession.start_time) == target_date,
@@ -61,8 +61,16 @@ async def get_daily_stats(
         .group_by(models.LearningSession.theme_name)
     )
     sessions_by_theme: Dict[str, int] = {
-        row.theme_name: round(row.sum / 60) for row in sessions_by_theme_result.all()
+        row.theme_name: round(row.total_seconds / 60)
+        for row in sessions_by_theme_result.all()
     }
+
+    return schemas.DailyStats(
+        date=target_date.isoformat(),
+        total_focus_minutes=total_focus_minutes,
+        total_sessions=total_sessions,
+        sessions_by_theme=sessions_by_theme,
+    )
 
 
 async def create_chat_message(
@@ -82,3 +90,64 @@ async def get_recent_chat_history(db: AsyncSession, limit: int = 50):
         .limit(limit)
     )
     return result.scalars().all()[::-1]  # Return in chronological order
+
+
+async def get_user_settings(
+    db: AsyncSession, user_id: str
+) -> Optional[models.UserSettings]:
+    result = await db.execute(
+        select(models.UserSettings).where(models.UserSettings.user_id == user_id)
+    )
+    return result.scalar_one_or_none()
+
+
+async def upsert_user_settings(
+    db: AsyncSession, user_id: str, settings_in: schemas.UserSettingsBase
+) -> models.UserSettings:
+    existing_settings = await get_user_settings(db, user_id)
+
+    if existing_settings:
+        update_data = settings_in.model_dump(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(existing_settings, key, value)
+        db.add(existing_settings)
+        await db.commit()
+        await db.refresh(existing_settings)
+        return existing_settings
+    else:
+        new_settings = models.UserSettings(**settings_in.model_dump(), user_id=user_id)
+        db.add(new_settings)
+        await db.commit()
+        await db.refresh(new_settings)
+        return new_settings
+
+
+async def get_user_themes(db: AsyncSession, user_id: str) -> List[models.UserTheme]:
+    result = await db.execute(
+        select(models.UserTheme).where(models.UserTheme.user_id == user_id)
+    )
+    return list(result.scalars().all())
+
+
+async def create_user_theme(
+    db: AsyncSession, user_id: str, theme_in: schemas.ThemeCreate
+) -> models.UserTheme:
+    db_theme = models.UserTheme(**theme_in.model_dump(), user_id=user_id)
+    db.add(db_theme)
+    await db.commit()
+    await db.refresh(db_theme)
+    return db_theme
+
+
+async def delete_user_theme(db: AsyncSession, user_id: str, theme_id: str) -> bool:
+    result = await db.execute(
+        select(models.UserTheme).where(
+            models.UserTheme.user_id == user_id, models.UserTheme.theme_id == theme_id
+        )
+    )
+    db_theme = result.scalar_one_or_none()
+    if db_theme:
+        await db.delete(db_theme)
+        await db.commit()
+        return True
+    return False

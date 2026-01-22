@@ -3,6 +3,52 @@ from datetime import datetime
 from typing import Dict, Optional
 
 
+class UserSettingsBase(BaseModel):
+    google_api_key: Optional[str] = None
+    ai_persona: Optional[str] = "gentle_encourager"
+    focus_duration: Optional[int] = 25
+    short_break_duration: Optional[int] = 5
+    long_break_duration: Optional[int] = 15
+    long_break_interval: Optional[int] = 4
+    ai_proactivity: Optional[bool] = True
+    ai_actionable: Optional[bool] = False
+    auto_start_next: Optional[bool] = False
+
+
+class UserSettingsCreate(UserSettingsBase):
+    user_id: str
+
+
+class UserSettingsResponse(UserSettingsBase):
+    id: int
+    user_id: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ThemeBase(BaseModel):
+    theme_id: str
+    name: str
+    focus_duration: int
+    is_default: bool = False
+
+
+class ThemeCreate(ThemeBase):
+    pass
+
+
+class ThemeResponse(ThemeBase):
+    id: int
+    user_id: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class SessionBase(BaseModel):
     theme_name: str
     duration_seconds: int

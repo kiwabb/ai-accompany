@@ -29,8 +29,7 @@ const CozyPal = forwardRef<CozyPalHandle, CozyPalProps>(({ themeName, phase, tim
   const [hasUnread, setHasUnread] = useState(false);
   const [avatarState, setAvatarState] = useState<'idle' | 'thinking' | 'speaking' | 'focused'>('idle');
   const [speechBubble, setSpeechBubble] = useState<string | null>(null);
-  const [isSpeakingProactive, setIsSpeakingProactive] = useState(false);
-  const speechBubbleTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const speechBubbleTimerRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
 
@@ -105,7 +104,6 @@ const CozyPal = forwardRef<CozyPalHandle, CozyPalProps>(({ themeName, phase, tim
       setMessages((prev) => [...prev, userMessage]);
       setInputValue('');
     } else {
-      setIsSpeakingProactive(true);
       setSpeechBubble('');
     }
 
@@ -191,12 +189,9 @@ const CozyPal = forwardRef<CozyPalHandle, CozyPalProps>(({ themeName, phase, tim
       setAvatarState('idle');
     } finally {
       setIsLoading(false);
-      if (proactiveTrigger) {
-        setIsSpeakingProactive(false);
-      }
       setAvatarState('idle');
     }
-  }, [inputValue, isLoading, apiKey, themeName, phase, timeLeft, t, isOpen, currentLanguage, aiPersona, proactiveTrigger]);
+  }, [inputValue, isLoading, apiKey, themeName, phase, timeLeft, t, isOpen, currentLanguage, aiPersona]);
 
   useImperativeHandle(ref, () => ({
     triggerProactiveMessage: (type, durationOverride) => {

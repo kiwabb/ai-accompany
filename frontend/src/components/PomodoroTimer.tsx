@@ -1,7 +1,8 @@
-import React, { useReducer, useEffect, useCallback, useMemo, useState } from 'react';
+import React, { useReducer, useEffect, useCallback, useMemo, useState, useRef } from 'react';
 import { Settings as SettingsIcon } from 'lucide-react';
-import { motion, LayoutGroup } from 'framer-motion';
+import { motion, LayoutGroup, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import type { CozyPalHandle } from './CozyPal';
 import CozyPal from './CozyPal';
 import ThemeSelector from './ThemeSelector';
 import { TimerDisplay } from './TimerDisplay';
@@ -10,10 +11,8 @@ import TimerSettingsModal from './TimerSettingsModal';
 import { useTimer } from '../hooks/useTimer';
 import { DEFAULT_THEMES, DEFAULT_SETTINGS } from '../constants/pomodoro';
 import type { FocusTheme, TimerSettings, Phase } from '../types/pomodoro';
-import { saveSession, getDailyStats } from '../api/client';
+import { saveSession, getDailyStats, upsertUserSettings, getUserSettings, getUserThemes } from '../api/client';
 import type { SessionCreate, DailyStats } from '../api/client';
-
-const STORAGE_KEY = 'pomodoro-timer-state';
 
 interface PomodoroState {
   themes: FocusTheme[];
@@ -26,12 +25,13 @@ interface PomodoroState {
 type PomodoroAction =
   | { type: 'SET_ACTIVE_THEME'; themeId: string }
   | { type: 'SAVE_SETTINGS'; settings: TimerSettings; themes: FocusTheme[] }
+  | { type: 'SET_THEMES'; themes: FocusTheme[] }
   | { type: 'NEXT_PHASE' }
   | { type: 'RESET_TO_FOCUS' };
 
 const initialState: PomodoroState = {
   themes: DEFAULT_THEMES,
-  activeThemeId: DEFAULT_THEMES[0].id,
+  activeThemeId: DEFAULT_THEMES && DEFAULT_THEMES.length > 0 ? DEFAULT_THEMES[0].id : '',
   settings: DEFAULT_SETTINGS,
   phase: 'focus',
   completedSessions: 0,
@@ -42,18 +42,28 @@ function pomodoroReducer(state: PomodoroState, action: PomodoroAction): Pomodoro
     case 'SET_ACTIVE_THEME':
       return { ...state, activeThemeId: action.themeId, phase: 'focus' };
     case 'SAVE_SETTINGS':
+      const newThemes = action.themes && action.themes.length > 0 ? action.themes : state.themes;
+      const newActiveThemeId = newThemes.some(t => t.id === state.activeThemeId) 
+          ? state.activeThemeId 
+          : (newThemes.length > 0 ? newThemes[0].id : state.activeThemeId);
       return {
         ...state,
         settings: action.settings,
+        themes: newThemes,
+        activeThemeId: newActiveThemeId,
+      };
+    case 'SET_THEMES':
+      return {
+        ...state,
         themes: action.themes,
-        activeThemeId: action.themes.some(t => t.id === state.activeThemeId) 
-          ? state.activeThemeId 
-          : action.themes[0].id,
+        activeThemeId: action.themes.some(t => t.id === state.activeThemeId)
+          ? state.activeThemeId
+          : (action.themes.length > 0 ? action.themes[0].id : state.activeThemeId),
       };
     case 'NEXT_PHASE': {
       if (state.phase === 'focus') {
         const nextSessions = state.completedSessions + 1;
-        const nextPhase = nextSessions % state.settings.longBreakInterval === 0 ? 'longBreak' : 'shortBreak';
+        const nextPhase = nextSessions % (state.settings.longBreakInterval || 4) === 0 ? 'longBreak' : 'shortBreak';
         return { ...state, completedSessions: nextSessions, phase: nextPhase };
       }
       return { ...state, phase: 'focus' };
@@ -69,23 +79,26 @@ const PomodoroTimer: React.FC = () => {
   const { t, i18n } = useTranslation();
   const currentLanguage = i18n.language;
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [state, dispatch] = useReducer(pomodoroReducer, initialState, (initial) => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return { ...initial, ...parsed };
-      }
-    } catch (e) {
-      console.error('Failed to load state', e);
-    }
-    return initial;
-  });
-
+  const [initialLoaded, setInitialLoaded] = useState(false);
+  
+  const [state, dispatch] = useReducer(pomodoroReducer, initialState);
+  
   const { themes, activeThemeId, settings, phase, completedSessions } = state;
-  const activeTheme = useMemo(() => themes.find(t => t.id === activeThemeId) || themes[0], [themes, activeThemeId]);
+  const activeTheme = useMemo(() => {
+    return themes.find(t => t.id === activeThemeId) || themes[0];
+  }, [themes, activeThemeId]);
+  
+  const totalTimeValue = useMemo(() => {
+    if (!activeTheme) return 25 * 60;
+    if (phase === 'focus') return (activeTheme.focusDuration || 25) * 60;
+    return (phase === 'shortBreak' ? (settings.shortBreakDuration || 5) : (settings.longBreakDuration || 15)) * 60;
+  }, [phase, activeTheme, settings]);
+
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
   const [todayStats, setTodayStats] = useState<DailyStats | null>(null);
+  
+  const cozyPalRef = useRef<CozyPalHandle>(null);
+  const prevPhaseRef = useRef<Phase>(phase);
 
   const fetchDailyStats = useCallback(async () => {
     try {
@@ -97,19 +110,42 @@ const PomodoroTimer: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ themes, settings, completedSessions, activeThemeId }));
-  }, [themes, settings, completedSessions, activeThemeId]);
+    const fetchSettingsAndThemes = async () => {
+      try {
+        const [fetchedSettings, fetchedThemes] = await Promise.all([
+          getUserSettings(),
+          getUserThemes()
+        ]);
+        
+        const combinedThemes = [...DEFAULT_THEMES];
+        fetchedThemes.forEach(theme => {
+          if (!combinedThemes.find(t => t.id === theme.id)) {
+            combinedThemes.push(theme);
+          }
+        });
 
-  useEffect(() => {
-    fetchDailyStats(); // Fetch stats on mount
-  }, [fetchDailyStats]);
+        dispatch({ 
+          type: 'SAVE_SETTINGS', 
+          settings: fetchedSettings,
+          themes: combinedThemes
+        });
+      } catch (error) {
+        console.error('Error fetching user settings/themes:', error);
+        dispatch({ 
+          type: 'SAVE_SETTINGS', 
+          settings: DEFAULT_SETTINGS, 
+          themes: DEFAULT_THEMES 
+        });
+      } finally {
+        setInitialLoaded(true);
+      }
+    };
 
-  const totalTime = useMemo(() => {
-    if (phase === 'focus') return activeTheme.focusDuration * 60;
-    return (phase === 'shortBreak' ? settings.shortBreakDuration : settings.longBreakDuration) * 60;
-  }, [phase, activeTheme, settings]);
+    fetchSettingsAndThemes();
+  }, []);
 
   const saveLearningSession = useCallback(async (status: SessionCreate['status'], duration: number, start: Date, end: Date) => {
+    if (!activeTheme) return;
     const sessionData: SessionCreate = {
       theme_name: activeTheme.name,
       duration_seconds: duration,
@@ -117,33 +153,68 @@ const PomodoroTimer: React.FC = () => {
       status: status,
       start_time: start.toISOString(),
       end_time: end.toISOString(),
+      ai_persona: settings.aiPersona || 'gentle_encourager',
     };
     try {
       await saveSession(sessionData);
-      console.log('Session saved successfully', sessionData);
-      fetchDailyStats(); // Refresh stats after saving
+      fetchDailyStats();
     } catch (error) {
       console.error('Failed to save session', error);
     }
-  }, [activeTheme.name, phase, fetchDailyStats]);
+  }, [activeTheme, phase, settings.aiPersona, fetchDailyStats]);
 
   const handleTimerComplete = useCallback(() => {
     if (sessionStartTime) {
-      saveLearningSession('completed', totalTime, sessionStartTime, new Date());
+      if (phase === 'focus') {
+        cozyPalRef.current?.triggerProactiveMessage('focus_completed', 0);
+      }
+      saveLearningSession('completed', totalTimeValue, sessionStartTime, new Date());
       setSessionStartTime(null);
     }
     dispatch({ type: 'NEXT_PHASE' });
-  }, [sessionStartTime, saveLearningSession, totalTime]);
+  }, [sessionStartTime, saveLearningSession, totalTimeValue, phase]);
 
   const { timeLeft, isActive, start, pause, reset } = useTimer({
-    initialSeconds: totalTime,
+    initialSeconds: totalTimeValue,
     onComplete: handleTimerComplete,
   });
 
+  useEffect(() => {
+    if (prevPhaseRef.current !== phase) {
+      if (phase === 'focus') {
+        cozyPalRef.current?.triggerProactiveMessage('focus_start', totalTimeValue);
+      } else if (phase === 'shortBreak' || phase === 'longBreak') {
+        cozyPalRef.current?.triggerProactiveMessage('break_start', totalTimeValue);
+      }
+      prevPhaseRef.current = phase;
+    }
+  }, [phase, totalTimeValue]);
+
+  useEffect(() => {
+    if (isActive) {
+      if (phase === 'focus' && timeLeft === 60) {
+        cozyPalRef.current?.triggerProactiveMessage('focus_near_end', 60);
+      } else if (phase !== 'focus' && timeLeft === 30) {
+        cozyPalRef.current?.triggerProactiveMessage('break_near_end', 30);
+      }
+    }
+  }, [timeLeft, phase, isActive]);
+
+  useEffect(() => {
+    fetchDailyStats();
+  }, [fetchDailyStats]);
+
   const handleStart = useCallback(() => {
     setSessionStartTime(new Date());
+    if (timeLeft === totalTimeValue) {
+      if (phase === 'focus') {
+        cozyPalRef.current?.triggerProactiveMessage('focus_start', totalTimeValue);
+      } else {
+        cozyPalRef.current?.triggerProactiveMessage('break_start', totalTimeValue);
+      }
+    }
     start();
-  }, [start]);
+  }, [start, timeLeft, totalTimeValue, phase]);
 
   const handlePause = useCallback(() => {
     pause();
@@ -153,40 +224,48 @@ const PomodoroTimer: React.FC = () => {
   
   const handleReset = useCallback(() => {
     if (isActive && sessionStartTime) {
-      const duration = totalTime - timeLeft;
+      const duration = totalTimeValue - timeLeft;
       saveLearningSession('interrupted', duration, sessionStartTime, new Date());
     }
     setSessionStartTime(null);
     reset();
-    dispatch({ type: 'RESET_TO_FOCUS' }); // Ensure UI goes back to focus phase
-  }, [isActive, sessionStartTime, totalTime, timeLeft, saveLearningSession, reset]);
+    dispatch({ type: 'RESET_TO_FOCUS' });
+  }, [isActive, sessionStartTime, totalTimeValue, timeLeft, saveLearningSession, reset]);
 
   const handleSkip = useCallback(() => {
     if (sessionStartTime) {
-      const duration = totalTime - timeLeft;
+      const duration = totalTimeValue - timeLeft;
       saveLearningSession('skipped', duration, sessionStartTime, new Date());
     }
     setSessionStartTime(null);
     reset();
     dispatch({ type: 'NEXT_PHASE' });
-  }, [sessionStartTime, totalTime, timeLeft, saveLearningSession, reset]);
+  }, [sessionStartTime, totalTimeValue, timeLeft, saveLearningSession, reset]);
 
   const handleThemeChange = useCallback((themeId: string) => { 
     if (isActive && sessionStartTime) {
-      const duration = totalTime - timeLeft;
+      const duration = totalTimeValue - timeLeft;
       saveLearningSession('interrupted', duration, sessionStartTime, new Date());
     }
     setSessionStartTime(null);
     dispatch({ type: 'SET_ACTIVE_THEME', themeId }); 
     reset(); 
-  }, [isActive, sessionStartTime, totalTime, timeLeft, saveLearningSession, reset]);
+  }, [isActive, sessionStartTime, totalTimeValue, timeLeft, saveLearningSession, reset]);
 
-  const handleSaveSettings = useCallback((s: TimerSettings, t: FocusTheme[]) => { 
-    dispatch({ type: 'SAVE_SETTINGS', settings: s, themes: t }); 
-    // If settings change, reset timer and phase to reflect new durations
-    reset();
-    dispatch({ type: 'RESET_TO_FOCUS' });
+  const handleSaveSettings = useCallback(async (s: TimerSettings) => { 
+    try {
+      const updatedSettings = await upsertUserSettings(s);
+      dispatch({ type: 'SAVE_SETTINGS', settings: updatedSettings, themes: DEFAULT_THEMES });
+      reset();
+      dispatch({ type: 'RESET_TO_FOCUS' });
+    } catch (error) {
+      console.error("Failed to save user settings:", error);
+    }
   }, [reset]);
+
+  const handleThemesChange = useCallback((newThemes: FocusTheme[]) => {
+    dispatch({ type: 'SET_THEMES', themes: newThemes });
+  }, []);
 
   return (
     <LayoutGroup>
@@ -196,15 +275,25 @@ const PomodoroTimer: React.FC = () => {
         animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-[420px] md:max-w-[480px] lg:max-w-[1024px] xl:max-w-[1100px] bg-white rounded-[56px] md:rounded-[72px] p-8 md:p-10 lg:p-16 shadow-cozy flex flex-col lg:flex-row items-center lg:items-center gap-10 lg:gap-24 relative transition-all duration-700 mx-auto"
       >
-        {/* Container for decorative shapes with internal overflow hidden to protect shadow */}
+        <AnimatePresence>
+          {!initialLoaded && (
+            <motion.div 
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex items-center justify-center rounded-[56px] md:rounded-[72px]"
+            >
+              <div className="text-cozy-text font-bold">Loading settings...</div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className="absolute inset-0 rounded-[56px] md:rounded-[72px] overflow-hidden pointer-events-none">
           <div className="absolute -top-24 -right-24 w-48 h-48 bg-cozy-orange/5 rounded-full blur-3xl" />
           <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-cozy-green/5 rounded-full blur-3xl" />
         </div>
 
-        {/* Left: Timer */}
         <motion.div layout className="flex-shrink-0 flex items-center justify-center">
-          <TimerDisplay timeLeft={timeLeft} totalTime={totalTime} phase={phase} />
+          <TimerDisplay timeLeft={timeLeft} totalTime={totalTimeValue} phase={phase} />
         </motion.div>
 
         <motion.div layout className="flex-grow flex flex-col items-center lg:items-start justify-center relative z-10 w-full lg:max-w-[420px] min-w-0">
@@ -261,10 +350,12 @@ const PomodoroTimer: React.FC = () => {
           initialSettings={settings}
           initialThemes={themes}
           onSave={handleSaveSettings}
+          onThemesChange={handleThemesChange}
         />
       </motion.div>
        <CozyPal 
-         themeName={activeTheme.name} 
+         ref={cozyPalRef}
+         themeName={activeTheme?.name || 'English'} 
          phase={phase} 
          timeLeft={timeLeft} 
          apiKey={settings.googleApiKey} 
@@ -272,7 +363,6 @@ const PomodoroTimer: React.FC = () => {
          aiPersona={settings.aiPersona || 'gentle_encourager'} 
        />
     </LayoutGroup>
-
   );
 };
 

@@ -11,6 +11,41 @@ from sqlalchemy import (
 from .database import Base
 
 
+class UserSettings(Base):
+    __tablename__ = "user_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(
+        String, unique=True, index=True, nullable=False
+    )  # Assuming user_id is a string from an auth provider
+    google_api_key = Column(String, nullable=True)
+    ai_persona = Column(String, default="gentle_encourager")
+    focus_duration = Column(Integer, default=25)
+    short_break_duration = Column(Integer, default=5)
+    long_break_duration = Column(Integer, default=15)
+    long_break_interval = Column(Integer, default=4)
+    ai_proactivity = Column(Boolean, default=True)
+    ai_actionable = Column(Boolean, default=False)
+    auto_start_next = Column(Boolean, default=False)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), onupdate=func.now(), server_default=func.now()
+    )
+
+
+class UserTheme(Base):
+    __tablename__ = "user_themes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, index=True, nullable=False)
+    theme_id = Column(String, index=True, nullable=False)
+    name = Column(String, nullable=False)
+    focus_duration = Column(Integer, default=25)
+    is_default = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
 class LearningSession(Base):
     __tablename__ = "learning_sessions"
 
