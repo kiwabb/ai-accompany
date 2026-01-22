@@ -47,14 +47,17 @@ async def chat_completions(
     daily_focus = daily_stats.total_focus_minutes if daily_stats else 0
     daily_sessions = daily_stats.total_sessions if daily_stats else 0
 
-    # 2. Extract real-time context from request
+    # 2. Fetch Recent Chat History
+    chat_history = await crud.get_recent_chat_history(db, limit=10)
+
+    # 3. Extract real-time context from request
     context = request.context or {}
     ai_persona = context.get("ai_persona", "gentle_encourager")
     task_name = context.get("theme_name", "Focus")
     phase = context.get("phase", "focus")
     time_left = context.get("time_left", 0)  # seconds
 
-    # 3. Construct System Prompt
+    # 4. Construct System Prompt
     system_prompt = (
         f"You are CozyPal, a supportive AI study companion. "
         f"Persona: {ai_persona}. "
@@ -64,12 +67,60 @@ async def chat_completions(
         f"Instructions: Be concise (1-3 sentences). Match the persona. Encourage the user."
     )
 
+    # 5. Save User Message
+    await crud.create_chat_message(db, role="user", content=request.message)
+
+    # 6. Stream Response & Save AI Message
+    async def response_generator():
+        full_response = ""
+        async for chunk in chat_service.stream_chat(
+            request.message,
+            system_prompt,
+            chat_history=chat_history,
+            api_key=x_google_api_key,
+        ):
+            full_response += chunk
+            yield chunk
+
     return StreamingResponse(
-        chat_service.stream_chat(
-            request.message, system_prompt, api_key=x_google_api_key
+        response_generator_with_save(
+            request.message,
+            system_prompt,
+            chat_history,
+            x_google_api_key,
+            db,
         ),
         media_type="text/plain",
     )
+
+
+# Helper for streaming and saving
+async def response_generator_with_save(
+    message, system_prompt, chat_history, api_key, db_session
+):
+    full_response = ""
+    # Create a new session for saving to avoid 'session is closed' errors if main request finishes
+    # Actually, we can't easily create a new session here without the sessionmaker.
+    # Let's import the sessionmaker
+    from ..database import AsyncSessionLocal
+
+    async for chunk in chat_service.stream_chat(
+        message, system_prompt, chat_history=chat_history, api_key=api_key
+    ):
+        full_response += chunk
+        yield chunk
+
+    if full_response:
+        async with AsyncSessionLocal() as session:
+            await crud.create_chat_message(session, role="ai", content=full_response)
+
+
+@router.get("/chat/history", response_model=schemas.ChatHistoryResponse)
+async def get_chat_history(
+    limit: int = Query(50, ge=1, le=100), db: AsyncSession = Depends(get_db)
+):
+    messages = await crud.get_recent_chat_history(db, limit=limit)
+    return schemas.ChatHistoryResponse(messages=messages)
 
 
 @router.get("/stats/daily", response_model=schemas.DailyStats)

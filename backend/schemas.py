@@ -39,3 +39,16 @@ class DailyStats(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     context: Optional[Dict] = None
+
+
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ChatHistoryResponse(BaseModel):
+    messages: list[ChatMessage]

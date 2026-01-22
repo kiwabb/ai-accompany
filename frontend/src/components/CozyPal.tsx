@@ -24,6 +24,34 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey })
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
 
+  // Fetch chat history on mount
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const response = await fetch('/api/chat/history?limit=10');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.messages && data.messages.length > 0) {
+            setMessages(data.messages.map((msg: any) => ({
+              sender: msg.role,
+              text: msg.content
+            })));
+          } else {
+             // Only set greeting if no history
+             setMessages([{ sender: 'ai', text: t('cozyPal.greeting') }]);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch chat history', error);
+      }
+    };
+    
+    // Only fetch if messages are empty (initial load)
+    if (messages.length === 0) {
+        fetchHistory();
+    }
+  }, []); // Run once on mount
+
   useEffect(() => {
     // Update avatar state based on context
     if (phase === 'focus' && timeLeft > 0 && !isOpen) {
@@ -42,6 +70,7 @@ const CozyPal: React.FC<CozyPalProps> = ({ themeName, phase, timeLeft, apiKey })
 
   const toggleChat = () => {
     setIsOpen(!isOpen);
+    // If messages are still empty when toggling (and fetch failed or returned nothing), show greeting
     if (!isOpen && messages.length === 0) {
       setMessages([{ sender: 'ai', text: t('cozyPal.greeting') }]);
     }

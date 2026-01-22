@@ -28,7 +28,11 @@ class GeminiService:
             self.model = None
 
     async def stream_chat(
-        self, message: str, system_prompt: str, api_key: str = None
+        self,
+        message: str,
+        system_prompt: str,
+        chat_history: list = None,
+        api_key: str = None,
     ) -> AsyncGenerator[str, None]:
         # Determine which key to use
         current_key = api_key or self.default_api_key
@@ -50,10 +54,14 @@ class GeminiService:
             yield "Error: Failed to initialize AI model."
             return
 
-        # Combine system prompt and user message
-        # Gemini Pro doesn't enforce a strict system/user role structure like OpenAI
-        # but supports it via context or just prepending.
-        full_prompt = f"{system_prompt}\n\nUser: {message}\nAI:"
+        # Construct full prompt with history
+        history_context = ""
+        if chat_history:
+            history_context = "\nRecent History:\n" + "\n".join(
+                [f"{msg.role}: {msg.content}" for msg in chat_history]
+            )
+
+        full_prompt = f"{system_prompt}\n{history_context}\n\nUser: {message}\nAI:"
 
         try:
             # stream=True returns a generator

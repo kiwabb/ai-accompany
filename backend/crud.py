@@ -62,9 +62,21 @@ async def get_daily_stats(db: AsyncSession, target_date: date) -> schemas.DailyS
         row.theme_name: round(row.sum / 60) for row in sessions_by_theme_result.all()
     }
 
-    return schemas.DailyStats(
-        date=target_date.isoformat(),
-        total_focus_minutes=total_focus_minutes,
-        total_sessions=total_sessions,
-        sessions_by_theme=sessions_by_theme,
+
+async def create_chat_message(
+    db: AsyncSession, role: str, content: str, session_id: int = None
+):
+    db_message = models.ChatHistory(role=role, content=content, session_id=session_id)
+    db.add(db_message)
+    await db.commit()
+    await db.refresh(db_message)
+    return db_message
+
+
+async def get_recent_chat_history(db: AsyncSession, limit: int = 50):
+    result = await db.execute(
+        select(models.ChatHistory)
+        .order_by(models.ChatHistory.created_at.desc())
+        .limit(limit)
     )
+    return result.scalars().all()[::-1]  # Return in chronological order
