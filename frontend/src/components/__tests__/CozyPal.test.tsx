@@ -19,6 +19,12 @@ const mockFetch = vi.fn(() =>
   })
 );
 
+const defaultProps = {
+  themeName: 'Focus',
+  phase: 'focus',
+  timeLeft: 1500
+};
+
 describe('CozyPal', () => {
   beforeAll(() => {
     vi.stubGlobal('fetch', mockFetch);
@@ -32,7 +38,7 @@ describe('CozyPal', () => {
   it('renders the avatar initially', () => {
     render(
       <I18nextProvider i18n={i18n}>
-        <CozyPal />
+        <CozyPal {...defaultProps} />
       </I18nextProvider>
     );
     expect(screen.getByRole('button', { name: /cozy pal ai avatar/i })).toBeInTheDocument();
@@ -41,7 +47,7 @@ describe('CozyPal', () => {
   it('opens the chat window when avatar is clicked', () => {
     render(
       <I18nextProvider i18n={i18n}>
-        <CozyPal />
+        <CozyPal {...defaultProps} />
       </I18nextProvider>
     );
     const avatar = screen.getByRole('button', { name: /cozy pal ai avatar/i });
@@ -53,7 +59,7 @@ describe('CozyPal', () => {
   it('sends a message and receives a streaming response', async () => {
     render(
       <I18nextProvider i18n={i18n}>
-        <CozyPal />
+        <CozyPal {...defaultProps} />
       </I18nextProvider>
     );
     fireEvent.click(screen.getByRole('button', { name: /cozy pal ai avatar/i }));
@@ -70,7 +76,7 @@ describe('CozyPal', () => {
   it('closes the chat window when avatar is clicked again', async () => {
     render(
       <I18nextProvider i18n={i18n}>
-        <CozyPal />
+        <CozyPal {...defaultProps} />
       </I18nextProvider>
     );
     const avatar = screen.getByRole('button', { name: /cozy pal ai avatar/i });

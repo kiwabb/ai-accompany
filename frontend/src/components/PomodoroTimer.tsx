@@ -2,6 +2,7 @@ import React, { useReducer, useEffect, useCallback, useMemo, useState } from 're
 import { Settings as SettingsIcon } from 'lucide-react';
 import { motion, LayoutGroup } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import CozyPal from './CozyPal';
 import ThemeSelector from './ThemeSelector';
 import { TimerDisplay } from './TimerDisplay';
 import TimerControls from './TimerControls';
@@ -205,7 +206,6 @@ const PomodoroTimer: React.FC = () => {
           <TimerDisplay timeLeft={timeLeft} totalTime={totalTime} phase={phase} />
         </motion.div>
 
-        {/* Right: Controls & Content - Constrained width container */}
         <motion.div layout className="flex-grow flex flex-col items-center lg:items-start justify-center relative z-10 w-full lg:max-w-[420px] min-w-0">
            <div className="w-full flex flex-wrap justify-between items-start gap-4 mb-8 lg:mb-12">
             <div className="flex flex-col">
@@ -262,6 +262,7 @@ const PomodoroTimer: React.FC = () => {
           onSave={handleSaveSettings}
         />
       </motion.div>
+      <CozyPal themeName={activeTheme.name} phase={phase} timeLeft={timeLeft} apiKey={settings.googleApiKey} />
     </LayoutGroup>
   );
 };

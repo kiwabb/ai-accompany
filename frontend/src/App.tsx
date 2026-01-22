@@ -1,5 +1,4 @@
 import PomodoroTimer from './components/PomodoroTimer'
-import CozyPal from './components/CozyPal'
 
 function App() {
   return (
@@ -13,8 +12,6 @@ function App() {
       <div className="relative z-10 w-full max-w-[1000px] flex justify-center py-6 sm:py-10">
         <PomodoroTimer />
       </div>
-
-      <CozyPal />
     </main>
   )
 }

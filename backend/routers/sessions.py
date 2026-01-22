@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException, Header
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import date
@@ -7,6 +7,7 @@ import json
 
 from ..database import get_db
 from .. import crud, schemas
+from ..services.chat_service import chat_service
 
 router = APIRouter(prefix="/api", tags=["sessions"])
 
@@ -33,22 +34,42 @@ async def update_learning_session(
 
 
 @router.post("/chat/completions")
-async def chat_completions(request: schemas.ChatRequest):
+async def chat_completions(
+    request: schemas.ChatRequest,
+    db: AsyncSession = Depends(get_db),
+    x_google_api_key: str = Header(None),
+):
     """
-    AI 聊天伴侣的对话接口，目前返回 Mock 的流式数据。
-    未来将集成真实的 LLM (如 Gemini/OpenAI)。
+    AI 聊天伴侣的对话接口，集成 Gemini Pro。
     """
+    # 1. Fetch historical context (Daily Stats)
+    daily_stats = await crud.get_daily_stats(db, date.today())
+    daily_focus = daily_stats.total_focus_minutes if daily_stats else 0
+    daily_sessions = daily_stats.total_sessions if daily_stats else 0
 
-    async def event_generator():
-        # 模拟 AI 思考过程和打字感
-        full_response = f"I heard you say: '{request.message}'. I'm here to accompany you on your learning journey! Keep up the great work. ✨"
+    # 2. Extract real-time context from request
+    context = request.context or {}
+    ai_persona = context.get("ai_persona", "gentle_encourager")
+    task_name = context.get("theme_name", "Focus")
+    phase = context.get("phase", "focus")
+    time_left = context.get("time_left", 0)  # seconds
 
-        # 模拟流式输出
-        for char in full_response:
-            yield char
-            await asyncio.sleep(0.03)
+    # 3. Construct System Prompt
+    system_prompt = (
+        f"You are CozyPal, a supportive AI study companion. "
+        f"Persona: {ai_persona}. "
+        f"User Context: Currently in '{phase}' phase (Theme: {task_name}). "
+        f"Time Remaining: ~{time_left // 60} minutes. "
+        f"Today's Progress: {daily_focus} mins focused ({daily_sessions} sessions). "
+        f"Instructions: Be concise (1-3 sentences). Match the persona. Encourage the user."
+    )
 
-    return StreamingResponse(event_generator(), media_type="text/plain")
+    return StreamingResponse(
+        chat_service.stream_chat(
+            request.message, system_prompt, api_key=x_google_api_key
+        ),
+        media_type="text/plain",
+    )
 
 
 @router.get("/stats/daily", response_model=schemas.DailyStats)

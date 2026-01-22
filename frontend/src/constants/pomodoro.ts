@@ -11,4 +11,5 @@ export const DEFAULT_SETTINGS: TimerSettings = {
   longBreakDuration: 15,
   longBreakInterval: 4,
   autoStartNext: false,
+  googleApiKey: '',
 };

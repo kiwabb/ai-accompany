@@ -33,7 +33,7 @@ const TimerSettingsModal: React.FC<TimerSettingsModalProps> = ({
     }
   }, [isOpen, initialSettings, initialThemes]);
 
-  const handleSettingChange = useCallback((key: keyof TimerSettings, value: number | boolean) => {
+  const handleSettingChange = useCallback((key: keyof TimerSettings, value: number | boolean | string) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
   }, []);
 
@@ -96,33 +96,26 @@ const TimerSettingsModal: React.FC<TimerSettingsModalProps> = ({
             </div>
 
             <div className="flex-grow overflow-y-auto space-y-10 pr-2 custom-scrollbar">
-              <section>
+                <section>
                 <h3 className="text-xs font-black uppercase tracking-[0.25em] text-cozy-text-light/50 mb-6 flex items-center">
                   <span className="w-8 h-px bg-cozy-text-light/20 mr-3" />
-                  {t('settings.language')}
+                  API Keys
                 </h3>
-                <div className="flex gap-3">
-                  {[
-                    { code: 'en', label: 'English' },
-                    { code: 'zh', label: '中文' },
-                  ].map((lang) => (
-                    <button
-                      key={lang.code}
-                      onClick={() => i18n.changeLanguage(lang.code)}
-                      className={`flex-1 py-3 px-4 rounded-2xl font-bold transition-all border-2 ${
-                        i18n.language.startsWith(lang.code)
-                          ? 'bg-cozy-orange border-cozy-orange text-white shadow-lg shadow-cozy-orange/20'
-                          : 'bg-white/40 border-white text-cozy-text-light hover:bg-white/60'
-                      }`}
-                    >
-                      {lang.label}
-                    </button>
-                  ))}
+                <div className="flex items-center justify-between p-4 bg-white/40 rounded-[1.5rem] border border-white">
+                  <label className="text-sm font-bold text-cozy-text-light">Google Gemini API Key</label>
+                  <input
+                    type="password"
+                    value={settings.googleApiKey || ''}
+                    onChange={(e) => handleSettingChange('googleApiKey', e.target.value)}
+                    placeholder="Enter key..."
+                    className="w-48 bg-transparent text-right font-bold text-cozy-orange focus:outline-none placeholder:text-cozy-text-light/30"
+                  />
                 </div>
               </section>
 
               <section>
                 <h3 className="text-xs font-black uppercase tracking-[0.25em] text-cozy-text-light/50 mb-6 flex items-center">
+
                   <span className="w-8 h-px bg-cozy-text-light/20 mr-3" />
                   {t('settings.durations')}
                 </h3>
