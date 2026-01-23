@@ -49,7 +49,7 @@ class MemoryService:
 
         # 3. Generate embedding and create MemoryFragment
         # Using the user message for embedding as it often contains the core intent
-        embedding = await self._generate_embedding(user_msg)
+        embedding = await self.generate_embedding(user_msg)
 
         combined_content = f"User: {user_msg}\nAI: {ai_msg}"
 
@@ -138,7 +138,7 @@ JSON Output:
         profile.data = current_data
         db.add(profile)
 
-    async def _generate_embedding(self, text: str) -> List[float]:
+    async def generate_embedding(self, text: str) -> List[float]:
         try:
             # Using genai.embed_content. Note: In a production async environment,
             # this might need to be run in a thread pool if it's blocking.
@@ -164,3 +164,37 @@ JSON Output:
         except Exception as e:
             logger.error(f"Error generating embedding: {e}")
             return [0.0] * 1536  # Fallback
+
+    async def search_memory(
+        self, user_id: str, query_text: str, db: AsyncSession, limit: int = 5
+    ) -> List[models.MemoryFragment]:
+        """
+        Performs a vector search to find relevant memory fragments.
+        """
+        query_embedding = await self.generate_embedding(query_text)
+
+        # Vector similarity search using pgvector
+        # Note: cosine_distance is <-> in pgvector, but sqlalchemy integration uses .cosine_distance()
+        stmt = (
+            select(models.MemoryFragment)
+            .where(models.MemoryFragment.user_id == user_id)
+            .order_by(models.MemoryFragment.embedding.cosine_distance(query_embedding))
+            .limit(limit)
+        )
+
+        result = await db.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get_user_profile(
+        self, user_id: str, db: AsyncSession
+    ) -> Optional[models.UserProfile]:
+        """
+        Retrieves the user profile.
+        """
+        result = await db.execute(
+            select(models.UserProfile).where(models.UserProfile.user_id == user_id)
+        )
+        return result.scalar_one_or_none()
+
+
+memory_service = MemoryService()

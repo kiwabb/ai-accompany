@@ -108,6 +108,8 @@ class ChatRequest(BaseModel):
 
     message: str
     context: Optional[ChatContext] = None
+    user_id: Optional[str] = "default_user"
+    topic_id: Optional[int] = None
 
 
 class ChatMessage(BaseModel):

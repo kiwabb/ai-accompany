@@ -74,9 +74,15 @@ async def get_daily_stats(
 
 
 async def create_chat_message(
-    db: AsyncSession, role: str, content: str, session_id: Optional[int] = None
+    db: AsyncSession,
+    role: str,
+    content: str,
+    session_id: Optional[int] = None,
+    topic_id: Optional[int] = None,
 ):
-    db_message = models.ChatHistory(role=role, content=content, session_id=session_id)
+    db_message = models.ChatHistory(
+        role=role, content=content, session_id=session_id, topic_id=topic_id
+    )
     db.add(db_message)
     await db.commit()
     await db.refresh(db_message)
