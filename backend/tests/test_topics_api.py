@@ -87,3 +87,41 @@ async def test_topic_crud():
         # 6. Verify Deletion
         response = await ac.get(f"/api/topics/{topic_id}", headers=headers)
         assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_unauthorized_topic_access():
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as ac:
+        user1_headers = {"Authorization": "Bearer test-user-1"}
+        user2_headers = {"Authorization": "Bearer test-user-2"}
+
+        # 1. User 1 creates a topic
+        topic_data = {
+            "name": "User 1 Topic",
+            "description": "Secret topic",
+            "is_active": True,
+        }
+        response = await ac.post("/api/topics", json=topic_data, headers=user1_headers)
+        assert response.status_code == 201
+        topic_id = response.json()["id"]
+
+        # 2. User 2 tries to GET User 1's topic
+        response = await ac.get(f"/api/topics/{topic_id}", headers=user2_headers)
+        assert response.status_code == 404
+
+        # 3. User 2 tries to PUT User 1's topic
+        update_data = {
+            "name": "Hacked",
+            "description": "Hacked",
+            "is_active": False,
+        }
+        response = await ac.put(
+            f"/api/topics/{topic_id}", json=update_data, headers=user2_headers
+        )
+        assert response.status_code == 404
+
+        # 4. User 2 tries to DELETE User 1's topic
+        response = await ac.delete(f"/api/topics/{topic_id}", headers=user2_headers)
+        assert response.status_code == 404
