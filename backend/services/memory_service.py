@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import asyncio
 from typing import Optional, Dict, Any, List
 import google.generativeai as genai
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -80,6 +81,7 @@ AI: {ai_msg}
 
 JSON Output:
 """
+        response = None
         try:
             response = await self.extraction_model.generate_content_async(
                 prompt,
@@ -88,6 +90,11 @@ JSON Output:
                 ),
             )
             return json.loads(response.text)
+        except json.JSONDecodeError as e:
+            logger.error(
+                f"Invalid JSON from LLM: {e}. Content: {getattr(response, 'text', 'N/A')}"
+            )
+            return {}
         except Exception as e:
             logger.error(f"Error extracting memory: {e}")
             return {}
@@ -135,10 +142,14 @@ JSON Output:
         try:
             # Using genai.embed_content. Note: In a production async environment,
             # this might need to be run in a thread pool if it's blocking.
-            result = genai.embed_content(
-                model=self.embedding_model_name,
-                content=text,
-                task_type="retrieval_document",
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(
+                None,
+                lambda: genai.embed_content(
+                    model=self.embedding_model_name,
+                    content=text,
+                    task_type="retrieval_document",
+                ),
             )
             embedding = result["embedding"]
 

@@ -111,3 +111,71 @@ async def test_process_exchange_merge_data(db_session: AsyncSession):
             assert "User likes coffee" in profile.data["preferences"]
             assert "User likes tea" in profile.data["preferences"]
             assert profile.data["last_emotional_state"] == "Excited"
+
+
+@pytest.mark.asyncio
+async def test_extract_memory_invalid_json():
+    service = MemoryService()
+    user_msg = "test"
+    ai_msg = "test"
+
+    mock_response = MagicMock()
+    mock_response.text = "Invalid JSON"
+
+    with patch(
+        "google.generativeai.GenerativeModel.generate_content_async",
+        new_callable=AsyncMock,
+    ) as mock_extract:
+        mock_extract.return_value = mock_response
+
+        # This should return {} and log an error
+        result = await service._extract_memory(user_msg, ai_msg)
+        assert result == {}
+
+
+@pytest.mark.asyncio
+async def test_extract_memory_api_error():
+    service = MemoryService()
+
+    with patch(
+        "google.generativeai.GenerativeModel.generate_content_async",
+        side_effect=Exception("API Error"),
+    ):
+        result = await service._extract_memory("test", "test")
+        assert result == {}
+
+
+@pytest.mark.asyncio
+async def test_generate_embedding_api_error():
+    service = MemoryService()
+
+    with patch(
+        "google.generativeai.embed_content", side_effect=Exception("Embedding Error")
+    ):
+        embedding = await service._generate_embedding("test")
+        assert len(embedding) == 1536
+        assert all(v == 0.0 for v in embedding)
+
+
+@pytest.mark.asyncio
+async def test_extract_memory_missing_keys(db_session: AsyncSession):
+    service = MemoryService()
+
+    mock_response = MagicMock()
+    # Missing 'emotional_state'
+    mock_response.text = json.dumps({"facts": ["fact"], "preferences": ["pref"]})
+
+    with patch(
+        "google.generativeai.GenerativeModel.generate_content_async",
+        new_callable=AsyncMock,
+    ) as mock_extract:
+        mock_extract.return_value = mock_response
+
+        with patch("google.generativeai.embed_content") as mock_embed:
+            mock_embed.return_value = {"embedding": [0.1] * 1536}
+
+            fragment = await service.process_exchange(
+                "user1", None, "hi", "hello", db_session
+            )
+            assert fragment.metadata_["extracted_facts"] == ["fact"]
+            assert fragment.metadata_["extracted_emotional_state"] == ""
