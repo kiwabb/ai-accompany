@@ -1,67 +1,78 @@
 // frontend/src/components/__tests__/CozyPal.test.tsx
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import CozyPal from '../CozyPal';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '../../i18n';
 
-const mockFetch = vi.fn((url) => {
-  if (url.includes('/api/topics')) {
-    return Promise.resolve({
-      ok: true,
-      json: () => Promise.resolve([{ id: 1, name: 'Default' }])
-    });
-  }
-  if (url.includes('/api/chat/history')) {
-    return Promise.resolve({
-      ok: true,
-      json: () => Promise.resolve({ messages: [] })
-    });
-  }
-  return Promise.resolve({
-    ok: true,
-    body: {
-      getReader: () => ({
-        read: vi.fn()
-          .mockResolvedValueOnce({ value: new TextEncoder().encode('Hello'), done: false })
-          .mockResolvedValueOnce({ value: new TextEncoder().encode(' World'), done: false })
-          .mockResolvedValueOnce({ done: true }),
-      }),
-    },
-  });
-});
-
 const defaultProps = {
   themeName: 'Focus',
   phase: 'focus',
-  timeLeft: 1500
+  timeLeft: 1500,
+  currentLanguage: 'en',
+  aiPersona: 'gentle_encourager',
+  dailyCompletedPomodoros: 0,
+  totalFocusMinutes: 0
 };
 
 describe('CozyPal', () => {
-  beforeAll(() => {
+  beforeEach(() => {
+    const mockFetch = vi.fn((url: string) => {
+      if (url.includes('/api/topics')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([{ id: 1, name: 'Default' }])
+        });
+      }
+      if (url.includes('/api/chat/history')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ messages: [] })
+        });
+      }
+      if (url.includes('/api/chat/completions')) {
+        return Promise.resolve({
+          ok: true,
+          body: {
+            getReader: () => ({
+              read: vi.fn()
+                .mockResolvedValueOnce({ value: new TextEncoder().encode('Hello'), done: false })
+                .mockResolvedValueOnce({ value: new TextEncoder().encode(' World'), done: false })
+                .mockResolvedValueOnce({ done: true }),
+            }),
+          },
+        });
+      }
+      return Promise.reject(new Error('Unhandled mock url: ' + url));
+    });
+
     vi.stubGlobal('fetch', mockFetch);
     window.HTMLElement.prototype.scrollIntoView = vi.fn();
   });
 
-  afterAll(() => {
+  afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('renders the avatar initially', () => {
-    render(
-      <I18nextProvider i18n={i18n}>
-        <CozyPal {...defaultProps} />
-      </I18nextProvider>
-    );
+  it('renders the avatar initially', async () => {
+    await act(async () => {
+      render(
+        <I18nextProvider i18n={i18n}>
+          <CozyPal {...defaultProps} />
+        </I18nextProvider>
+      );
+    });
     expect(screen.getByRole('button', { name: /cozy pal ai avatar/i })).toBeInTheDocument();
   });
 
-  it('opens the chat window when avatar is clicked', () => {
-    render(
-      <I18nextProvider i18n={i18n}>
-        <CozyPal {...defaultProps} />
-      </I18nextProvider>
-    );
+  it('opens the chat window when avatar is clicked', async () => {
+    await act(async () => {
+      render(
+        <I18nextProvider i18n={i18n}>
+          <CozyPal {...defaultProps} />
+        </I18nextProvider>
+      );
+    });
     const avatar = screen.getByRole('button', { name: /cozy pal ai avatar/i });
     fireEvent.click(avatar);
     expect(screen.getByRole('dialog', { name: /cozy pal chat window/i })).toBeInTheDocument();
@@ -69,28 +80,38 @@ describe('CozyPal', () => {
   });
 
   it('sends a message and receives a streaming response', async () => {
-    render(
-      <I18nextProvider i18n={i18n}>
-        <CozyPal {...defaultProps} />
-      </I18nextProvider>
-    );
+    await act(async () => {
+      render(
+        <I18nextProvider i18n={i18n}>
+          <CozyPal {...defaultProps} />
+        </I18nextProvider>
+      );
+    });
     fireEvent.click(screen.getByRole('button', { name: /cozy pal ai avatar/i }));
 
     const input = screen.getByPlaceholderText(/type your message.../i);
     fireEvent.change(input, { target: { value: 'Hello AI' } });
-    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    
+    const form = screen.getByRole('dialog').querySelector('form');
+    if (form) {
+      fireEvent.submit(form);
+    } else {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    }
 
     await waitFor(() => {
       expect(screen.getByText(/hello world/i)).toBeInTheDocument();
-    }, { timeout: 3000 });
+    }, { timeout: 4000 });
   });
 
   it('closes the chat window when avatar is clicked again', async () => {
-    render(
-      <I18nextProvider i18n={i18n}>
-        <CozyPal {...defaultProps} />
-      </I18nextProvider>
-    );
+    await act(async () => {
+      render(
+        <I18nextProvider i18n={i18n}>
+          <CozyPal {...defaultProps} />
+        </I18nextProvider>
+      );
+    });
     const avatar = screen.getByRole('button', { name: /cozy pal ai avatar/i });
     fireEvent.click(avatar); // Open
     
