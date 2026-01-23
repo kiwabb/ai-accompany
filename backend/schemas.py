@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 from typing import Dict, Optional
 
@@ -20,16 +20,19 @@ class UserSettingsCreate(UserSettingsBase):
 
 
 class UserSettingsResponse(UserSettingsBase):
+    """Schema for user settings response."""
+
     id: int
     user_id: str
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ThemeBase(BaseModel):
+    """Base schema for theme."""
+
     theme_id: str
     name: str
     focus_duration: int
@@ -37,16 +40,19 @@ class ThemeBase(BaseModel):
 
 
 class ThemeCreate(ThemeBase):
+    """Schema for creating a theme."""
+
     pass
 
 
 class ThemeResponse(ThemeBase):
+    """Schema for theme response."""
+
     id: int
     user_id: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SessionBase(BaseModel):
@@ -68,14 +74,17 @@ class SessionCreate(SessionBase):
 
 
 class SessionResponse(SessionBase):
+    """Schema for learning session response."""
+
     id: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True  # Pydantic v2
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DailyStats(BaseModel):
+    """Schema for daily statistics."""
+
     date: str
     total_focus_minutes: int
     total_sessions: int
@@ -83,6 +92,8 @@ class DailyStats(BaseModel):
 
 
 class ChatContext(BaseModel):
+    """Context information for chat requests."""
+
     theme_name: Optional[str] = "Focus"
     phase: Optional[str] = "focus"
     time_left: Optional[int] = 0
@@ -93,18 +104,80 @@ class ChatContext(BaseModel):
 
 
 class ChatRequest(BaseModel):
+    """Schema for chat request."""
+
     message: str
     context: Optional[ChatContext] = None
+    user_id: Optional[str] = "default_user"
+    topic_id: Optional[int] = None
 
 
 class ChatMessage(BaseModel):
+    """Schema for a single chat message."""
+
     role: str
     content: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ChatHistoryResponse(BaseModel):
+    """Schema for chat history response."""
+
     messages: list[ChatMessage]
+
+
+class TopicBase(BaseModel):
+    """Base schema for topic."""
+
+    name: str
+    description: Optional[str] = None
+    is_active: Optional[bool] = True
+
+
+class TopicCreate(TopicBase):
+    """Schema for creating a topic."""
+
+    pass
+
+
+class TopicResponse(TopicBase):
+    """Schema for topic response."""
+
+    id: int
+    user_id: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserProfileBase(BaseModel):
+    user_id: str
+    data: Dict = {}
+
+
+class UserProfileResponse(UserProfileBase):
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MemoryFragmentBase(BaseModel):
+    user_id: str
+    topic_id: Optional[int] = None
+    content: str
+    metadata: Dict = Field(
+        default={}, validation_alias="metadata_", serialization_alias="metadata"
+    )
+
+
+class MemoryFragmentCreate(MemoryFragmentBase):
+    embedding: Optional[list[float]] = None
+
+
+class MemoryFragmentResponse(MemoryFragmentBase):
+    id: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

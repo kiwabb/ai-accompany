@@ -10,16 +10,17 @@ router = APIRouter(prefix="/api", tags=["users"])
 
 # Placeholder for actual user authentication dependency
 # In a real app, this would decode a JWT or similar to get the current user's ID
-async def get_current_user_id(authorization: str = Header(...)) -> str:
+async def get_current_user_id(authorization: Optional[str] = Header(None)) -> str:
     # For now, we'll just return a dummy user ID or extract from a simple header
     # In a real application, you'd integrate with your authentication system
     # and retrieve the actual user ID from the token.
-    if authorization.startswith("Bearer "):
+    if authorization and authorization.startswith("Bearer "):
         # This is a placeholder. Replace with actual token validation and user ID extraction.
         token = authorization.split(" ")[1]
         # Example: if token is "user-123", return "user-123"
         return token
-    raise HTTPException(status_code=401, detail="Not authenticated")
+    # Default user for development/testing if no header is provided
+    return "default_user"
 
 
 @router.get("/settings", response_model=schemas.UserSettingsResponse)
