@@ -27,17 +27,20 @@ async def test_process_exchange(db_session: AsyncSession):
         }
     )
 
-    # Mock extraction model and its generate_content_async method
-    with patch(
-        "google.generativeai.GenerativeModel.generate_content_async",
-        new_callable=AsyncMock,
-    ) as mock_extract:
-        mock_extract.return_value = mock_response
+    # Mock the new SDK client.aio.models.generate_content
+    with patch.object(
+        service.client.aio.models, "generate_content", new_callable=AsyncMock
+    ) as mock_gen:
+        mock_gen.return_value = mock_response
 
-        # Mock embedding call
-        with patch("google.generativeai.embed_content") as mock_embed:
-            # Return 1536 dims to match DB constraint
-            mock_embed.return_value = {"embedding": [0.1] * 1536}
+        # Mock embedding call client.aio.models.embed_content
+        with patch.object(
+            service.client.aio.models, "embed_content", new_callable=AsyncMock
+        ) as mock_embed:
+            # New SDK returns a response with embeddings[0].values
+            mock_embed_resp = MagicMock()
+            mock_embed_resp.embeddings = [MagicMock(values=[0.1] * 1536)]
+            mock_embed.return_value = mock_embed_resp
 
             # Execute
             fragment = await service.process_exchange(
@@ -91,13 +94,16 @@ async def test_process_exchange_merge_data(db_session: AsyncSession):
         }
     )
 
-    with patch(
-        "google.generativeai.GenerativeModel.generate_content_async",
-        new_callable=AsyncMock,
-    ) as mock_extract:
-        mock_extract.return_value = mock_response
-        with patch("google.generativeai.embed_content") as mock_embed:
-            mock_embed.return_value = {"embedding": [0.2] * 1536}
+    with patch.object(
+        service.client.aio.models, "generate_content", new_callable=AsyncMock
+    ) as mock_gen:
+        mock_gen.return_value = mock_response
+        with patch.object(
+            service.client.aio.models, "embed_content", new_callable=AsyncMock
+        ) as mock_embed:
+            mock_embed_resp = MagicMock()
+            mock_embed_resp.embeddings = [MagicMock(values=[0.2] * 1536)]
+            mock_embed.return_value = mock_embed_resp
 
             await service.process_exchange(user_id, None, user_msg, ai_msg, db_session)
 
@@ -122,11 +128,10 @@ async def test_extract_memory_invalid_json():
     mock_response = MagicMock()
     mock_response.text = "Invalid JSON"
 
-    with patch(
-        "google.generativeai.GenerativeModel.generate_content_async",
-        new_callable=AsyncMock,
-    ) as mock_extract:
-        mock_extract.return_value = mock_response
+    with patch.object(
+        service.client.aio.models, "generate_content", new_callable=AsyncMock
+    ) as mock_gen:
+        mock_gen.return_value = mock_response
 
         # This should return {} and log an error
         result = await service._extract_memory(user_msg, ai_msg)
@@ -137,8 +142,9 @@ async def test_extract_memory_invalid_json():
 async def test_extract_memory_api_error():
     service = MemoryService()
 
-    with patch(
-        "google.generativeai.GenerativeModel.generate_content_async",
+    with patch.object(
+        service.client.aio.models,
+        "generate_content",
         side_effect=Exception("API Error"),
     ):
         result = await service._extract_memory("test", "test")
@@ -149,10 +155,12 @@ async def test_extract_memory_api_error():
 async def test_generate_embedding_api_error():
     service = MemoryService()
 
-    with patch(
-        "google.generativeai.embed_content", side_effect=Exception("Embedding Error")
+    with patch.object(
+        service.client.aio.models,
+        "embed_content",
+        side_effect=Exception("Embedding Error"),
     ):
-        embedding = await service._generate_embedding("test")
+        embedding = await service.generate_embedding("test")
         assert len(embedding) == 1536
         assert all(v == 0.0 for v in embedding)
 
@@ -165,14 +173,17 @@ async def test_extract_memory_missing_keys(db_session: AsyncSession):
     # Missing 'emotional_state'
     mock_response.text = json.dumps({"facts": ["fact"], "preferences": ["pref"]})
 
-    with patch(
-        "google.generativeai.GenerativeModel.generate_content_async",
-        new_callable=AsyncMock,
-    ) as mock_extract:
-        mock_extract.return_value = mock_response
+    with patch.object(
+        service.client.aio.models, "generate_content", new_callable=AsyncMock
+    ) as mock_gen:
+        mock_gen.return_value = mock_response
 
-        with patch("google.generativeai.embed_content") as mock_embed:
-            mock_embed.return_value = {"embedding": [0.1] * 1536}
+        with patch.object(
+            service.client.aio.models, "embed_content", new_callable=AsyncMock
+        ) as mock_embed:
+            mock_embed_resp = MagicMock()
+            mock_embed_resp.embeddings = [MagicMock(values=[0.1] * 1536)]
+            mock_embed.return_value = mock_embed_resp
 
             fragment = await service.process_exchange(
                 "user1", None, "hi", "hello", db_session

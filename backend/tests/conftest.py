@@ -1,4 +1,6 @@
 import pytest
+import os
+import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from backend.database import Base, get_db
@@ -11,10 +13,15 @@ from backend.models import (
     UserProfile,
     MemoryFragment,
 )  # Import all models
-import asyncio
 
 # Use a file-based SQLite database for testing to ensure shared state between fixtures
 DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def mock_env_vars():
+    os.environ["GOOGLE_API_KEY"] = "fake-test-key"
+    yield
 
 
 @pytest.fixture(scope="session")
@@ -41,9 +48,6 @@ async def setup_database():
     async def override_get_db():
         async with AsyncTestingSessionLocal() as session:
             yield session
-
-    # You might need to patch get_db in your main application if you're running FastAPI tests
-    # For standalone model tests, this fixture alone is enough to provide a session
 
     yield  # This will run tests
 
