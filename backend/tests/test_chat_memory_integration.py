@@ -1,43 +1,16 @@
+# backend/tests/test_chat_memory_integration.py
 import pytest
-import json
+import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 from backend.services.chat_service import chat_service
 from backend.services.memory_service import memory_service
-from backend import models, schemas
-from httpx import AsyncClient, ASGITransport
-from backend.main import app
-from backend.database import get_db
-
-# Use a file-based SQLite database for testing to ensure shared state between fixtures
-DATABASE_URL = "sqlite+aiosqlite:///./test.db"
-engine = create_async_engine(DATABASE_URL, echo=True)
-AsyncTestingSessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-)
-
-
-async def override_get_db():
-    async with AsyncTestingSessionLocal() as session:
-        yield session
-
-
-app.dependency_overrides[get_db] = override_get_db
-
-# Also override AsyncSessionLocal in the router to use the test engine
-import backend.routers.sessions
-
-backend.routers.sessions.AsyncSessionLocal = AsyncTestingSessionLocal
+from backend import models
 
 
 @pytest.mark.asyncio
 async def test_chat_service_memory_injection(db_session: AsyncSession):
-    # 1. Setup mock memory data
+    """Test that chat service correctly retrieves and injects memory into the prompt."""
     user_id = "test_user_memory"
 
     # Create a user profile
@@ -51,7 +24,6 @@ async def test_chat_service_memory_injection(db_session: AsyncSession):
     db_session.add(profile)
 
     # Create a memory fragment
-    # We need to mock the embedding for the fragment
     fragment = models.MemoryFragment(
         user_id=user_id,
         content="The user previously mentioned they are working on a project named 'CozyPal'.",
@@ -61,25 +33,23 @@ async def test_chat_service_memory_injection(db_session: AsyncSession):
     db_session.add(fragment)
     await db_session.commit()
 
-    # 2. Mock memory service's search and embedding
-    # We want to ensure search_memory returns our fragment
+    # Mock memory service's search and embedding
     with patch.object(
         memory_service, "search_memory", new_callable=AsyncMock
     ) as mock_search:
         mock_search.return_value = [fragment]
 
-        # 3. Mock the AI provider to capture the system prompt
+        # Mock the AI provider to capture the system prompt
         provider = chat_service._providers["gemini"]
         with patch.object(
             provider, "stream_chat", new_callable=MagicMock
         ) as mock_stream:
-            # mock_stream needs to return an async generator
+
             async def mock_gen(*args, **kwargs):
                 yield "Response from AI"
 
             mock_stream.return_value = mock_gen()
 
-            # 4. Execute stream_chat
             message = "Tell me about my project."
             system_prompt = "You are a helpful assistant."
 
@@ -89,9 +59,9 @@ async def test_chat_service_memory_injection(db_session: AsyncSession):
             ):
                 chunks.append(chunk)
 
-            # 5. Verify augmented system prompt
+            # Verify augmented system prompt
             call_args = mock_stream.call_args
-            passed_system_prompt = call_args[0][1]  # Second positional argument
+            passed_system_prompt = call_args[0][1]
 
             assert "User is a Python developer" in passed_system_prompt
             assert "User likes dark mode" in passed_system_prompt
@@ -100,14 +70,12 @@ async def test_chat_service_memory_injection(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_router_memory_extraction_trigger(db_session: AsyncSession):
-    # This test verifies that the router calls process_exchange
-    # We'll use the AsyncClient to call the endpoint
-
+async def test_router_memory_extraction_trigger(async_client):
+    """Test that the chat router triggers memory extraction as a background task."""
     user_id = "router_test_user"
     message = "I just finished the integration test."
 
-    # Mock AIChatService.stream_chat to avoid actual AI calls
+    # Mock AIChatService.stream_chat
     with patch("backend.routers.sessions.chat_service.stream_chat") as mock_chat:
 
         async def mock_gen(*args, **kwargs):
@@ -120,30 +88,20 @@ async def test_router_memory_extraction_trigger(db_session: AsyncSession):
             "backend.routers.sessions.memory_service.process_exchange",
             new_callable=AsyncMock,
         ) as mock_process:
-            async with AsyncClient(
-                transport=ASGITransport(app=app), base_url="http://test"
-            ) as ac:
-                chat_data = {"message": message, "user_id": user_id, "topic_id": 1}
-                response = await ac.post("/api/chat/completions", json=chat_data)
-                assert response.status_code == 200
+            chat_data = {"message": message, "user_id": user_id, "topic_id": 1}
+            response = await async_client.post("/api/chat/completions", json=chat_data)
+            assert response.status_code == 200
 
-                # Consume the stream to trigger the background task
-                async for _ in response.aiter_text():
-                    pass
+            # Consume the stream
+            async for _ in response.aiter_text():
+                pass
 
-                # Wait a bit for background tasks to potentially run
-                # In FastAPI, background tasks run after the response is sent.
-                # In tests with ASGITransport, they usually run before AsyncClient returns if it's not a real server,
-                # but let's be safe.
-                await asyncio.sleep(0.1)
+            await asyncio.sleep(0.1)
 
-                # Verify process_exchange was called
-                mock_process.assert_called_once()
-                args = mock_process.call_args.kwargs
-                assert args["user_id"] == user_id
-                assert args["user_msg"] == message
-                assert args["ai_msg"] == "Great job!"
-                assert args["topic_id"] == 1
-
-
-import asyncio
+            # Verify process_exchange was called
+            mock_process.assert_called_once()
+            args = mock_process.call_args.kwargs
+            assert args["user_id"] == user_id
+            assert args["user_msg"] == message
+            assert args["ai_msg"] == "Great job!"
+            assert args["topic_id"] == 1
