@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Dict, Optional
 
@@ -108,3 +108,21 @@ class ChatMessage(BaseModel):
 
 class ChatHistoryResponse(BaseModel):
     messages: list[ChatMessage]
+
+
+class TopicBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    is_active: Optional[bool] = True
+
+
+class TopicCreate(TopicBase):
+    pass
+
+
+class TopicResponse(TopicBase):
+    id: int
+    user_id: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
