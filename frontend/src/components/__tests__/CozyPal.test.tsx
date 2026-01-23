@@ -5,8 +5,20 @@ import CozyPal from '../CozyPal';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '../../i18n';
 
-const mockFetch = vi.fn(() =>
-  Promise.resolve({
+const mockFetch = vi.fn((url) => {
+  if (url.includes('/api/topics')) {
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve([{ id: 1, name: 'Default' }])
+    });
+  }
+  if (url.includes('/api/chat/history')) {
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ messages: [] })
+    });
+  }
+  return Promise.resolve({
     ok: true,
     body: {
       getReader: () => ({
@@ -16,8 +28,8 @@ const mockFetch = vi.fn(() =>
           .mockResolvedValueOnce({ done: true }),
       }),
     },
-  })
-);
+  });
+});
 
 const defaultProps = {
   themeName: 'Focus',

@@ -2,6 +2,13 @@ import React, { useState, useRef, useEffect, useCallback, useImperativeHandle, f
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import CozyAvatar from './CozyAvatar';
+import TopicSelector from './TopicSelector';
+
+interface Topic {
+  id: number;
+  name: string;
+  description?: string;
+}
 
 interface Message {
   sender: 'user' | 'ai';
@@ -31,53 +38,77 @@ const CozyPal = forwardRef<CozyPalHandle, CozyPalProps>(({ themeName, phase, tim
   const [hasUnread, setHasUnread] = useState(false);
   const [avatarState, setAvatarState] = useState<'idle' | 'thinking' | 'speaking' | 'focused'>('idle');
   const [speechBubble, setSpeechBubble] = useState<string | null>(null);
+  const [topics, setTopics] = useState<Topic[]>([]);
+  const [activeTopicId, setActiveTopicId] = useState<number | null>(null);
+  const [showTopicSelector, setShowTopicSelector] = useState(false);
   const speechBubbleTimerRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
 
-  useEffect(() => {
-    if (isOpen) {
-      setHasUnread(false);
-      if (speechBubbleTimerRef.current) {
-        clearTimeout(speechBubbleTimerRef.current);
-        speechBubbleTimerRef.current = null;
-      }
-      setSpeechBubble(null);
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    return () => {
-      if (speechBubbleTimerRef.current) {
-        clearTimeout(speechBubbleTimerRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        const response = await fetch('/api/chat/history?limit=10');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.messages && data.messages.length > 0) {
-            setMessages(data.messages.map((msg: any) => ({
-              sender: msg.role,
-              text: msg.content
-            })));
-          } else {
-             setMessages([{ sender: 'ai', text: t('cozyPal.greeting') }]);
-          }
+  const fetchTopics = useCallback(async () => {
+    try {
+      const response = await fetch('/api/topics');
+      if (response.ok) {
+        const data = await response.json();
+        setTopics(data);
+        if (data.length > 0 && activeTopicId === null) {
+          setActiveTopicId(data[0].id);
         }
-      } catch (error) {
-        console.error('Failed to fetch chat history', error);
       }
-    };
-    
-    if (messages.length === 0) {
-        fetchHistory();
+    } catch (error) {
+      console.error('Failed to fetch topics', error);
     }
-  }, [t, messages.length]);
+  }, [activeTopicId]);
+
+  const handleCreateTopic = async (name: string, description?: string) => {
+    try {
+      const response = await fetch('/api/topics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, description }),
+      });
+      if (response.ok) {
+        const newTopic = await response.json();
+        setTopics(prev => [...prev, newTopic]);
+        setActiveTopicId(newTopic.id);
+        setShowTopicSelector(false);
+      }
+    } catch (error) {
+      console.error('Failed to create topic', error);
+    }
+  };
+
+  const fetchHistory = useCallback(async (topicId: number | null) => {
+    try {
+      const url = topicId 
+        ? `/api/chat/history?topic_id=${topicId}&limit=10`
+        : '/api/chat/history?limit=10';
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.messages && data.messages.length > 0) {
+          setMessages(data.messages.map((msg: any) => ({
+            sender: msg.role,
+            text: msg.content
+          })));
+        } else {
+          setMessages([{ sender: 'ai', text: t('cozyPal.greeting') }]);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch chat history', error);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    fetchTopics();
+  }, [fetchTopics]);
+
+  useEffect(() => {
+    if (activeTopicId !== null) {
+      fetchHistory(activeTopicId);
+    }
+  }, [activeTopicId, fetchHistory]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -128,6 +159,7 @@ const CozyPal = forwardRef<CozyPalHandle, CozyPalProps>(({ themeName, phase, tim
         headers: headers,
         body: JSON.stringify({
           message: proactiveTrigger ? `[SYSTEM_TRIGGER:${proactiveTrigger}]` : textToSend,
+          topic_id: activeTopicId,
           context: {
             theme_name: themeName,
             phase: phase,
@@ -265,7 +297,15 @@ const CozyPal = forwardRef<CozyPalHandle, CozyPalProps>(({ themeName, phase, tim
               </div>
               <div>
                 <h3 className="font-bold text-indigo-900 text-sm">Cozy Pal</h3>
-                <p className="text-[10px] text-indigo-400 uppercase tracking-wider font-semibold">Online</p>
+                <button 
+                  onClick={() => setShowTopicSelector(!showTopicSelector)}
+                  className="text-[10px] text-indigo-400 uppercase tracking-wider font-semibold hover:text-indigo-600 transition-colors flex items-center gap-1"
+                >
+                  {topics.find(t => t.id === activeTopicId)?.name || 'Select Topic'}
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-2 w-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
               </div>
               <button onClick={toggleChat} className="ml-auto text-indigo-300 hover:text-indigo-500 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -273,6 +313,27 @@ const CozyPal = forwardRef<CozyPalHandle, CozyPalProps>(({ themeName, phase, tim
                 </svg>
               </button>
             </div>
+
+            <AnimatePresence>
+              {showTopicSelector && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden bg-white/50 border-b border-indigo-100"
+                >
+                  <TopicSelector 
+                    topics={topics}
+                    activeTopicId={activeTopicId}
+                    onSelect={(id) => {
+                      setActiveTopicId(id);
+                      setShowTopicSelector(false);
+                    }}
+                    onCreate={handleCreateTopic}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <div className="flex-grow overflow-y-auto p-4 space-y-4 min-h-[300px] flex flex-col custom-scrollbar">
               {messages.map((msg, idx) => (
