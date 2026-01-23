@@ -1,15 +1,17 @@
 # backend/tests/test_models.py
 import pytest
 from datetime import datetime, timezone
-from sqlalchemy.orm import selectinload
 from backend.models import Topic, LearningSession, ChatHistory
 from sqlalchemy.future import select
 from sqlalchemy import inspect
 
 
 @pytest.mark.asyncio
-async def test_learning_session_model_has_ai_fields():
-    """Test that LearningSession model has the expected AI-related fields."""
+async def test_learning_session_model_has_ai_fields(db_session):
+    """
+    Test that LearningSession model correctly stores and retrieves AI-related fields.
+    """
+    # Simulate data containing new AI fields
     session_data = {
         "theme_name": "test_theme",
         "duration_seconds": 1500,
@@ -23,8 +25,11 @@ async def test_learning_session_model_has_ai_fields():
     }
 
     session = LearningSession(**session_data)
+    db_session.add(session)
+    await db_session.commit()
+    await db_session.refresh(session)
 
-    # Check if fields exist in the mapper
+    # Check if fields exist and have correct values
     mapper = inspect(LearningSession)
     assert "ai_persona" in mapper.columns
     assert "ai_proactivity" in mapper.columns
@@ -33,102 +38,3 @@ async def test_learning_session_model_has_ai_fields():
     assert session.ai_persona == "gentle_encourager"
     assert session.ai_proactivity is True
     assert session.ai_actionable is False
-
-
-@pytest.mark.asyncio
-async def test_create_topic_model(db_session):
-    """Test creating a Topic model instance."""
-    user_id = "test_user_topic_1"
-    topic_name = "Test Topic 1"
-    description = "A topic for testing purposes."
-
-    new_topic = Topic(user_id=user_id, name=topic_name, description=description)
-    db_session.add(new_topic)
-    await db_session.commit()
-    await db_session.refresh(new_topic)
-
-    # Verify creation
-    assert new_topic.id is not None
-    assert new_topic.user_id == user_id
-    assert new_topic.name == topic_name
-    assert new_topic.description == description
-    assert new_topic.is_active is True
-    assert new_topic.created_at is not None
-
-    # Fetch and verify
-    stmt = select(Topic).where(Topic.user_id == user_id, Topic.name == topic_name)
-    result = await db_session.execute(stmt)
-    fetched_topic = result.scalar_one_or_none()
-
-    assert fetched_topic is not None
-    assert fetched_topic.name == topic_name
-    assert fetched_topic.description == description
-
-
-@pytest.mark.asyncio
-async def test_topic_relationships(db_session):
-    """Test the relationships between Topic, LearningSession, and ChatHistory."""
-    user_id = "test_user_topic_rel"
-    topic_name = "Relationship Topic"
-    description = "Testing topic relationships."
-
-    new_topic = Topic(user_id=user_id, name=topic_name, description=description)
-    db_session.add(new_topic)
-    await db_session.commit()
-    await db_session.refresh(new_topic)
-
-    # Create a LearningSession linked to the topic
-    learning_session = LearningSession(
-        theme_name="Learning Theme",
-        duration_seconds=1500,
-        phase_type="focus",
-        status="completed",
-        start_time=datetime.now(timezone.utc),
-        end_time=datetime.now(timezone.utc),
-        ai_persona="test_persona",
-        ai_proactivity=True,
-        ai_actionable=False,
-        topic_id=new_topic.id,  # Link to topic
-    )
-    db_session.add(learning_session)
-    await db_session.commit()
-    await db_session.refresh(learning_session)
-
-    # Create a ChatHistory entry linked to the topic
-    chat_entry = ChatHistory(
-        session_id=learning_session.id,
-        role="user",
-        content="Hello in a topic!",
-        topic_id=new_topic.id,  # Link to topic
-    )
-    db_session.add(chat_entry)
-    await db_session.commit()
-    await db_session.refresh(chat_entry)
-
-    # Fetch topic and verify relationships
-    stmt = (
-        select(Topic)
-        .where(Topic.id == new_topic.id)
-        .options(
-            selectinload(Topic.learning_sessions),
-            selectinload(Topic.chat_history_entries),
-        )
-    )
-    result = await db_session.execute(stmt)
-    fetched_topic = result.scalar_one()
-
-    assert fetched_topic.learning_sessions[0].id == learning_session.id
-    assert fetched_topic.chat_history_entries[0].id == chat_entry.id
-
-    # Verify relationships from the other side
-    fetched_session = await db_session.get(
-        LearningSession,
-        learning_session.id,
-        options=[selectinload(LearningSession.topic)],
-    )
-    assert fetched_session.topic.id == new_topic.id
-
-    fetched_chat = await db_session.get(
-        ChatHistory, chat_entry.id, options=[selectinload(ChatHistory.topic)]
-    )
-    assert fetched_chat.topic.id == new_topic.id

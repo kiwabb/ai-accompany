@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, HTTPException, Header
+from fastapi import APIRouter, Depends, Query, HTTPException, Header, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import date
@@ -9,6 +9,7 @@ from typing import List, Optional
 from ..database import get_db, AsyncSessionLocal
 from .. import crud, schemas
 from ..services.chat_service import chat_service
+from ..services.memory_service import memory_service
 
 
 router = APIRouter(prefix="/api", tags=["sessions"])
@@ -21,17 +22,44 @@ async def response_generator_with_save(
     chat_history: List[schemas.ChatMessage],
     api_key: Optional[str],
     db_session: AsyncSession,
+    user_id: Optional[str] = "default_user",
+    topic_id: Optional[int] = None,
+    background_tasks: Optional[BackgroundTasks] = None,
 ):
+    actual_user_id = user_id or "default_user"
     full_response = ""
     async for chunk in chat_service.stream_chat(
-        message, system_prompt, chat_history=chat_history, api_key=api_key
+        message,
+        system_prompt,
+        chat_history=chat_history,
+        api_key=api_key,
+        db=db_session,
+        user_id=actual_user_id,
     ):
         full_response += chunk
         yield chunk
 
     if full_response:
         async with AsyncSessionLocal() as session:
-            await crud.create_chat_message(session, role="ai", content=full_response)
+            # 1. Save to regular chat history
+            await crud.create_chat_message(
+                session, role="ai", content=full_response, topic_id=topic_id
+            )
+
+            # 2. Trigger memory extraction in background if background_tasks provided
+            if background_tasks:
+
+                async def process_memory():
+                    async with AsyncSessionLocal() as mem_session:
+                        await memory_service.process_exchange(
+                            user_id=actual_user_id,
+                            topic_id=topic_id,
+                            user_msg=message,
+                            ai_msg=full_response,
+                            db=mem_session,
+                        )
+
+                background_tasks.add_task(process_memory)
 
 
 @router.post("/sessions", response_model=schemas.SessionResponse, status_code=201)
@@ -58,6 +86,7 @@ async def update_learning_session(
 @router.post("/chat/completions")
 async def chat_completions(
     request: schemas.ChatRequest,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     x_google_api_key: Optional[str] = Header(None),
 ):
@@ -157,7 +186,9 @@ async def chat_completions(
     )
 
     if not is_proactive:
-        await crud.create_chat_message(db, role="user", content=request.message)
+        await crud.create_chat_message(
+            db, role="user", content=request.message, topic_id=request.topic_id
+        )
 
     return StreamingResponse(
         response_generator_with_save(
@@ -166,6 +197,9 @@ async def chat_completions(
             chat_history_for_llm,
             x_google_api_key,
             db,
+            user_id=request.user_id,
+            topic_id=request.topic_id,
+            background_tasks=background_tasks,
         ),
         media_type="text/plain",
     )

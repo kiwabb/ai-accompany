@@ -1,78 +1,73 @@
-# backend/tests/conftest.py
 import pytest
 import os
-from datetime import datetime, timezone
-from typing import AsyncGenerator
-
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-
-from backend.database import Base, get_db as original_get_db
+import asyncio
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
+from backend.database import Base, get_db
 from backend.models import (
-    UserSettings,
-    UserTheme,
     LearningSession,
     ChatHistory,
+    UserSettings,
+    UserTheme,
     Topic,
     UserProfile,
     MemoryFragment,
-)
-from backend.main import app
-from fastapi import Depends
-from httpx import AsyncClient, ASGITransport
+)  # Import all models
 
-# Use an in-memory SQLite database for tests
-SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
-test_engine = create_async_engine(SQLALCHEMY_DATABASE_URL, echo=False)
-TestAsyncSessionLocal = async_sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=test_engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-)
+# Use a file-based SQLite database for testing to ensure shared state between fixtures
+DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 
 
-@pytest.fixture(autouse=True)
-async def setup_db() -> AsyncGenerator[None, None]:
-    """
-    Sets up an in-memory SQLite database for each test, creating and dropping tables.
-    """
-    async with test_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)  # Create tables
-
-    yield  # Run the tests
-
-    async with test_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)  # Drop tables
+@pytest.fixture(scope="session", autouse=True)
+def mock_env_vars():
+    os.environ["GOOGLE_API_KEY"] = "fake-test-key"
+    yield
 
 
-@pytest.fixture
-async def db_session() -> AsyncGenerator[AsyncSession, None]:
-    """
-    Provides an independent, rollback-enabled session per test.
-    """
-    async with TestAsyncSessionLocal() as session:
+@pytest.fixture(scope="session")
+def event_loop():
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
+
+
+@pytest.fixture(scope="function", autouse=True)
+async def setup_database():
+    engine = create_async_engine(DATABASE_URL, echo=True)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    AsyncTestingSessionLocal = sessionmaker(
+        autocommit=False,
+        autoflush=False,
+        bind=engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+    )
+
+    async def override_get_db():
+        async with AsyncTestingSessionLocal() as session:
+            yield session
+
+    yield  # This will run tests
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+
+
+@pytest.fixture(scope="function")
+async def db_session(setup_database):
+    engine = create_async_engine(DATABASE_URL)
+    AsyncTestingSessionLocal = sessionmaker(
+        autocommit=False,
+        autoflush=False,
+        bind=engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+    )
+    async with AsyncTestingSessionLocal() as session:
         yield session
-        await session.rollback()  # Ensure tests are isolated
-
-
-async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
-    """
-    Overrides the application's get_db dependency to use the test database.
-    """
-    async with TestAsyncSessionLocal() as session:
-        yield session
-
-
-app.dependency_overrides[original_get_db] = override_get_db
-
-
-@pytest.fixture(scope="module")
-async def async_client():
-    """
-    Provides an AsyncClient for testing FastAPI endpoints.
-    """
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        yield client
+        # Clean up data after each test
+        for table in reversed(Base.metadata.sorted_tables):
+            await session.execute(table.delete())
+        await session.commit()
