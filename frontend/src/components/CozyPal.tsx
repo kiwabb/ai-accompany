@@ -15,13 +15,15 @@ interface CozyPalProps {
   apiKey?: string;
   currentLanguage: string;
   aiPersona: string;
+  dailyCompletedPomodoros: number;
+  totalFocusMinutes: number;
 }
 
 export interface CozyPalHandle {
   triggerProactiveMessage: (type: 'focus_start' | 'focus_end' | 'break_start' | 'break_end' | 'focus_near_end' | 'break_near_end' | 'focus_completed', durationOverride?: number) => void;
 }
 
-const CozyPal = forwardRef<CozyPalHandle, CozyPalProps>(({ themeName, phase, timeLeft, apiKey, currentLanguage, aiPersona }, ref) => {
+const CozyPal = forwardRef<CozyPalHandle, CozyPalProps>(({ themeName, phase, timeLeft, apiKey, currentLanguage, aiPersona, dailyCompletedPomodoros, totalFocusMinutes }, ref) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -131,7 +133,9 @@ const CozyPal = forwardRef<CozyPalHandle, CozyPalProps>(({ themeName, phase, tim
             phase: phase,
             time_left: durationOverride !== undefined ? durationOverride : timeLeft,
             language: currentLanguage,
-            ai_persona: aiPersona
+            ai_persona: aiPersona,
+            daily_completed_pomodoros: dailyCompletedPomodoros,
+            total_focus_minutes: totalFocusMinutes
           }
         }),
       });
@@ -191,7 +195,7 @@ const CozyPal = forwardRef<CozyPalHandle, CozyPalProps>(({ themeName, phase, tim
       setIsLoading(false);
       setAvatarState('idle');
     }
-  }, [inputValue, isLoading, apiKey, themeName, phase, timeLeft, t, isOpen, currentLanguage, aiPersona]);
+  }, [inputValue, isLoading, apiKey, themeName, phase, timeLeft, t, isOpen, currentLanguage, aiPersona, dailyCompletedPomodoros, totalFocusMinutes]);
 
   useImperativeHandle(ref, () => ({
     triggerProactiveMessage: (type, durationOverride) => {

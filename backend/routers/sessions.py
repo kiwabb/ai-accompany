@@ -88,6 +88,17 @@ async def chat_completions(
         phase = context.phase or "focus"
         time_left = context.time_left or 0
         language = context.language or "en"
+        # Use frontend provided stats if available, otherwise fallback to DB stats
+        daily_focus = (
+            context.total_focus_minutes
+            if context.total_focus_minutes is not None
+            else daily_focus
+        )
+        daily_sessions = (
+            context.daily_completed_pomodoros
+            if context.daily_completed_pomodoros is not None
+            else daily_sessions
+        )
     else:
         ai_persona = "gentle_encourager"
         task_name = "Focus"

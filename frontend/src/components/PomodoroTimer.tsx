@@ -361,6 +361,8 @@ const PomodoroTimer: React.FC = () => {
          apiKey={settings.googleApiKey} 
          currentLanguage={currentLanguage} 
          aiPersona={settings.aiPersona || 'gentle_encourager'} 
+         dailyCompletedPomodoros={todayStats?.total_sessions || 0}
+         totalFocusMinutes={todayStats?.total_focus_minutes || 0}
        />
     </LayoutGroup>
   );

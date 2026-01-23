@@ -82,17 +82,19 @@ class DailyStats(BaseModel):
     sessions_by_theme: Dict[str, int]
 
 
-class TimerContext(BaseModel):
+class ChatContext(BaseModel):
     theme_name: Optional[str] = "Focus"
     phase: Optional[str] = "focus"
     time_left: Optional[int] = 0
     language: Optional[str] = "en"
     ai_persona: Optional[str] = "gentle_encourager"
+    daily_completed_pomodoros: Optional[int] = 0
+    total_focus_minutes: Optional[int] = 0
 
 
 class ChatRequest(BaseModel):
     message: str
-    context: Optional[TimerContext] = None
+    context: Optional[ChatContext] = None
 
 
 class ChatMessage(BaseModel):
