@@ -7,9 +7,32 @@ from sqlalchemy import (
     func,
     ForeignKey,
     Text,
+    JSON,
 )
 from sqlalchemy.orm import relationship
+from pgvector.sqlalchemy import Vector
+from sqlalchemy.dialects.postgresql import JSONB
 from .database import Base
+
+
+class UserProfile(Base):
+    __tablename__ = "user_profiles"
+    user_id = Column(String, primary_key=True, index=True)
+    data = Column(JSONB().with_variant(JSON, "sqlite"), default={})
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class MemoryFragment(Base):
+    __tablename__ = "memory_fragments"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, index=True, nullable=False)
+    topic_id = Column(Integer, ForeignKey("topics.id"), nullable=True)
+    content = Column(Text, nullable=False)
+    embedding = Column(Vector(1536))
+    metadata_ = Column("metadata", JSONB().with_variant(JSON, "sqlite"), default={})
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
 class UserSettings(Base):

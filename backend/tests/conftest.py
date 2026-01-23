@@ -8,6 +8,8 @@ from backend.models import (
     UserSettings,
     UserTheme,
     Topic,
+    UserProfile,
+    MemoryFragment,
 )  # Import all models
 import asyncio
 

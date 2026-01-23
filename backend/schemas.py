@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 from typing import Dict, Optional
 
@@ -145,6 +145,37 @@ class TopicResponse(TopicBase):
 
     id: int
     user_id: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserProfileBase(BaseModel):
+    user_id: str
+    data: Dict = {}
+
+
+class UserProfileResponse(UserProfileBase):
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MemoryFragmentBase(BaseModel):
+    user_id: str
+    topic_id: Optional[int] = None
+    content: str
+    metadata: Dict = Field(
+        default={}, validation_alias="metadata_", serialization_alias="metadata"
+    )
+
+
+class MemoryFragmentCreate(MemoryFragmentBase):
+    embedding: Optional[list[float]] = None
+
+
+class MemoryFragmentResponse(MemoryFragmentBase):
+    id: int
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
