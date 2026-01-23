@@ -1,5 +1,5 @@
 import os
-from google.generativeai import configure, GenerativeModel
+import google.generativeai as genai
 from typing import AsyncGenerator, Optional
 from .. import schemas
 import logging
@@ -20,10 +20,10 @@ class GeminiService:
 
     def _configure_model(self, api_key: str):
         try:
-            configure(api_key=api_key)
-            # Fallback to gemini-2.0-flash which is the latest stable.
+            genai.configure(api_key=api_key)
+            # Fallback to gemini-1.5-flash which is the latest stable.
             # If that fails, the list_models script would be needed to debug further.
-            self.model = GenerativeModel("gemini-2.0-flash")
+            self.model = genai.GenerativeModel("gemini-2.0-flash")
         except Exception as e:
             logger.error(f"Failed to configure Gemini: {e}")
             self.model = None
