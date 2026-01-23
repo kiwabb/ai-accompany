@@ -157,3 +157,58 @@ async def delete_user_theme(db: AsyncSession, user_id: str, theme_id: str) -> bo
         await db.commit()
         return True
     return False
+
+
+async def get_topics(db: AsyncSession, user_id: str) -> List[models.Topic]:
+    result = await db.execute(
+        select(models.Topic).where(models.Topic.user_id == user_id)
+    )
+    return list(result.scalars().all())
+
+
+async def get_topic(
+    db: AsyncSession, topic_id: int, user_id: str
+) -> Optional[models.Topic]:
+    result = await db.execute(
+        select(models.Topic).where(
+            models.Topic.id == topic_id, models.Topic.user_id == user_id
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+async def create_topic(
+    db: AsyncSession, user_id: str, topic_in: schemas.TopicCreate
+) -> models.Topic:
+    db_topic = models.Topic(**topic_in.model_dump(), user_id=user_id)
+    db.add(db_topic)
+    await db.commit()
+    await db.refresh(db_topic)
+    return db_topic
+
+
+async def update_topic(
+    db: AsyncSession, topic_id: int, user_id: str, topic_in: schemas.TopicCreate
+) -> Optional[models.Topic]:
+    db_topic = await get_topic(db, topic_id, user_id)
+    if not db_topic:
+        return None
+
+    update_data = topic_in.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_topic, key, value)
+
+    db.add(db_topic)
+    await db.commit()
+    await db.refresh(db_topic)
+    return db_topic
+
+
+async def delete_topic(db: AsyncSession, topic_id: int, user_id: str) -> bool:
+    db_topic = await get_topic(db, topic_id, user_id)
+    if not db_topic:
+        return False
+
+    await db.delete(db_topic)
+    await db.commit()
+    return True
