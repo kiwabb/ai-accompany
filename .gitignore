@@ -8,3 +8,5 @@ venv
 .worktrees/
 .opencode/
 *.log
+.venv/
+test.db

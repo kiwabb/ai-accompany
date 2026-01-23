@@ -10,6 +10,7 @@ from ..database import get_db, AsyncSessionLocal
 from .. import crud, schemas
 from ..services.chat_service import chat_service
 from ..services.memory_service import memory_service
+from .users import get_current_user_id
 
 
 router = APIRouter(prefix="/api", tags=["sessions"])
@@ -89,6 +90,7 @@ async def chat_completions(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     x_google_api_key: Optional[str] = Header(None),
+    current_user_id: str = Depends(get_current_user_id),
 ):
     """
     AI 聊天伴侣的对话接口，集成 Gemini Pro。
@@ -197,7 +199,7 @@ async def chat_completions(
             chat_history_for_llm,
             x_google_api_key,
             db,
-            user_id=request.user_id,
+            user_id=current_user_id,
             topic_id=request.topic_id,
             background_tasks=background_tasks,
         ),
