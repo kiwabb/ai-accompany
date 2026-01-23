@@ -8,6 +8,7 @@ from sqlalchemy import (
     ForeignKey,
     Text,
 )
+from sqlalchemy.orm import relationship
 from .database import Base
 
 
@@ -46,6 +47,23 @@ class UserTheme(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
+class Topic(Base):
+    """
+    Represents a learning topic that user-defined learning sessions and chat history
+    can be categorized under.
+    """
+
+    __tablename__ = "topics"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, index=True, nullable=False)
+    name = Column(String, index=True, nullable=False)
+    description = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    learning_sessions = relationship("LearningSession", back_populates="topic")
+    chat_history_entries = relationship("ChatHistory", back_populates="topic")
+
+
 class LearningSession(Base):
     __tablename__ = "learning_sessions"
 
@@ -62,6 +80,8 @@ class LearningSession(Base):
     ai_persona = Column(String, default="gentle_encourager")
     ai_proactivity = Column(Boolean, default=True)
     ai_actionable = Column(Boolean, default=False)
+    topic_id = Column(Integer, ForeignKey("topics.id"), nullable=True)
+    topic = relationship("Topic", back_populates="learning_sessions")
 
 
 class ChatHistory(Base):
@@ -73,3 +93,5 @@ class ChatHistory(Base):
     role = Column(String, nullable=False)  # 'user' or 'ai'
     content = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    topic_id = Column(Integer, ForeignKey("topics.id"), nullable=True)
+    topic = relationship("Topic", back_populates="chat_history_entries")
