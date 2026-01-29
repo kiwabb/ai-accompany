@@ -9,7 +9,22 @@
     "reset": "Reset",
     "skip": "Skip",
     "start": "Start",
-    "pause": "Pause"
+    "pause": "Pause",
+    "back": "Back",
+    "backToTimer": "Back to Timer",
+    "library": "Library",
+    "menu": "Menu",
+    "uploading": "Uploading...",
+    "uploadNew": "Upload New",
+    "noDocuments": "No documents yet. Upload one to get started!",
+    "deleteConfirmTitle": "Delete Document?",
+    "deleteConfirmMessage": "Are you sure you want to delete \"{{title}}\"? This action cannot be undone.",
+    "yourDocuments": "Your Documents",
+    "uploadFailed": "Upload failed",
+    "networkError": "Network error",
+    "savedSuccess": "Settings Saved Successfully!",
+    "gridView": "Grid View",
+    "listView": "List View"
   },
   "timer": {
     "focusCompanion": "Focus Companion",
@@ -32,12 +47,31 @@
     "aiBehavior": "AI Behavior",
     "aiProactivity": "AI Proactivity",
     "aiActionable": "AI Actionable Suggestions",
+    "aiProviderTitle": "AI Provider",
+    "aiPersonaTitle": "AI Persona",
+    "provider": "Provider",
+    "model": "Model",
+    "loading": "Loading...",
+    "default": "Default",
+    "enterKey": "Enter key...",
+    "ollamaInfo": "Ollama requires no API key. Ensure it is running at http://localhost:11434",
+    "aiPersonaDescription": "AI will act as a {{persona}}",
     "personas": {
       "gentle_encourager": "Gentle Encourager",
       "strict_coach": "Strict Coach",
       "logical_analyst": "Logical Analyst",
       "humorous_buddy": "Humorous Buddy"
     }
+  },
+  "reader": {
+    "page": "Page",
+    "opening": "Opening your document...",
+    "loadError": "Oops! Failed to load the PDF.",
+    "checkFile": "Please check the file and try again.",
+    "loadingPage": "Loading page {{pageNumber}}...",
+    "noExtraction": "Text extraction was not possible for this document.",
+    "errorDetail": "Error loading document detail.",
+    "errorLoading": "Error loading document."
   },
   "themes": {
     "english": "English",
@@ -50,6 +84,44 @@
     "greeting": "Hello, how can I help you today?",
     "typeMessagePlaceholder": "Type your message...",
     "thinkingMessage": "Cozy Pal is thinking...",
-    "errorMessage": "Oops! Something went wrong. Please try again."
+    "errorMessage": "Oops! Something went wrong. Please try again.",
+    "tabs": {
+      "chat": "Chat",
+      "memory": "Memory",
+      "debug": "Debug"
+    },
+    "memory": {
+      "profile": "My Profile",
+      "facts": "Facts",
+      "preferences": "Preferences",
+      "learned": "Learned",
+      "timeline": "Memory Timeline",
+      "noFacts": "No facts extracted yet.",
+      "noPreferences": "No preferences noted.",
+      "noFragments": "No memory fragments recorded yet.",
+      "active": "Memory function active.",
+      "resetMemory": "Reset All Memory",
+      "resetConfirm": "Are you sure you want to clear all memory? This cannot be undone."
+    },
+    "debug": {
+      "title": "Augmented System Prompt",
+      "loading": "Initializing scan...",
+      "noData": "No diagnostic data available. Please send a message first.",
+      "refresh": "Refresh Diagnostics",
+      "score": "Relevance Score",
+      "clickToEdit": "Click to edit",
+      "editTitle": "Edit Memory Fragment",
+      "saveAndRescan": "Update & Re-scan"
+    }
+  },
+  "countdown": {
+    "title": "Countdowns",
+    "daysLeft": "days left",
+    "daysAgo": "days ago",
+    "today": "Today",
+    "noCountdowns": "No countdowns yet",
+    "eventName": "Event name...",
+    "save": "Save",
+    "days": "days"
   }
 }

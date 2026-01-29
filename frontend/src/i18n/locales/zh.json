@@ -9,7 +9,22 @@
     "reset": "重置",
     "skip": "跳过",
     "start": "开始",
-    "pause": "暂停"
+    "pause": "暂停",
+    "back": "返回",
+    "backToTimer": "返回计时器",
+    "library": "书架",
+    "menu": "菜单",
+    "uploading": "正在上传...",
+    "uploadNew": "上传新文档",
+    "noDocuments": "暂无文档。上传一个开始吧！",
+    "deleteConfirmTitle": "删除文档？",
+    "deleteConfirmMessage": "确定要删除 \"{{title}}\" 吗？此操作不可撤销。",
+    "yourDocuments": "您的文档",
+    "uploadFailed": "上传失败",
+    "networkError": "网络错误",
+    "savedSuccess": "设置保存成功！",
+    "gridView": "网格视图",
+    "listView": "列表视图"
   },
   "timer": {
     "focusCompanion": "专注伴侣",
@@ -32,12 +47,31 @@
     "aiBehavior": "AI 行为",
     "aiProactivity": "AI 主动交互",
     "aiActionable": "AI 任务执行建议",
+    "aiProviderTitle": "AI 提供商",
+    "aiPersonaTitle": "AI 人格",
+    "provider": "服务商",
+    "model": "模型",
+    "loading": "正在加载...",
+    "default": "默认",
+    "enterKey": "输入秘钥...",
+    "ollamaInfo": "Ollama 不需要 API 秘钥。请确保它运行在 http://localhost:11434",
+    "aiPersonaDescription": "AI 将以{{persona}}的身份与你交流",
     "personas": {
       "gentle_encourager": "温柔鼓励者",
       "strict_coach": "严厉教练",
       "logical_analyst": "理性分析师",
       "humorous_buddy": "幽默搭子"
     }
+  },
+  "reader": {
+    "page": "页",
+    "opening": "正在打开文档...",
+    "loadError": "哎呀！PDF 加载失败。",
+    "checkFile": "请检查文件并重试。",
+    "loadingPage": "正在加载第 {{pageNumber}} 页...",
+    "noExtraction": "该文档无法提取文字内容。",
+    "errorDetail": "加载文档详情出错。",
+    "errorLoading": "加载文档出错。"
   },
   "themes": {
     "english": "英语",
@@ -50,6 +84,44 @@
     "greeting": "你好，今天有什么可以帮你的吗？",
     "typeMessagePlaceholder": "输入你的消息...",
     "thinkingMessage": "温馨伙伴正在思考...",
-    "errorMessage": "哎呀！出了点问题。请再试一次。"
+    "errorMessage": "哎呀！出了点问题。请再试一次。",
+    "tabs": {
+      "chat": "对话",
+      "memory": "记忆",
+      "debug": "调试"
+    },
+    "memory": {
+      "profile": "我的画像",
+      "facts": "事实信息",
+      "preferences": "个人偏好",
+      "learned": "已记下",
+      "timeline": "记忆时间轴",
+      "noFacts": "尚未提取到事实。",
+      "noPreferences": "尚未记录偏好。",
+      "noFragments": "尚未记录任何记忆碎片。",
+      "active": "记忆功能已开启。",
+      "resetMemory": "重置所有记忆",
+      "resetConfirm": "确定要清除所有记忆吗？此操作不可撤销。"
+    },
+    "debug": {
+      "title": "系统提示词增强诊断",
+      "loading": "正在扫描上下文...",
+      "noData": "暂无诊断数据。请先发送消息。",
+      "refresh": "刷新诊断",
+      "score": "相似度分值",
+      "clickToEdit": "点击修改记忆",
+      "editTitle": "编辑记忆片段",
+      "saveAndRescan": "更新并重新扫描"
+    }
+  },
+  "countdown": {
+    "title": "倒数日",
+    "daysLeft": "天后",
+    "daysAgo": "天前",
+    "today": "今天",
+    "noCountdowns": "暂无倒数日",
+    "eventName": "事件名称...",
+    "save": "保存",
+    "days": "天"
   }
 }
