@@ -1,0 +1,152 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, Check } from 'lucide-react';
+import { createPortal } from 'react-dom';
+
+interface Option {
+    value: string;
+    label: string;
+}
+
+interface CustomSelectProps {
+    options: Option[];
+    value: string;
+    onChange: (value: string) => void;
+    placeholder?: string;
+    disabled?: boolean;
+}
+
+const CustomSelect: React.FC<CustomSelectProps> = ({
+    options,
+    value,
+    onChange,
+    placeholder = 'Select...',
+    disabled = false,
+}) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, width: 0 });
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    const selectedOption = options.find((opt) => opt.value === value);
+
+    // Close when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (
+                triggerRef.current &&
+                !triggerRef.current.contains(event.target as Node) &&
+                menuRef.current &&
+                !menuRef.current.contains(event.target as Node)
+            ) {
+                setIsOpen(false);
+            }
+        };
+
+        const handleClose = () => setIsOpen(false);
+
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+            window.addEventListener('resize', handleClose);
+            window.addEventListener('scroll', handleClose, true); // Close on scroll to avoid drift
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            window.removeEventListener('resize', handleClose);
+            window.removeEventListener('scroll', handleClose, true);
+        };
+    }, [isOpen]);
+
+    const handleOpen = () => {
+        if (disabled) return;
+        if (triggerRef.current) {
+            const rect = triggerRef.current.getBoundingClientRect();
+            setMenuPosition({
+                top: rect.bottom + window.scrollY + 8, // Add gap
+                left: rect.left + window.scrollX,
+                width: rect.width,
+            });
+        }
+        setIsOpen(!isOpen);
+    };
+
+    const handleSelect = (newValue: string) => {
+        onChange(newValue);
+        setIsOpen(false);
+    };
+
+    const dropdownMenu = (
+        <div
+            className="fixed inset-0 z-[9999] pointer-events-none" // Overlay container
+        >
+            <div
+                ref={menuRef}
+                className="pointer-events-auto"
+                style={{
+                    position: 'absolute',
+                    top: menuPosition.top,
+                    left: menuPosition.left,
+                    width: menuPosition.width,
+                }}
+            >
+                <motion.div
+                    initial={{ opacity: 0, y: -10, scaleY: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scaleY: 1 }}
+                    exit={{ opacity: 0, y: -10, scaleY: 0.95 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    className="flex flex-col bg-white/90 border border-white/95 rounded-2xl shadow-elevated overflow-hidden py-2"
+                >
+                    {options.map((option) => (
+                        <button
+                            key={option.value}
+                            onClick={() => handleSelect(option.value)}
+                            className={`
+                group flex items-center justify-between px-4 py-3 text-sm font-bold text-left transition-colors
+                ${option.value === value
+                                    ? 'bg-cozy-orange text-white'
+                                    : 'text-cozy-text-light hover:bg-cozy-orange/10 hover:text-cozy-text'}
+              `}
+                        >
+                            <span>{option.label}</span>
+                            {option.value === value && (
+                                <Check size={16} strokeWidth={3} className="text-white" />
+                            )}
+                        </button>
+                    ))}
+                </motion.div>
+            </div>
+        </div>
+    );
+
+    return (
+        <>
+            <button
+                ref={triggerRef}
+                type="button"
+                onClick={handleOpen}
+                disabled={disabled}
+                className={`
+           relative w-full flex items-center justify-between pl-4 pr-3 py-3 rounded-xl font-bold text-sm transition-all duration-300
+           ${isOpen ? 'ring-2 ring-cozy-orange/50 bg-white/80' : 'bg-cozy-cream/50 hover:bg-white/60'}
+           ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer lift-hover'}
+           text-cozy-orange
+        `}
+            >
+                <span className="truncate mr-2">
+                    {selectedOption ? selectedOption.label : placeholder}
+                </span>
+                <ChevronDown
+                    size={16}
+                    strokeWidth={3}
+                    className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : 'rotate-0'}`}
+                />
+            </button>
+
+            {/* Render Portal for Dropdown */}
+            {isOpen && createPortal(dropdownMenu, document.body)}
+        </>
+    );
+};
+
+export default CustomSelect;
