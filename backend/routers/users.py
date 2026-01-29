@@ -18,7 +18,9 @@ async def get_current_user_id(authorization: Optional[str] = Header(None)) -> st
         # This is a placeholder. Replace with actual token validation and user ID extraction.
         token = authorization.split(" ")[1]
         # Example: if token is "user-123", return "user-123"
+        print(f"--- DEBUG: Extracting user_id: {token} from header ---")
         return token
+    print(f"--- DEBUG: No valid Bearer token found, falling back to default_user (Header: {authorization}) ---")
     # Default user for development/testing if no header is provided
     return "default_user"
 
