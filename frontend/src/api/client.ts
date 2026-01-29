@@ -33,6 +33,11 @@ export interface UserSettingsBackend {
   id: number;
   user_id: string;
   google_api_key?: string;
+  openai_api_key?: string;
+  deepseek_api_key?: string;
+  zhipu_api_key?: string;
+  ai_provider?: string;
+  ai_model?: string;
   ai_persona?: string;
   short_break_duration: number;
   long_break_duration: number;
@@ -74,9 +79,7 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
 export const saveSession = async (session: SessionCreate): Promise<SessionResponse> => {
   const response = await fetch(`${API_BASE_URL}/sessions`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(session),
   });
   return handleResponse<SessionResponse>(response);
@@ -87,11 +90,13 @@ export const getDailyStats = async (date?: Date): Promise<DailyStats> => {
   if (date) {
     url += `?target_date=${getFormattedDate(date)}`;
   }
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    headers: getAuthHeaders(),
+  });
   return handleResponse<DailyStats>(response);
 };
 
-const getAuthHeaders = () => {
+export const getAuthHeaders = () => {
   const userId = "user-123";
   return {
     'Content-Type': 'application/json',
@@ -104,9 +109,14 @@ export const getUserSettings = async (): Promise<TimerSettings> => {
     headers: getAuthHeaders(),
   });
   const backendSettings = await handleResponse<UserSettingsBackend>(response);
-  
+
   return {
     googleApiKey: backendSettings.google_api_key,
+    aiProvider: backendSettings.ai_provider,
+    aiModel: backendSettings.ai_model,
+    openaiApiKey: backendSettings.openai_api_key,
+    deepseekApiKey: backendSettings.deepseek_api_key,
+    zhipuApiKey: backendSettings.zhipu_api_key,
     aiPersona: backendSettings.ai_persona,
     shortBreakDuration: backendSettings.short_break_duration,
     longBreakDuration: backendSettings.long_break_duration,
@@ -120,6 +130,11 @@ export const getUserSettings = async (): Promise<TimerSettings> => {
 export const upsertUserSettings = async (settings: TimerSettings): Promise<TimerSettings> => {
   const backendPayload = {
     google_api_key: settings.googleApiKey,
+    ai_provider: settings.aiProvider,
+    ai_model: settings.aiModel,
+    openai_api_key: settings.openaiApiKey,
+    deepseek_api_key: settings.deepseekApiKey,
+    zhipu_api_key: settings.zhipuApiKey,
     ai_persona: settings.aiPersona,
     short_break_duration: settings.shortBreakDuration,
     long_break_duration: settings.longBreakDuration,
@@ -138,6 +153,11 @@ export const upsertUserSettings = async (settings: TimerSettings): Promise<Timer
 
   return {
     googleApiKey: updatedBackendSettings.google_api_key,
+    aiProvider: updatedBackendSettings.ai_provider,
+    aiModel: updatedBackendSettings.ai_model,
+    openaiApiKey: updatedBackendSettings.openai_api_key,
+    deepseekApiKey: updatedBackendSettings.deepseek_api_key,
+    zhipuApiKey: updatedBackendSettings.zhipu_api_key,
     aiPersona: updatedBackendSettings.ai_persona,
     shortBreakDuration: updatedBackendSettings.short_break_duration,
     longBreakDuration: updatedBackendSettings.long_break_duration,
@@ -184,5 +204,62 @@ export const deleteUserTheme = async (themeId: string): Promise<void> => {
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.detail || 'Failed to delete theme');
+  }
+};
+
+export const getProviderModels = async (provider: string, apiKey?: string): Promise<string[]> => {
+  let url = `${API_BASE_URL}/chat/models/${provider}`;
+  if (apiKey) {
+    url += `?api_key=${encodeURIComponent(apiKey)}`;
+  }
+  const response = await fetch(url, {
+    headers: getAuthHeaders(),
+  });
+  const data = await handleResponse<{ provider: string; models: string[] }>(response);
+  return data.models;
+};
+
+export interface CountdownBackend {
+  id: number;
+  user_id: string;
+  title: string;
+  target_date: string;
+  created_at: string;
+}
+
+export const getCountdowns = async (): Promise<import("../types/pomodoro").CountdownEvent[]> => {
+  const response = await fetch(`${API_BASE_URL}/countdowns`, {
+    headers: getAuthHeaders(),
+  });
+  const data = await handleResponse<CountdownBackend[]>(response);
+  return data.map(item => ({
+    id: item.id,
+    title: item.title,
+    targetDate: item.target_date,
+  }));
+};
+
+export const createCountdown = async (title: string, targetDate: Date): Promise<import("../types/pomodoro").CountdownEvent> => {
+  const response = await fetch(`${API_BASE_URL}/countdowns`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ title, target_date: targetDate.toISOString() }),
+  });
+  const data = await handleResponse<CountdownBackend>(response);
+  return {
+    id: data.id,
+    title: data.title,
+    targetDate: data.target_date,
+  };
+};
+
+export const deleteCountdown = async (id: number): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/countdowns/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || 'Failed to delete countdown');
   }
 };
