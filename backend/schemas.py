@@ -5,6 +5,11 @@ from typing import Dict, Optional
 
 class UserSettingsBase(BaseModel):
     google_api_key: Optional[str] = None
+    openai_api_key: Optional[str] = None
+    deepseek_api_key: Optional[str] = None
+    zhipu_api_key: Optional[str] = None
+    ai_provider: Optional[str] = "gemini"
+    ai_model: Optional[str] = None
     ai_persona: Optional[str] = "gentle_encourager"
     focus_duration: Optional[int] = 25
     short_break_duration: Optional[int] = 5
@@ -110,6 +115,11 @@ class ChatRequest(BaseModel):
     context: Optional[ChatContext] = None
     user_id: Optional[str] = "default_user"
     topic_id: Optional[int] = None
+    provider: Optional[str] = None
+    model: Optional[str] = None
+    document_id: Optional[int] = None
+    document_title: Optional[str] = None
+    document_content: Optional[str] = None
 
 
 class ChatMessage(BaseModel):
@@ -181,3 +191,47 @@ class MemoryFragmentResponse(MemoryFragmentBase):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class CountdownBase(BaseModel):
+    title: str
+    target_date: datetime
+
+
+class CountdownCreate(CountdownBase):
+    pass
+
+
+class CountdownResponse(CountdownBase):
+    id: int
+    user_id: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DocumentBase(BaseModel):
+    title: str
+    filename: str
+    file_type: str
+
+
+class DocumentCreate(DocumentBase):
+    content: str
+    user_id: str
+
+
+class DocumentResponse(DocumentBase):
+    id: int
+    user_id: str
+    created_at: datetime
+    # Content is excluded from list view by default in many designs, 
+    # but strictly following schema inheritance here. 
+    # Depending on select query, this might be partial or full.
+    # For now, let's include it but use a separate schema for list if needed.
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DocumentDetailResponse(DocumentResponse):
+    content: str

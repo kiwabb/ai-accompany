@@ -77,11 +77,16 @@ async def create_chat_message(
     db: AsyncSession,
     role: str,
     content: str,
+    user_id: str,
     session_id: Optional[int] = None,
     topic_id: Optional[int] = None,
 ):
     db_message = models.ChatHistory(
-        role=role, content=content, session_id=session_id, topic_id=topic_id
+        role=role,
+        content=content,
+        user_id=user_id,
+        session_id=session_id,
+        topic_id=topic_id,
     )
     db.add(db_message)
     await db.commit()
@@ -89,12 +94,19 @@ async def create_chat_message(
     return db_message
 
 
-async def get_recent_chat_history(db: AsyncSession, limit: int = 50):
-    result = await db.execute(
+async def get_recent_chat_history(
+    db: AsyncSession, user_id: str, limit: int = 50, topic_id: Optional[int] = None
+):
+    stmt = (
         select(models.ChatHistory)
+        .where(models.ChatHistory.user_id == user_id)
         .order_by(models.ChatHistory.created_at.desc())
-        .limit(limit)
     )
+    if topic_id is not None:
+        stmt = stmt.where(models.ChatHistory.topic_id == topic_id)
+
+    stmt = stmt.limit(limit)
+    result = await db.execute(stmt)
     return result.scalars().all()[::-1]  # Return in chronological order
 
 
@@ -212,3 +224,32 @@ async def delete_topic(db: AsyncSession, topic_id: int, user_id: str) -> bool:
     await db.delete(db_topic)
     await db.commit()
     return True
+
+
+async def get_countdowns(db: AsyncSession, user_id: str) -> List[models.Countdown]:
+    result = await db.execute(
+        select(models.Countdown).where(models.Countdown.user_id == user_id).order_by(models.Countdown.target_date.asc())
+    )
+    return list(result.scalars().all())
+
+
+async def create_countdown(db: AsyncSession, user_id: str, countdown_in: schemas.CountdownCreate) -> models.Countdown:
+    db_countdown = models.Countdown(**countdown_in.model_dump(), user_id=user_id)
+    db.add(db_countdown)
+    await db.commit()
+    await db.refresh(db_countdown)
+    return db_countdown
+
+
+async def delete_countdown(db: AsyncSession, countdown_id: int, user_id: str) -> bool:
+    result = await db.execute(
+        select(models.Countdown).where(
+            models.Countdown.id == countdown_id, models.Countdown.user_id == user_id
+        )
+    )
+    db_countdown = result.scalar_one_or_none()
+    if db_countdown:
+        await db.delete(db_countdown)
+        await db.commit()
+        return True
+    return False
