@@ -19,3 +19,8 @@ uvicorn==0.39.0
 google-generativeai
 google-genai
 pgvector
+openai
+python-dotenv
+pypdf
+python-docx
+python-multipart
