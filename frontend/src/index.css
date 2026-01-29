@@ -2,8 +2,8 @@
 
 @theme {
   --font-heading: "Fredoka", "M PLUS Rounded 1c", "STYuanti-SC-Regular", "Arial Rounded MT Bold", "YouYuan", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
-  --font-sans: "Nunito", "M PLUS Rounded 1c", "STYuanti-SC-Regular", "Arial Rounded MT Bold", "YouYuan", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; 
-  
+  --font-sans: "Nunito", "M PLUS Rounded 1c", "STYuanti-SC-Regular", "Arial Rounded MT Bold", "YouYuan", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+
   --color-cozy-cream: #FDF7E4;
   --color-cozy-pink: #FBF0F6;
   --color-cozy-green: #D4EDDA;
@@ -12,13 +12,30 @@
   --color-cozy-red: #FF6B6B;
   --color-cozy-text: #4A4439;
   --color-cozy-text-light: #8E8575;
-  
+
+  /* Gradient colors for premium feel */
+  --gradient-warm: linear-gradient(135deg, #FDF7E4 0%, #FFF5E6 50%, #FFE8CC 100%);
+  --gradient-orange: linear-gradient(135deg, #FFB766 0%, #FFA94D 50%, #FF9A33 100%);
+  --gradient-subtle: linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 100%);
+
+  /* Enhanced shadows for depth */
   --shadow-cozy: 0 10px 30px -5px rgba(74, 68, 57, 0.1), 0 4px 15px -5px rgba(74, 68, 57, 0.05);
   --shadow-cozy-inner: inset 0 2px 4px 0 rgba(74, 68, 57, 0.05);
+  --shadow-elevated: 0 20px 40px -10px rgba(74, 68, 57, 0.15), 0 8px 24px -8px rgba(74, 68, 57, 0.1);
+  --shadow-float: 0 4px 16px rgba(255, 183, 102, 0.25), 0 2px 8px rgba(255, 183, 102, 0.15);
+  --shadow-glow-orange: 0 0 20px rgba(255, 183, 102, 0.3), 0 0 40px rgba(255, 183, 102, 0.15);
+
+  /* Glassmorphism effects */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.9);
+  --glass-backdrop: blur(12px) saturate(180%);
 }
 
 @layer base {
-  html, body, #root {
+
+  html,
+  body,
+  #root {
     @apply min-h-full w-full bg-cozy-cream;
   }
 
@@ -31,7 +48,12 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-heading);
     @apply tracking-normal;
   }
@@ -51,3 +73,111 @@
   background-color: transparent;
 }
 
+/* Smooth scroll behavior */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Animation keyframes */
+@keyframes float-up {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(255, 183, 102, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 40px rgba(255, 183, 102, 0.6);
+  }
+}
+
+@keyframes slide-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* Custom focus ring for accessibility */
+@layer utilities {
+  .focus-ring {
+    @apply outline-none ring-3 ring-offset-2 ring-cozy-orange;
+  }
+
+  .glass-effect {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: var(--glass-backdrop);
+    -webkit-backdrop-filter: var(--glass-backdrop);
+  }
+
+  .glass-surface {
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+  }
+
+  .gpu-layer {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+    will-change: transform;
+  }
+
+  .scrolling-touch {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  .glow-hover:hover {
+    box-shadow: var(--shadow-glow-orange);
+    transition: box-shadow 0.3s ease;
+  }
+
+  .lift-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-elevated);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Ensure all interactive elements have proper cursor */
+button,
+a,
+[role="button"] {
+  cursor: pointer;
+}
+
+/* Improve focus visibility for keyboard navigation */
+:focus-visible {
+  outline: 3px solid var(--color-cozy-orange);
+  outline-offset: 2px;
+}
