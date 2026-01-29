@@ -1,184 +1,41 @@
-import React, { useReducer, useEffect, useCallback, useMemo, useState, useRef } from 'react';
-import { Settings as SettingsIcon } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+import { Settings as SettingsIcon, Book as BookIcon } from 'lucide-react';
 import { motion, LayoutGroup, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import type { CozyPalHandle } from './CozyPal';
 import CozyPal from './CozyPal';
-import ThemeSelector from './ThemeSelector';
 import { TimerDisplay } from './TimerDisplay';
 import TimerControls from './TimerControls';
-import TimerSettingsModal from './TimerSettingsModal';
-import { useTimer } from '../hooks/useTimer';
-import { DEFAULT_THEMES, DEFAULT_SETTINGS } from '../constants/pomodoro';
-import type { FocusTheme, TimerSettings, Phase } from '../types/pomodoro';
-import { saveSession, getDailyStats, upsertUserSettings, getUserSettings, getUserThemes } from '../api/client';
-import type { SessionCreate, DailyStats } from '../api/client';
-
-interface PomodoroState {
-  themes: FocusTheme[];
-  activeThemeId: string;
-  settings: TimerSettings;
-  phase: Phase;
-  completedSessions: number;
-}
-
-type PomodoroAction =
-  | { type: 'SET_ACTIVE_THEME'; themeId: string }
-  | { type: 'SAVE_SETTINGS'; settings: TimerSettings; themes: FocusTheme[] }
-  | { type: 'SET_THEMES'; themes: FocusTheme[] }
-  | { type: 'NEXT_PHASE' }
-  | { type: 'RESET_TO_FOCUS' };
-
-const initialState: PomodoroState = {
-  themes: DEFAULT_THEMES,
-  activeThemeId: DEFAULT_THEMES && DEFAULT_THEMES.length > 0 ? DEFAULT_THEMES[0].id : '',
-  settings: DEFAULT_SETTINGS,
-  phase: 'focus',
-  completedSessions: 0,
-};
-
-function pomodoroReducer(state: PomodoroState, action: PomodoroAction): PomodoroState {
-  switch (action.type) {
-    case 'SET_ACTIVE_THEME':
-      return { ...state, activeThemeId: action.themeId, phase: 'focus' };
-    case 'SAVE_SETTINGS':
-      const newThemes = action.themes && action.themes.length > 0 ? action.themes : state.themes;
-      const newActiveThemeId = newThemes.some(t => t.id === state.activeThemeId) 
-          ? state.activeThemeId 
-          : (newThemes.length > 0 ? newThemes[0].id : state.activeThemeId);
-      return {
-        ...state,
-        settings: action.settings,
-        themes: newThemes,
-        activeThemeId: newActiveThemeId,
-      };
-    case 'SET_THEMES':
-      return {
-        ...state,
-        themes: action.themes,
-        activeThemeId: action.themes.some(t => t.id === state.activeThemeId)
-          ? state.activeThemeId
-          : (action.themes.length > 0 ? action.themes[0].id : state.activeThemeId),
-      };
-    case 'NEXT_PHASE': {
-      if (state.phase === 'focus') {
-        const nextSessions = state.completedSessions + 1;
-        const nextPhase = nextSessions % (state.settings.longBreakInterval || 4) === 0 ? 'longBreak' : 'shortBreak';
-        return { ...state, completedSessions: nextSessions, phase: nextPhase };
-      }
-      return { ...state, phase: 'focus' };
-    }
-    case 'RESET_TO_FOCUS':
-      return { ...state, phase: 'focus' };
-    default:
-      return state;
-  }
-}
+import CountdownWidget from './CountdownWidget';
+import { useTimerContext } from '../contexts/TimerContext';
+import { useNavigate } from 'react-router-dom';
 
 const PomodoroTimer: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const currentLanguage = i18n.language;
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [initialLoaded, setInitialLoaded] = useState(false);
-  
-  const [state, dispatch] = useReducer(pomodoroReducer, initialState);
-  
-  const { themes, activeThemeId, settings, phase, completedSessions } = state;
-  const activeTheme = useMemo(() => {
-    return themes.find(t => t.id === activeThemeId) || themes[0];
-  }, [themes, activeThemeId]);
-  
-  const totalTimeValue = useMemo(() => {
-    if (!activeTheme) return 25 * 60;
-    if (phase === 'focus') return (activeTheme.focusDuration || 25) * 60;
-    return (phase === 'shortBreak' ? (settings.shortBreakDuration || 5) : (settings.longBreakDuration || 15)) * 60;
-  }, [phase, activeTheme, settings]);
 
-  const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
-  const [todayStats, setTodayStats] = useState<DailyStats | null>(null);
-  
+  const {
+    state,
+    timeLeft,
+    isActive,
+    totalTimeValue,
+    todayStats,
+    handleToggle,
+    handleReset,
+    handleSkip,
+    activeTheme,
+    initialLoaded
+  } = useTimerContext();
+
+  const { phase, completedSessions, settings } = state;
+
   const cozyPalRef = useRef<CozyPalHandle>(null);
-  const prevPhaseRef = useRef<Phase>(phase);
+  const prevPhaseRef = useRef(phase);
 
-  const fetchDailyStats = useCallback(async () => {
-    try {
-      const stats = await getDailyStats();
-      setTodayStats(stats);
-    } catch (error) {
-      console.error('Failed to fetch daily stats', error);
-    }
-  }, []);
-
-  useEffect(() => {
-    const fetchSettingsAndThemes = async () => {
-      try {
-        const [fetchedSettings, fetchedThemes] = await Promise.all([
-          getUserSettings(),
-          getUserThemes()
-        ]);
-        
-        const combinedThemes = [...DEFAULT_THEMES];
-        fetchedThemes.forEach(theme => {
-          if (!combinedThemes.find(t => t.id === theme.id)) {
-            combinedThemes.push(theme);
-          }
-        });
-
-        dispatch({ 
-          type: 'SAVE_SETTINGS', 
-          settings: fetchedSettings,
-          themes: combinedThemes
-        });
-      } catch (error) {
-        console.error('Error fetching user settings/themes:', error);
-        dispatch({ 
-          type: 'SAVE_SETTINGS', 
-          settings: DEFAULT_SETTINGS, 
-          themes: DEFAULT_THEMES 
-        });
-      } finally {
-        setInitialLoaded(true);
-      }
-    };
-
-    fetchSettingsAndThemes();
-  }, []);
-
-  const saveLearningSession = useCallback(async (status: SessionCreate['status'], duration: number, start: Date, end: Date) => {
-    if (!activeTheme) return;
-    const sessionData: SessionCreate = {
-      theme_name: activeTheme.name,
-      duration_seconds: duration,
-      phase_type: phase,
-      status: status,
-      start_time: start.toISOString(),
-      end_time: end.toISOString(),
-      ai_persona: settings.aiPersona || 'gentle_encourager',
-    };
-    try {
-      await saveSession(sessionData);
-      fetchDailyStats();
-    } catch (error) {
-      console.error('Failed to save session', error);
-    }
-  }, [activeTheme, phase, settings.aiPersona, fetchDailyStats]);
-
-  const handleTimerComplete = useCallback(() => {
-    if (sessionStartTime) {
-      if (phase === 'focus') {
-        cozyPalRef.current?.triggerProactiveMessage('focus_completed', 0);
-      }
-      saveLearningSession('completed', totalTimeValue, sessionStartTime, new Date());
-      setSessionStartTime(null);
-    }
-    dispatch({ type: 'NEXT_PHASE' });
-  }, [sessionStartTime, saveLearningSession, totalTimeValue, phase]);
-
-  const { timeLeft, isActive, start, pause, reset } = useTimer({
-    initialSeconds: totalTimeValue,
-    onComplete: handleTimerComplete,
-  });
-
+  // AI Proactive Messages (UI Side)
+  // We keep this here because CozyPal is part of the view.
+  // If the user navigates away, they won't see the message, which is expected behavior for now.
   useEffect(() => {
     if (prevPhaseRef.current !== phase) {
       if (phase === 'focus') {
@@ -200,12 +57,8 @@ const PomodoroTimer: React.FC = () => {
     }
   }, [timeLeft, phase, isActive]);
 
-  useEffect(() => {
-    fetchDailyStats();
-  }, [fetchDailyStats]);
-
-  const handleStart = useCallback(() => {
-    setSessionStartTime(new Date());
+  const handleStartCallback = React.useCallback(() => {
+    // Trigger message on manual start if at beginning
     if (timeLeft === totalTimeValue) {
       if (phase === 'focus') {
         cozyPalRef.current?.triggerProactiveMessage('focus_start', totalTimeValue);
@@ -213,157 +66,134 @@ const PomodoroTimer: React.FC = () => {
         cozyPalRef.current?.triggerProactiveMessage('break_start', totalTimeValue);
       }
     }
-    start();
-  }, [start, timeLeft, totalTimeValue, phase]);
+    handleToggle();
+  }, [timeLeft, totalTimeValue, phase, handleToggle]);
 
-  const handlePause = useCallback(() => {
-    pause();
-  }, [pause]);
-
-  const handleToggle = useCallback(() => isActive ? handlePause() : handleStart(), [isActive, handlePause, handleStart]);
-  
-  const handleReset = useCallback(() => {
-    if (isActive && sessionStartTime) {
-      const duration = totalTimeValue - timeLeft;
-      saveLearningSession('interrupted', duration, sessionStartTime, new Date());
-    }
-    setSessionStartTime(null);
-    reset();
-    dispatch({ type: 'RESET_TO_FOCUS' });
-  }, [isActive, sessionStartTime, totalTimeValue, timeLeft, saveLearningSession, reset]);
-
-  const handleSkip = useCallback(() => {
-    if (sessionStartTime) {
-      const duration = totalTimeValue - timeLeft;
-      saveLearningSession('skipped', duration, sessionStartTime, new Date());
-    }
-    setSessionStartTime(null);
-    reset();
-    dispatch({ type: 'NEXT_PHASE' });
-  }, [sessionStartTime, totalTimeValue, timeLeft, saveLearningSession, reset]);
-
-  const handleThemeChange = useCallback((themeId: string) => { 
-    if (isActive && sessionStartTime) {
-      const duration = totalTimeValue - timeLeft;
-      saveLearningSession('interrupted', duration, sessionStartTime, new Date());
-    }
-    setSessionStartTime(null);
-    dispatch({ type: 'SET_ACTIVE_THEME', themeId }); 
-    reset(); 
-  }, [isActive, sessionStartTime, totalTimeValue, timeLeft, saveLearningSession, reset]);
-
-  const handleSaveSettings = useCallback(async (s: TimerSettings) => { 
-    try {
-      const updatedSettings = await upsertUserSettings(s);
-      dispatch({ type: 'SAVE_SETTINGS', settings: updatedSettings, themes: DEFAULT_THEMES });
-      reset();
-      dispatch({ type: 'RESET_TO_FOCUS' });
-    } catch (error) {
-      console.error("Failed to save user settings:", error);
-    }
-  }, [reset]);
-
-  const handleThemesChange = useCallback((newThemes: FocusTheme[]) => {
-    dispatch({ type: 'SET_THEMES', themes: newThemes });
-  }, []);
 
   return (
     <LayoutGroup>
-      <motion.div 
+      <motion.div
         layout
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-[420px] md:max-w-[480px] lg:max-w-[1024px] xl:max-w-[1100px] bg-white rounded-[56px] md:rounded-[72px] p-8 md:p-10 lg:p-16 shadow-cozy flex flex-col lg:flex-row items-center lg:items-center gap-10 lg:gap-24 relative transition-all duration-700 mx-auto"
+        className="w-full max-w-[420px] md:max-w-[480px] lg:max-w-[1024px] xl:max-w-[1100px] rounded-[48px] md:rounded-[72px] p-6 md:p-10 lg:p-16 flex flex-col lg:flex-row items-center lg:items-center gap-6 md:gap-10 lg:gap-24 relative transition-all duration-700 mx-auto"
+        style={{
+          background: 'linear-gradient(135deg, #FFFFFF 0%, #FFF9F0 50%, #FFFFFF 100%)',
+          boxShadow: '0 20px 60px -10px rgba(74, 68, 57, 0.12), 0 8px 30px -8px rgba(74, 68, 57, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9)'
+        }}
       >
         <AnimatePresence>
           {!initialLoaded && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex items-center justify-center rounded-[56px] md:rounded-[72px]"
+              className="absolute inset-0 z-50 bg-white/90 flex items-center justify-center rounded-[56px] md:rounded-[72px]"
             >
               <div className="text-cozy-text font-bold">Loading settings...</div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="absolute inset-0 rounded-[56px] md:rounded-[72px] overflow-hidden pointer-events-none">
-          <div className="absolute -top-24 -right-24 w-48 h-48 bg-cozy-orange/5 rounded-full blur-3xl" />
-          <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-cozy-green/5 rounded-full blur-3xl" />
-        </div>
-
-        <motion.div layout className="flex-shrink-0 flex items-center justify-center">
+        <motion.div layout className="flex-shrink-0 flex flex-col items-center justify-center gap-6">
           <TimerDisplay timeLeft={timeLeft} totalTime={totalTimeValue} phase={phase} />
+          <CountdownWidget />
         </motion.div>
 
         <motion.div layout className="flex-grow flex flex-col items-center lg:items-start justify-center relative z-10 w-full lg:max-w-[420px] min-w-0">
-           <div className="w-full flex flex-wrap justify-between items-start gap-4 mb-8 lg:mb-12">
+          <div className="w-full mb-8 lg:mb-12">
             <div className="flex flex-col">
               <span className="text-[11px] md:text-xs font-black uppercase tracking-[0.3em] text-cozy-text-light/50 ml-1 mb-2">{t('timer.focusCompanion')}</span>
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-normal text-cozy-text/90 leading-tight font-heading">{t('timer.studyBuddy')}</h1>
             </div>
-            <motion.button 
-              whileHover={{ rotate: 90, scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setIsSettingsOpen(true)}
-              className="p-4 md:p-4.5 rounded-3xl bg-cozy-cream/60 text-cozy-text-light hover:text-cozy-orange transition-all shadow-cozy-inner border border-white flex-shrink-0"
-            >
-              <SettingsIcon size={24} strokeWidth={2.5} />
-            </motion.button>
           </div>
 
-          <div className="w-full mb-10 lg:mb-16">
-            <ThemeSelector themes={themes} activeThemeId={activeThemeId} onSelect={handleThemeChange} />
-          </div>
 
           <div className="w-full flex flex-col items-center lg:items-start">
-            <motion.div 
+            <motion.div
               key={completedSessions}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="mb-10 lg:mb-14 px-8 py-2.5 bg-cozy-cream/50 rounded-full text-xs md:text-sm font-black uppercase tracking-[0.2em] text-cozy-text-light/70 border border-white shadow-sm"
+              className="mb-6 lg:mb-14 px-8 py-2.5 bg-cozy-cream/50 rounded-full text-xs md:text-sm font-black uppercase tracking-[0.2em] text-cozy-text-light/70 border border-white shadow-sm"
             >
               {t('timer.cycle')} #{completedSessions + 1}
             </motion.div>
             <div className="lg:pl-2">
-              <TimerControls isActive={isActive} onStartPause={handleToggle} onReset={handleReset} onSkip={handleSkip} />
+              <TimerControls
+                isActive={isActive}
+                onStartPause={handleStartCallback}
+                onReset={handleReset}
+                onSkip={handleSkip}
+              />
             </div>
 
-            {todayStats && ( 
-              <motion.div 
+            {todayStats && (
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
-                className="mt-8 text-sm text-cozy-text-light/80 text-center lg:text-left"
+                className="mt-6 lg:mt-8 text-sm text-cozy-text-light/80 text-center lg:text-left"
               >
                 {t('timer.todayFocus')}: <span className="font-bold text-cozy-orange">{todayStats.total_focus_minutes} {t('timer.minutes')}</span>
-                <br/>{t('timer.totalSessions')}: <span className="font-bold text-cozy-orange">{todayStats.total_sessions}</span>
+                <br />{t('timer.totalSessions')}: <span className="font-bold text-cozy-orange">{todayStats.total_sessions}</span>
               </motion.div>
             )}
 
           </div>
         </motion.div>
 
-        <TimerSettingsModal
-          isOpen={isSettingsOpen}
-          onClose={() => setIsSettingsOpen(false)}
-          initialSettings={settings}
-          initialThemes={themes}
-          onSave={handleSaveSettings}
-          onThemesChange={handleThemesChange}
-        />
+        {/* Responsive Navigation Bar */}
+        <div className="absolute lg:right-[-28px] xl:right-[-40px] lg:top-1/2 lg:-translate-y-1/2 bottom-[-20px] left-1/2 -translate-x-1/2 lg:left-auto lg:translate-x-0 flex flex-col gap-3 z-50">
+          <motion.div
+            initial={{ opacity: 0, y: 20, x: 0 }}
+            animate={{ opacity: 1, y: 0, x: 0 }}
+            transition={{ delay: 0.5 }}
+            className="flex flex-row lg:flex-col bg-white/90 backdrop-blur-2xl p-1.5 rounded-[32px] lg:rounded-[40px] shadow-2xl border border-white items-center"
+          >
+            <motion.button
+              whileHover={{ scale: 1.05, backgroundColor: 'rgba(99, 102, 241, 0.05)' }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate('/library')}
+              className="flex flex-col items-center gap-1 p-3 md:p-4 rounded-[24px] lg:rounded-[32px] text-indigo-500 transition-all group min-w-[70px] md:min-w-0"
+            >
+              <div className="p-2 md:p-2.5 bg-indigo-50/50 group-hover:bg-indigo-100/50 rounded-xl lg:rounded-2xl transition-colors">
+                <BookIcon size={20} strokeWidth={2.5} />
+              </div>
+              <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-indigo-400/80 group-hover:text-indigo-600 transition-colors">
+                {t('common.library')}
+              </span>
+            </motion.button>
+
+            <div className="w-px h-8 lg:w-10 lg:h-px bg-gray-100/80 mx-2 lg:mx-auto lg:my-1" />
+
+            <motion.button
+              whileHover={{ scale: 1.05, backgroundColor: 'rgba(249, 115, 22, 0.05)' }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate('/settings')}
+              className="flex flex-col items-center gap-1 p-3 md:p-4 rounded-[24px] lg:rounded-[32px] text-orange-500 transition-all group min-w-[70px] md:min-w-0"
+            >
+              <div className="p-2 md:p-2.5 bg-orange-50/50 group-hover:bg-orange-100/50 rounded-xl lg:rounded-2xl transition-colors">
+                <SettingsIcon size={20} strokeWidth={2.5} />
+              </div>
+              <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-orange-400/80 group-hover:text-orange-600 transition-colors">
+                {t('common.settings')}
+              </span>
+            </motion.button>
+          </motion.div>
+        </div>
       </motion.div>
-       <CozyPal 
-         ref={cozyPalRef}
-         themeName={activeTheme?.name || 'English'} 
-         phase={phase} 
-         timeLeft={timeLeft} 
-         apiKey={settings.googleApiKey} 
-         currentLanguage={currentLanguage} 
-         aiPersona={settings.aiPersona || 'gentle_encourager'} 
-         dailyCompletedPomodoros={todayStats?.total_sessions || 0}
-         totalFocusMinutes={todayStats?.total_focus_minutes || 0}
-       />
+      <CozyPal
+        ref={cozyPalRef}
+        themeName={activeTheme?.name || 'English'}
+        phase={phase}
+        timeLeft={timeLeft}
+        apiKey={settings.googleApiKey}
+        currentLanguage={currentLanguage}
+        aiPersona={settings.aiPersona || 'gentle_encourager'}
+        aiProvider={settings.aiProvider || 'gemini'}
+        aiModel={settings.aiModel}
+        dailyCompletedPomodoros={todayStats?.total_sessions || 0}
+        totalFocusMinutes={todayStats?.total_focus_minutes || 0}
+      />
     </LayoutGroup>
   );
 };

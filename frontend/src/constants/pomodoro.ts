@@ -13,4 +13,7 @@ export const DEFAULT_SETTINGS: TimerSettings = {
   autoStartNext: false,
   googleApiKey: '',
   aiPersona: 'gentle_encourager',
+  enableSounds: true,
+  enableBackgroundMusic: true,
+  soundVolume: 0.5,
 };

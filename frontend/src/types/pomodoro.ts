@@ -11,9 +11,17 @@ export interface TimerSettings {
   longBreakInterval: number;
   autoStartNext: boolean;
   googleApiKey?: string;
+  openaiApiKey?: string;
+  aiProvider?: string;
+  aiModel?: string;
+  deepseekApiKey?: string;
+  zhipuApiKey?: string;
   aiPersona?: string;
   aiProactivity?: boolean;
   aiActionable?: boolean;
+  enableSounds?: boolean;
+  enableBackgroundMusic?: boolean;
+  soundVolume?: number;
 }
 
 export type Phase = 'focus' | 'shortBreak' | 'longBreak';
@@ -23,4 +31,9 @@ export interface TimerState {
   isActive: boolean;
   currentPhase: Phase;
   completedSessions: number;
+}
+export interface CountdownEvent {
+  id: number;
+  title: string;
+  targetDate: string;
 }
