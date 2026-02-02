@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class MemoryService:
     def __init__(self):
-        self._client = None
+        self.client = None
         self.extraction_model_name = "gemini-2.0-flash"
         self.embedding_model_name = "text-embedding-004"
         # Store for the last exchange metadata (per user, for debugging)
@@ -34,9 +34,9 @@ class MemoryService:
     def get_client(self, api_key: Optional[str] = None) -> genai.Client:
         if api_key:
             return genai.Client(api_key=api_key)
-        if self._client is None:
-            self._client = genai.Client()
-        return self._client
+        if self.client is None:
+            self.client = genai.Client()
+        return self.client
 
     async def process_exchange(
         self,
@@ -190,10 +190,10 @@ Your JSON Output:
                 extracted = json.loads(text)
                 logger.info(f"Extracted structured data for {user_id}: {extracted}")
                 return extracted
-            return {{}}
+            return {}
         except Exception as e:
             logger.error(f"Error extracting memory for {user_id}: {e}")
-            return {{}}
+            return {}
 
     async def _update_user_profile(
         self, user_id: str, extracted_data: Dict[str, Any], db: AsyncSession

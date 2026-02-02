@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback, useMemo, useState, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useTimer } from '../hooks/useTimer';
 import { useAudio } from '../hooks/useAudio';
 import { DEFAULT_THEMES, DEFAULT_SETTINGS } from '../constants/pomodoro';
@@ -13,6 +12,11 @@ interface PomodoroState {
     settings: TimerSettings;
     phase: Phase;
     completedSessions: number;
+    documentContext?: {
+        id: number;
+        title: string;
+        content: string;
+    };
 }
 
 type PomodoroAction =
@@ -20,7 +24,8 @@ type PomodoroAction =
     | { type: 'SAVE_SETTINGS'; settings: TimerSettings; themes: FocusTheme[] }
     | { type: 'SET_THEMES'; themes: FocusTheme[] }
     | { type: 'NEXT_PHASE' }
-    | { type: 'RESET_TO_FOCUS' };
+    | { type: 'RESET_TO_FOCUS' }
+    | { type: 'SET_DOCUMENT_CONTEXT'; context?: PomodoroState['documentContext'] };
 
 const initialState: PomodoroState = {
     themes: DEFAULT_THEMES,
@@ -34,17 +39,23 @@ function pomodoroReducer(state: PomodoroState, action: PomodoroAction): Pomodoro
     switch (action.type) {
         case 'SET_ACTIVE_THEME':
             return { ...state, activeThemeId: action.themeId, phase: 'focus' };
-        case 'SAVE_SETTINGS':
+        case 'SAVE_SETTINGS': {
             const newThemes = action.themes && action.themes.length > 0 ? action.themes : state.themes;
-            const newActiveThemeId = newThemes.some(t => t.id === state.activeThemeId)
-                ? state.activeThemeId
-                : (newThemes.length > 0 ? newThemes[0].id : state.activeThemeId);
+            // Priority: action.settings.activeThemeId (backend) > current state.activeThemeId (local) > first theme
+            const idFromSettings = action.settings.activeThemeId;
+            const newActiveThemeId = (idFromSettings && newThemes.some(t => t.id === idFromSettings))
+                ? idFromSettings
+                : (newThemes.some(t => t.id === state.activeThemeId)
+                    ? state.activeThemeId
+                    : (newThemes.length > 0 ? newThemes[0].id : state.activeThemeId));
+
             return {
                 ...state,
                 settings: action.settings,
                 themes: newThemes,
                 activeThemeId: newActiveThemeId,
             };
+        }
         case 'SET_THEMES':
             return {
                 ...state,
@@ -63,6 +74,8 @@ function pomodoroReducer(state: PomodoroState, action: PomodoroAction): Pomodoro
         }
         case 'RESET_TO_FOCUS':
             return { ...state, phase: 'focus' };
+        case 'SET_DOCUMENT_CONTEXT':
+            return { ...state, documentContext: action.context };
         default:
             return state;
     }
@@ -84,18 +97,57 @@ interface TimerContextType {
     handleThemeChange: (themeId: string) => void;
     handleSaveSettings: (s: TimerSettings) => void;
     handleThemesChange: (newThemes: FocusTheme[]) => void;
+    setDocumentContext: (context?: PomodoroState['documentContext']) => void;
     activeTheme: FocusTheme | undefined;
     initialLoaded: boolean;
 }
 
 const TimerContext = createContext<TimerContextType | undefined>(undefined);
 
+const CONTEXT_STORAGE_KEY = 'pomodoro_context_state';
+
+const loadInitialState = (): PomodoroState => {
+    try {
+        const saved = localStorage.getItem(CONTEXT_STORAGE_KEY);
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            // Ensure we have valid structure, merging with defaults
+            return {
+                ...initialState,
+                // Only persist UI states that are not fetched from API immediately
+                // Or persist everything and let API update override
+                activeThemeId: parsed.activeThemeId || initialState.activeThemeId,
+                phase: parsed.phase || initialState.phase,
+                settings: parsed.settings || initialState.settings, // Will be updated by API
+                themes: parsed.themes || initialState.themes
+            };
+        }
+    } catch (e) {
+        console.error("Failed to load context state", e);
+    }
+    return initialState;
+};
+
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [state, dispatch] = useReducer(pomodoroReducer, initialState);
-    const { themes, activeThemeId, settings, phase, completedSessions } = state;
+    const [state, dispatch] = useReducer(pomodoroReducer, undefined, loadInitialState);
+
+    // Persist state changes
+    useEffect(() => {
+        const stateToSave = {
+            activeThemeId: state.activeThemeId,
+            phase: state.phase,
+            // We can optionally not save themes/settings if we trust API, 
+            // but saving them makes offline startup faster/smoother
+            settings: state.settings,
+            themes: state.themes
+        };
+        localStorage.setItem(CONTEXT_STORAGE_KEY, JSON.stringify(stateToSave));
+    }, [state.activeThemeId, state.phase, state.settings, state.themes]);
+    const { themes, activeThemeId, settings, phase } = state;
     const [initialLoaded, setInitialLoaded] = useState(false);
     const [todayStats, setTodayStats] = useState<DailyStats | null>(null);
     const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
+    const isAutoStartPending = useRef(false);
 
     const activeTheme = useMemo(() => {
         return themes.find(t => t.id === activeThemeId) || themes[0];
@@ -148,12 +200,10 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
 
         if (sessionStartTime) {
-            // Note: Proactive AI messaging is handled in the View for now, 
-            // as we don't have access to CozyPal ref here. 
-            // If we want it global, we need a GlobalCozyPal.
             saveLearningSession('completed', totalTimeValue, sessionStartTime, new Date());
             setSessionStartTime(null);
         }
+        isAutoStartPending.current = true;
         dispatch({ type: 'NEXT_PHASE' });
     }, [sessionStartTime, saveLearningSession, totalTimeValue, phase, playEndSound, stopBackgroundMusic]);
 
@@ -161,6 +211,21 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         initialSeconds: totalTimeValue,
         onComplete: handleTimerComplete,
     });
+
+    // Handle auto-start next phase - Only trigger on phase changes
+    useEffect(() => {
+        if (initialLoaded && settings.autoStartNext && !isActive && isAutoStartPending.current) {
+            const isAtStart = Math.abs(timeLeft - totalTimeValue) < 2;
+            if (isAtStart) {
+                isAutoStartPending.current = false;
+                const timer = setTimeout(() => {
+                    handleStart();
+                }, 1000);
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [phase, settings.autoStartNext, initialLoaded]);
+    // Reduced dependencies to avoid re-triggering on every tick
 
     useEffect(() => {
         const fetchSettingsAndThemes = async () => {
@@ -198,10 +263,10 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, [start]);
 
     const handlePause = useCallback(() => {
+        isAutoStartPending.current = false;
         pause();
     }, [pause]);
 
-    const handleToggle = useCallback(() => isActive ? handlePause() : handleStart(), [isActive, handlePause, handleStart]);
 
     const handleReset = useCallback(() => {
         if (isActive && sessionStartTime) {
@@ -209,8 +274,10 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             saveLearningSession('interrupted', duration, sessionStartTime, new Date());
         }
         setSessionStartTime(null);
+        isAutoStartPending.current = false;
         reset();
-        dispatch({ type: 'RESET_TO_FOCUS' });
+        // Just reset time, don't force phase back to focus unless explicitly desired.
+        // This prevents "skipping" the current phase (like a break).
     }, [isActive, sessionStartTime, totalTimeValue, timeLeft, saveLearningSession, reset]);
 
     const handleSkip = useCallback(() => {
@@ -219,11 +286,25 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             saveLearningSession('skipped', duration, sessionStartTime, new Date());
         }
         setSessionStartTime(null);
+        isAutoStartPending.current = true;
         reset();
         dispatch({ type: 'NEXT_PHASE' });
     }, [sessionStartTime, totalTimeValue, timeLeft, saveLearningSession, reset]);
 
-    const handleThemeChange = useCallback((themeId: string) => {
+    const handleToggle = useCallback(() => {
+        if (isActive) {
+            handlePause();
+        } else {
+            // Failsafe: if timer is at 0, treat play as "Next Phase"
+            if (timeLeft <= 0) {
+                handleSkip(); // handleSkip dispatches NEXT_PHASE and resets
+            } else {
+                handleStart();
+            }
+        }
+    }, [isActive, timeLeft, handlePause, handleStart, handleSkip]);
+
+    const handleThemeChange = useCallback(async (themeId: string) => {
         if (isActive && sessionStartTime) {
             const duration = totalTimeValue - timeLeft;
             saveLearningSession('interrupted', duration, sessionStartTime, new Date());
@@ -231,7 +312,23 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setSessionStartTime(null);
         dispatch({ type: 'SET_ACTIVE_THEME', themeId });
         reset();
-    }, [isActive, sessionStartTime, totalTimeValue, timeLeft, saveLearningSession, reset]);
+
+        // Sync theme choice to backend record
+        try {
+            const updatedSettings = { ...settings, activeThemeId: themeId };
+            await upsertUserSettings(updatedSettings);
+        } catch (error) {
+            console.error("Failed to sync theme to backend", error);
+        }
+
+        // Also ensure immediate localStorage backup
+        const saved = localStorage.getItem(CONTEXT_STORAGE_KEY);
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            parsed.activeThemeId = themeId;
+            localStorage.setItem(CONTEXT_STORAGE_KEY, JSON.stringify(parsed));
+        }
+    }, [isActive, sessionStartTime, totalTimeValue, timeLeft, saveLearningSession, reset, settings]);
 
     const handleSaveSettings = useCallback(async (s: TimerSettings) => {
         try {
@@ -246,6 +343,10 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const handleThemesChange = useCallback((newThemes: FocusTheme[]) => {
         dispatch({ type: 'SET_THEMES', themes: newThemes });
+    }, []);
+
+    const setDocumentContext = useCallback((context?: PomodoroState['documentContext']) => {
+        dispatch({ type: 'SET_DOCUMENT_CONTEXT', context });
     }, []);
 
     const value = {
@@ -264,6 +365,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         handleThemeChange,
         handleSaveSettings,
         handleThemesChange,
+        setDocumentContext,
         activeTheme,
         initialLoaded
     };

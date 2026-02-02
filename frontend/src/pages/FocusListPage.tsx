@@ -4,14 +4,19 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useTimerContext } from '../contexts/TimerContext';
 import { Book as BookIcon, Settings as SettingsIcon, Rocket as RocketIcon, Brain as BrainIcon, Coffee as CoffeeIcon, Sparkles as SparklesIcon } from 'lucide-react';
-import CozyPal from '../components/CozyPal';
-import FloatingTimer from '../components/FloatingTimer';
+
+import ConfirmModal from '../components/ConfirmModal';
+import AmbientBackground from '../components/AmbientBackground';
 
 const FocusListPage: React.FC = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const { state, isActive } = useTimerContext();
+    const { state, isActive, timeLeft, totalTimeValue, reset } = useTimerContext();
     const { themes } = state;
+
+    const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
+    const [pendingThemeId, setPendingThemeId] = React.useState<string | null>(null);
+    const [confirmMessage, setConfirmMessage] = React.useState('');
 
     const getIcon = (id: string) => {
         switch (id) {
@@ -55,100 +60,111 @@ const FocusListPage: React.FC = () => {
         }
     };
 
+    const handleThemeSelect = (themeId: string) => {
+        const isOngoing = isActive || (timeLeft > 0 && timeLeft < totalTimeValue);
+
+        if (isOngoing && state.activeThemeId !== themeId) {
+            const currentThemeName = themes.find(t => t.id === state.activeThemeId)?.name || t('timer.focus');
+            const targetThemeName = themes.find(t => t.id === themeId)?.name || '';
+            setPendingThemeId(themeId);
+            setConfirmMessage(
+                t('timer.switchConfirm', {
+                    defaultValue: `您正在进行 "${currentThemeName}" 的专注任务。确定要停止并切换到 "${targetThemeName}" 吗？`,
+                    current: currentThemeName,
+                    target: targetThemeName
+                })
+            );
+            setIsConfirmOpen(true);
+            return;
+        }
+        navigate(`/timer/${themeId}`);
+    };
+
+    const confirmSwitch = () => {
+        if (pendingThemeId) {
+            reset();
+            navigate(`/timer/${pendingThemeId}`);
+        }
+        setIsConfirmOpen(false);
+        setPendingThemeId(null);
+        setConfirmMessage('');
+    };
+
+    const cancelSwitch = () => {
+        setIsConfirmOpen(false);
+        setPendingThemeId(null);
+        setConfirmMessage('');
+    };
+
     return (
         <main className="min-h-screen w-full bg-[#FCFAF7] flex flex-col items-center justify-center p-6 selection:bg-cozy-orange/30 relative overflow-hidden">
-            {/* Premium Animated Background */}
-            <div className="fixed inset-0 overflow-hidden pointer-events-none">
-                <motion.div
-                    animate={{
-                        scale: [1, 1.2, 1],
-                        x: [0, 50, 0],
-                        y: [0, 30, 0]
-                    }}
-                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                    className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vw] bg-cozy-orange/10 rounded-full blur-[160px]"
-                />
-                <motion.div
-                    animate={{
-                        scale: [1.2, 1, 1.2],
-                        x: [0, -40, 0],
-                        y: [0, -20, 0]
-                    }}
-                    transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-                    className="absolute bottom-[-20%] right-[-10%] w-[80vw] h-[80vw] bg-cozy-green/10 rounded-full blur-[180px]"
-                />
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] mix-blend-overlay" />
-            </div>
+            <AmbientBackground />
 
             <div className="relative z-10 w-full max-w-[1100px] flex flex-col items-center">
                 <motion.div
-                    initial={{ opacity: 0, y: -30 }}
+                    initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, ease: "circOut" }}
-                    className="text-center mb-16"
+                    transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+                    className="text-center mb-20"
                 >
                     <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: 0.3, type: "spring" }}
-                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cozy-orange/10 text-cozy-orange text-[10px] font-black uppercase tracking-[0.2em] mb-6 border border-cozy-orange/20"
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: 0.2, duration: 0.8 }}
+                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cozy-orange/10 text-cozy-orange text-[10px] font-bold uppercase tracking-widest mb-6 border border-cozy-orange/20"
                     >
-                        <SparklesIcon size={12} />
+                        <SparklesIcon size={12} strokeWidth={3} />
                         {t('timer.focusCompanion')}
                     </motion.div>
 
-                    <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-[#2D2926] mb-6 font-heading drop-shadow-sm">
+                    <h1 className="text-6xl md:text-8xl font-bold tracking-normal text-slate-900 mb-8 font-heading leading-tight">
                         {t('timer.studyBuddy')}
                     </h1>
-                    <p className="text-[#6B6661] text-lg font-medium max-w-lg mx-auto leading-relaxed">
-                        开启沉浸式学习体验，<br className="sm:hidden" />选择一个您想要深入探索的领域
+                    <p className="text-slate-500 text-lg font-medium max-w-lg mx-auto leading-relaxed">
+                        开启沉浸式学习体验，选择一个您想要深入探索的领域
                     </p>
                 </motion.div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8 w-full px-4">
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10 w-full px-4">
                     {themes.map((theme, index) => {
                         const style = getCardTheme(theme.id);
                         return (
                             <motion.button
                                 key={theme.id}
-                                initial={{ opacity: 0, y: 40 }}
+                                initial={{ opacity: 0, y: 30 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.2 + index * 0.1, duration: 0.6, ease: "backOut" }}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => navigate(`/timer/${theme.id}`)}
-                                className={`group relative flex flex-row md:flex-col items-center p-5 md:p-10 rounded-[32px] md:rounded-[60px] bg-white/60 backdrop-blur-3xl border ${style.border} shadow-[0_15px_40px_-15px_rgba(0,0,0,0.06)] transition-all duration-500 overflow-hidden ${style.glow}`}
+                                transition={{ delay: 0.1 * index, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                                whileHover={{ y: -8, scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => handleThemeSelect(theme.id)}
+                                className={`
+                                    group relative flex flex-row md:flex-col items-center p-6 md:p-12
+                                    rounded-[40px] md:rounded-[64px] bg-white/70 backdrop-blur-2xl
+                                    border ${style.border} shadow-[0_20px_50px_-20px_rgba(0,0,0,0.08)]
+                                    transition-all duration-500 overflow-hidden cursor-pointer
+                                    hover:bg-white/90 ${style.glow}
+                                `}
                             >
                                 {/* Inner Gradient Glow - Desktop Only */}
-                                <div className={`hidden md:block absolute inset-0 bg-gradient-to-br ${style.grad} translate-y-full group-hover:translate-y-0 transition-transform duration-700 ease-out opacity-60`} />
+                                <div className={`hidden md:block absolute inset-0 bg-gradient-to-br ${style.grad} translate-y-full group-hover:translate-y-0 transition-transform duration-700 ease-out opacity-40`} />
 
-                                {/* Floating Icon Wrapper */}
+                                {/* Icon Wrapper - Animation on hover only */}
                                 <motion.div
-                                    animate={{ y: [0, -3, 0] }}
-                                    transition={{ duration: 3 + index, repeat: Infinity, ease: "easeInOut" }}
-                                    className={`relative z-10 p-4 md:p-6 rounded-2xl md:rounded-[32px] ${style.icon} flex-shrink-0 mr-4 md:mr-0 md:mb-8 shadow-inner border border-white/50 transition-transform duration-500`}
+                                    whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
+                                    className={`relative z-10 p-5 md:p-8 rounded-[24px] md:rounded-[40px] ${style.icon} flex-shrink-0 mr-5 md:mr-0 md:mb-10 shadow-inner border border-white/60 transition-all duration-300`}
                                 >
                                     {getIcon(theme.id)}
                                 </motion.div>
 
                                 <div className="relative z-10 text-left md:text-center flex-grow">
-                                    <h3 className="text-lg md:text-2xl font-black text-[#2D2926] mb-1 md:mb-3 group-hover:text-black transition-colors">{theme.name}</h3>
-                                    <div className="inline-flex items-center gap-2 px-3 md:px-5 py-1 md:py-2 rounded-full bg-white/40 border border-white/60 shadow-sm">
-                                        <div className={`w-1 h-1 md:w-1.5 md:h-1.5 rounded-full ${style.icon.split(' ')[0]}`} />
-                                        <span className="text-[9px] md:text-[11px] font-black uppercase tracking-[1px] md:tracking-[2px] text-[#8C867E]">
+                                    <h3 className="text-xl md:text-3xl font-bold text-slate-800 mb-2 md:mb-4 group-hover:text-black transition-colors">{theme.name}</h3>
+                                    <div className="inline-flex items-center gap-2.5 px-4 md:px-6 py-1.5 md:py-2.5 rounded-full bg-white/50 border border-white/80 shadow-sm backdrop-blur-md">
+                                        <div className={`w-1.5 h-1.5 rounded-full ${style.icon.split(' ')[0]} animate-pulse`} />
+                                        <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-slate-500">
                                             {theme.focusDuration} {t('timer.minutes')}
                                         </span>
                                     </div>
-                                </div>
-
-                                {/* Arrow Indicator */}
-                                <div className="relative z-10 md:absolute md:bottom-8 md:right-10 opacity-40 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 md:translate-x-4 md:group-hover:translate-x-0">
-                                    <motion.div
-                                        animate={{ x: [0, 3, 0] }}
-                                        transition={{ duration: 1.5, repeat: Infinity }}
-                                    >
-                                        <RocketIcon size={20} className={`${style.icon.split(' ')[0]}/40`} />
-                                    </motion.div>
                                 </div>
                             </motion.button>
                         );
@@ -171,7 +187,7 @@ const FocusListPage: React.FC = () => {
                         <div className="p-2 md:p-0 bg-white/80 md:bg-transparent rounded-xl md:rounded-none shadow-sm md:shadow-none border border-white md:border-none">
                             <BookIcon size={20} strokeWidth={2.5} className="group-hover:rotate-3" />
                         </div>
-                        <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[1px] md:tracking-[2px]">{t('common.library')}</span>
+                        <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest">{t('common.library')}</span>
                     </motion.button>
 
                     <div className="hidden md:block w-px h-8 bg-[#E6E2DE] self-center mx-2" />
@@ -185,18 +201,21 @@ const FocusListPage: React.FC = () => {
                         <div className="p-2 md:p-0 bg-white/80 md:bg-transparent rounded-xl md:rounded-none shadow-sm md:shadow-none border border-white md:border-none">
                             <SettingsIcon size={20} strokeWidth={2.5} className="group-hover:rotate-3" />
                         </div>
-                        <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[1px] md:tracking-[2px]">{t('common.settings')}</span>
+                        <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest">{t('common.settings')}</span>
                     </motion.button>
                 </motion.div>
             </div>
 
-            {/* Conditionally Render AI Companion and Timer if Timer is Active */}
-            {isActive && (
-                <>
-                    <CozyPal />
-                    <FloatingTimer />
-                </>
-            )}
+            <ConfirmModal
+                isOpen={isConfirmOpen}
+                title={t('common.confirm', '确认切换')}
+                message={confirmMessage}
+                confirmLabel={t('common.confirmSwitch', '确认切换')}
+                cancelLabel={t('common.cancel', '继续专注')}
+                onConfirm={confirmSwitch}
+                onCancel={cancelSwitch}
+                type="warning"
+            />
         </main>
     );
 };

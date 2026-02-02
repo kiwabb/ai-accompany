@@ -39,7 +39,9 @@ async def test_create_and_update_session_ai_settings(db_session: AsyncSession):
         ai_proactivity=True,
         ai_actionable=False,
     )
-    created_session = await create_session(db_session, session_data)
+    created_session = await create_session(
+        db_session, session_data, user_id="test_user"
+    )
     assert created_session.ai_persona == "gentle_encourager"
     assert created_session.ai_proactivity is True
 

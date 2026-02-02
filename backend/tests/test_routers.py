@@ -18,7 +18,10 @@ async def test_create_and_update_session_via_api(async_client):
         "ai_proactivity": True,
         "ai_actionable": False,
     }
-    response = await async_client.post("/api/sessions", json=session_data)
+    headers = {"Authorization": "Bearer test_user"}
+    response = await async_client.post(
+        "/api/sessions", json=session_data, headers=headers
+    )
     assert response.status_code == 201
     created_session = response.json()
     assert created_session["ai_persona"] == "gentle_encourager"
@@ -36,7 +39,9 @@ async def test_create_and_update_session_via_api(async_client):
         "ai_persona": "hardcore_motivator",
         "ai_proactivity": False,
     }
-    response = await async_client.patch(f"/api/sessions/{session_id}", json=patch_data)
+    response = await async_client.patch(
+        f"/api/sessions/{session_id}", json=patch_data, headers=headers
+    )
     assert response.status_code == 200
     updated_session = response.json()
     assert updated_session["ai_persona"] == "hardcore_motivator"

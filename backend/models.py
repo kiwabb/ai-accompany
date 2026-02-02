@@ -33,6 +33,7 @@ class UserSettings(Base):
     ai_proactivity = Column(Boolean, default=True)
     ai_actionable = Column(Boolean, default=False)
     auto_start_next = Column(Boolean, default=False)
+    active_theme_id = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -65,6 +66,7 @@ class LearningSession(Base):
     ai_proactivity = Column(Boolean)
     ai_actionable = Column(Boolean)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    topic = relationship("Topic", back_populates="learning_sessions")
 
 
 class Topic(Base):
@@ -75,7 +77,8 @@ class Topic(Base):
     description = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    chat_messages = relationship("ChatHistory", back_populates="topic")
+    chat_history_entries = relationship("ChatHistory", back_populates="topic")
+    learning_sessions = relationship("LearningSession", back_populates="topic")
 
 
 class ChatHistory(Base):
@@ -87,7 +90,7 @@ class ChatHistory(Base):
     content = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     topic_id = Column(Integer, ForeignKey("topics.id"), nullable=True)
-    topic = relationship("Topic", back_populates="chat_messages")
+    topic = relationship("Topic", back_populates="chat_history_entries")
 
 
 class UserProfile(Base):

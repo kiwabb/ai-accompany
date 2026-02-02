@@ -25,9 +25,9 @@ export const TimerDisplay = React.memo(({ timeLeft, totalTime, phase }: TimerDis
   const { t } = useTranslation();
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
-  const progress = timeLeft / totalTime;
+  const progress = totalTime > 0 ? timeLeft / totalTime : 1;
   const circumference = 2 * Math.PI * 120;
-  
+
   const color = phaseColors[phase];
   const emoji = phaseEmojis[phase];
   const label = t(`common.${phase}`);
@@ -35,8 +35,8 @@ export const TimerDisplay = React.memo(({ timeLeft, totalTime, phase }: TimerDis
   return (
     <div className="relative flex items-center justify-center w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 lg:w-[380px] lg:h-[380px] transition-all duration-500">
       {/* Outer Glow */}
-      <motion.div 
-        animate={{ 
+      <motion.div
+        animate={{
           boxShadow: [
             `0 0 0 0px ${color}15`,
             `0 0 0 25px ${color}00`
@@ -82,10 +82,10 @@ export const TimerDisplay = React.memo(({ timeLeft, totalTime, phase }: TimerDis
             {emoji}
           </motion.div>
         </AnimatePresence>
-        
+
         <div className="flex items-baseline font-sans font-bold text-cozy-text">
           <span className="text-5xl md:text-7xl lg:text-8xl tracking-tighter">{String(minutes).padStart(2, '0')}</span>
-          <motion.span 
+          <motion.span
             animate={{ opacity: [1, 0.4, 1] }}
             transition={{ repeat: Infinity, duration: 1 }}
             className="text-4xl md:text-6xl lg:text-7xl mx-1 mb-1 lg:mb-2"
@@ -95,7 +95,7 @@ export const TimerDisplay = React.memo(({ timeLeft, totalTime, phase }: TimerDis
           <span className="text-5xl md:text-7xl lg:text-8xl tracking-tighter">{String(seconds).padStart(2, '0')}</span>
         </div>
 
-        <motion.span 
+        <motion.span
           key={label}
           initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}

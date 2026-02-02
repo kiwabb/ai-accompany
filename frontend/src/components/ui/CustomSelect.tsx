@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ChevronDown, Check } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
@@ -95,7 +95,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                     animate={{ opacity: 1, y: 0, scaleY: 1 }}
                     exit={{ opacity: 0, y: -10, scaleY: 0.95 }}
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    className="flex flex-col bg-white/90 border border-white/95 rounded-2xl shadow-elevated overflow-hidden py-2"
+                    className="flex flex-col bg-white/95 backdrop-blur-xl border border-white/80 rounded-2xl shadow-elevated py-2 max-h-[280px] overflow-y-auto custom-scrollbar pointer-events-auto"
                 >
                     {options.map((option) => (
                         <button

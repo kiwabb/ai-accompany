@@ -19,6 +19,7 @@ export interface TimerSettings {
   aiPersona?: string;
   aiProactivity?: boolean;
   aiActionable?: boolean;
+  activeThemeId?: string;
   enableSounds?: boolean;
   enableBackgroundMusic?: boolean;
   soundVolume?: number;

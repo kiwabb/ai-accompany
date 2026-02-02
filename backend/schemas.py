@@ -18,6 +18,7 @@ class UserSettingsBase(BaseModel):
     ai_proactivity: Optional[bool] = True
     ai_actionable: Optional[bool] = False
     auto_start_next: Optional[bool] = False
+    active_theme_id: Optional[str] = None
 
 
 class UserSettingsCreate(UserSettingsBase):
@@ -76,6 +77,18 @@ class SessionBase(BaseModel):
 
 class SessionCreate(SessionBase):
     pass
+
+
+class SessionUpdate(BaseModel):
+    theme_name: Optional[str] = None
+    duration_seconds: Optional[int] = None
+    phase_type: Optional[str] = None
+    status: Optional[str] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    ai_persona: Optional[str] = None
+    ai_proactivity: Optional[bool] = None
+    ai_actionable: Optional[bool] = None
 
 
 class SessionResponse(SessionBase):
@@ -225,11 +238,11 @@ class DocumentResponse(DocumentBase):
     id: int
     user_id: str
     created_at: datetime
-    # Content is excluded from list view by default in many designs, 
-    # but strictly following schema inheritance here. 
+    # Content is excluded from list view by default in many designs,
+    # but strictly following schema inheritance here.
     # Depending on select query, this might be partial or full.
     # For now, let's include it but use a separate schema for list if needed.
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 

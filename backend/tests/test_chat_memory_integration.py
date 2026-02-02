@@ -89,7 +89,10 @@ async def test_router_memory_extraction_trigger(async_client):
             new_callable=AsyncMock,
         ) as mock_process:
             chat_data = {"message": message, "user_id": user_id, "topic_id": 1}
-            response = await async_client.post("/api/chat/completions", json=chat_data)
+            headers = {"Authorization": f"Bearer {user_id}"}
+            response = await async_client.post(
+                "/api/chat/completions", json=chat_data, headers=headers
+            )
             assert response.status_code == 200
 
             # Consume the stream

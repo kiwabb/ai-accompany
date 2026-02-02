@@ -323,10 +323,10 @@ const CozyPal = forwardRef<CozyPalHandle, CozyPalProps>(({ themeName, phase, tim
 
     // Simple replacement for now, could be improved with a proper parser
     // for handling overlapping fragments.
-    let parts: (string | JSX.Element)[] = [content];
+    let parts: (string | React.ReactNode)[] = [content];
 
     sortedFragments.forEach((fragment) => {
-      const newParts: (string | JSX.Element)[] = [];
+      const newParts: (string | React.ReactNode)[] = [];
       parts.forEach((part) => {
         if (typeof part !== 'string') {
           newParts.push(part);
@@ -631,13 +631,15 @@ const CozyPal = forwardRef<CozyPalHandle, CozyPalProps>(({ themeName, phase, tim
             exit={{ x: '100%' }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
             style={{ width }}
-            className="fixed top-0 right-0 h-full bg-white/95 backdrop-blur-xl shadow-2xl z-40 border-l border-white/40 flex flex-col"
+            className="fixed top-0 right-0 h-full bg-white/80 backdrop-blur-3xl shadow-2xl z-40 border-l border-white/40 flex flex-col"
           >
-            {/* Resize Handle */}
+            {/* Resize Handle with visual indicator */}
             <div
-              className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-indigo-500/50 transition-colors z-50 transform -translate-x-1/2"
+              className="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-indigo-500/30 transition-all z-50 transform -translate-x-1/2 flex items-center justify-center group"
               onMouseDown={startResizing}
-            />
+            >
+              <div className="w-0.5 h-12 bg-gray-200 group-hover:bg-indigo-400 rounded-full transition-colors opacity-0 group-hover:opacity-100" />
+            </div>
             {/* Overlay to capture mouse events during resize (fixes iframe stuck issue) */}
             {isResizing && (
               <div
@@ -646,36 +648,53 @@ const CozyPal = forwardRef<CozyPalHandle, CozyPalProps>(({ themeName, phase, tim
               />
             )}
             {/* Top Header & Main Tabs */}
-            <div className="flex-none p-4 pb-2 border-b border-indigo-100 bg-white/50">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-bold text-indigo-900 flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center bg-indigo-100">
-                    <CozyAvatar state={avatarState === 'focused' ? 'idle' : avatarState} size={32} />
+            <div className="flex-none p-5 pb-3 border-b border-indigo-50 bg-white/40 backdrop-blur-md">
+              <div className="flex justify-between items-center mb-5">
+                <h2 className="text-xl font-bold text-indigo-950 flex items-center gap-3 tracking-tight">
+                  <motion.div
+                    whileHover={{ rotate: 10, scale: 1.1 }}
+                    className="w-10 h-10 rounded-2xl overflow-hidden flex items-center justify-center bg-indigo-50 shadow-inner border border-white"
+                  >
+                    <CozyAvatar state={avatarState === 'focused' ? 'idle' : avatarState} size={40} />
+                  </motion.div>
+                  <div className="flex flex-col">
+                    <span className="leading-none">Cozy Pal</span>
+                    <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mt-1">AI Study Companion</span>
                   </div>
-                  Cozy Assistant
                 </h2>
-                <button onClick={toggleChat} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
+                <motion.button
+                  whileHover={{ rotate: 90, scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={toggleChat}
+                  className="p-2.5 hover:bg-red-50 rounded-2xl transition-all text-gray-400 hover:text-red-500 border border-transparent hover:border-red-100 shadow-sm hover:shadow-red-100/50"
+                >
                   <X size={20} />
-                </button>
+                </motion.button>
               </div>
 
-              <div className="flex p-1 bg-gray-100/80 rounded-xl">
+              <div className="flex p-1.5 bg-gray-100/50 backdrop-blur-sm rounded-2xl border border-white/50">
                 <button
                   onClick={() => setMainTab('companion')}
-                  className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${mainTab === 'companion'
-                    ? 'bg-white text-indigo-600 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all relative ${mainTab === 'companion'
+                    ? 'text-indigo-600'
+                    : 'text-gray-400 hover:text-gray-600'
                     }`}
                 >
-                  {t('cozyPal.mainTabs.companion', 'AI Companion')}
+                  {mainTab === 'companion' && (
+                    <motion.div layoutId="main-tab-bg" className="absolute inset-0 bg-white shadow-md rounded-xl -z-10 border border-white" />
+                  )}
+                  {t('cozyPal.mainTabs.companion', 'Companion')}
                 </button>
                 <button
                   onClick={() => setMainTab('gemini')}
-                  className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${mainTab === 'gemini'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all relative ${mainTab === 'gemini'
+                    ? 'text-blue-600'
+                    : 'text-gray-400 hover:text-gray-700'
                     }`}
                 >
+                  {mainTab === 'gemini' && (
+                    <motion.div layoutId="main-tab-bg" className="absolute inset-0 bg-white shadow-md rounded-xl -z-10 border border-white" />
+                  )}
                   Gemini
                 </button>
               </div>
@@ -699,21 +718,25 @@ const CozyPal = forwardRef<CozyPalHandle, CozyPalProps>(({ themeName, phase, tim
                       </button>
                     </div>
 
-                    {/* Sub-tabs for Companion */}
-                    <div className="flex gap-1">
-                      {(['chat', 'memory', 'debug'] as const).map((tab) => (
-                        <button
-                          key={tab}
-                          onClick={() => setActiveTab(tab)}
-                          className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full transition-colors ${activeTab === tab
-                            ? 'bg-indigo-100 text-indigo-700'
-                            : 'text-indigo-300 hover:bg-indigo-50 hover:text-indigo-500'
-                            }`}
-                        >
-                          {t(`cozyPal.tabs.${tab}`)}
-                        </button>
-                      ))}
-                    </div>
+                    {(['chat', 'memory', 'debug'] as const).map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-full transition-all relative ${activeTab === tab
+                          ? 'text-indigo-700'
+                          : 'text-indigo-300 hover:text-indigo-500'
+                          }`}
+                      >
+                        {activeTab === tab && (
+                          <motion.div
+                            layoutId="companion-tab-active"
+                            className="absolute inset-0 bg-indigo-100 rounded-full -z-10"
+                            transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                          />
+                        )}
+                        {t(`cozyPal.tabs.${tab}`)}
+                      </button>
+                    ))}
                   </div>
 
                   <AnimatePresence>
@@ -749,19 +772,27 @@ const CozyPal = forwardRef<CozyPalHandle, CozyPalProps>(({ themeName, phase, tim
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
-                          className="p-4 space-y-4 flex flex-col flex-grow"
+                          className="p-4 space-y-4 flex flex-col flex-grow bg-indigo-50/20"
                         >
                           {messages.map((msg, idx) => (
                             <motion.div
                               key={idx}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
+                              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
                               className={`${msg.sender === 'user'
-                                ? 'bg-indigo-500 text-white self-end rounded-tr-none'
-                                : 'bg-indigo-50 text-indigo-800 self-start rounded-tl-none border border-indigo-100'
-                                } p-3 rounded-2xl text-sm shadow-sm max-w-[85%] break-words`}
+                                ? 'bg-indigo-600 text-white self-end rounded-2xl rounded-tr-none shadow-indigo-200'
+                                : 'bg-white text-indigo-900 self-start rounded-2xl rounded-tl-none border border-indigo-50 shadow-sm'
+                                } p-3.5 text-sm shadow-md max-w-[88%] break-words leading-relaxed`}
                             >
-                              {msg.text || (idx === messages.length - 1 && isLoading ? <span className="animate-pulse italic text-indigo-400">Typing...</span> : '')}
+                              <div className="font-medium">
+                                {msg.text || (idx === messages.length - 1 && isLoading ? (
+                                  <div className="flex gap-1 py-1">
+                                    <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1 }} className="w-1.5 h-1.5 bg-indigo-300 rounded-full" />
+                                    <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="w-1.5 h-1.5 bg-indigo-300 rounded-full" />
+                                    <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="w-1.5 h-1.5 bg-indigo-300 rounded-full" />
+                                  </div>
+                                ) : '')}
+                              </div>
                             </motion.div>
                           ))}
                           <div ref={messagesEndRef} />
@@ -771,76 +802,98 @@ const CozyPal = forwardRef<CozyPalHandle, CozyPalProps>(({ themeName, phase, tim
                       {activeTab === 'memory' && (
                         <motion.div
                           key="memory"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="p-4 space-y-4"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="p-4 space-y-6 flex flex-col flex-grow"
                         >
-                          {/* Memory Content Logic - Keeping same block structure */}
-                          <div className="space-y-3">
-                            {/* Facts */}
-                            <div className="bg-white/50 rounded-xl p-3 border border-indigo-100 shadow-sm">
-                              <h4 className="text-[10px] font-bold text-indigo-400 uppercase mb-2">{t('cozyPal.memory.facts')}</h4>
-                              <div className="flex flex-wrap gap-1.5">
-                                {diagnostics?.user_profile?.facts?.length ? diagnostics.user_profile.facts.map((f, i) => (
-                                  <motion.div
-                                    key={i}
-                                    whileHover={{ scale: 1.02 }}
-                                    className="group relative text-[10px] bg-indigo-100 text-indigo-700 pl-2 pr-2 py-0.5 rounded-full border border-indigo-200/50 flex items-center gap-1"
-                                  >
-                                    <span>{f}</span>
-                                    <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity ml-1 border-l border-indigo-300/30 pl-1">
-                                      <button onClick={() => { setEditingProfileItem({ category: 'facts', value: f }); setEditValue(f); }} className="p-0.5 hover:text-indigo-900 transition-colors"><Edit3 size={10} /></button>
-                                      <button onClick={() => handleDeleteProfileItem('facts', f)} className="p-0.5 hover:text-red-600 transition-colors"><Trash2 size={10} /></button>
-                                    </div>
-                                  </motion.div>
-                                )) : <p className="text-[10px] text-gray-400 italic">{t('cozyPal.memory.noFacts')}</p>}
-                              </div>
-                            </div>
-                            {/* Preferences */}
-                            <div className="bg-white/50 rounded-xl p-3 border border-indigo-100 shadow-sm">
-                              <h4 className="text-[10px] font-bold text-indigo-400 uppercase mb-2">{t('cozyPal.memory.preferences')}</h4>
-                              <div className="flex flex-wrap gap-1.5">
-                                {diagnostics?.user_profile?.preferences?.length ? diagnostics.user_profile.preferences.map((p, i) => (
-                                  <motion.div
-                                    key={i}
-                                    whileHover={{ scale: 1.02 }}
-                                    className="group relative text-[10px] bg-amber-100 text-amber-700 pl-2 pr-2 py-0.5 rounded-full border border-amber-200/50 flex items-center gap-1"
-                                  >
-                                    <span>{p}</span>
-                                    <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity ml-1 border-l border-amber-300/30 pl-1">
-                                      <button onClick={() => { setEditingProfileItem({ category: 'preferences', value: p }); setEditValue(p); }} className="p-0.5 hover:text-amber-900 transition-colors"><Edit3 size={10} /></button>
-                                      <button onClick={() => handleDeleteProfileItem('preferences', p)} className="p-0.5 hover:text-red-600 transition-colors"><Trash2 size={10} /></button>
-                                    </div>
-                                  </motion.div>
-                                )) : <p className="text-[10px] text-gray-400 italic">{t('cozyPal.memory.noPreferences')}</p>}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Timeline */}
-                          <div>
-                            <h4 className="text-[10px] font-bold text-indigo-400 uppercase mb-2 px-1">{t('cozyPal.memory.timeline')}</h4>
-                            <div className="space-y-2 overflow-y-auto pr-1 custom-scrollbar">
-                              {memoryFragments.length > 0 ? memoryFragments.map((f) => (
-                                <div key={f.id} className="bg-white/30 p-2 rounded-lg border border-white/50 text-[10px] text-indigo-900 group">
-                                  <div className="flex justify-between items-start mb-1">
-                                    <span className="text-[8px] text-indigo-400 font-medium">{new Date(f.created_at).toLocaleString()}</span>
-                                    <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity ml-1 pl-1 gap-1">
-                                      <button onClick={() => { setEditingFragment({ id: f.id, content: f.content }); setEditValue(f.content); }} className="p-0.5 hover:text-indigo-600 transition-colors"><Edit3 size={10} /></button>
-                                      <button onClick={() => handleDeleteFragment(f.id)} className="p-0.5 hover:text-red-600 transition-colors"><Trash2 size={10} /></button>
-                                    </div>
-                                  </div>
-                                  <div className="italic">"{f.content}"</div>
+                          <div className="space-y-4">
+                            {/* Facts & Preferences Section */}
+                            <div className="grid grid-cols-1 gap-3">
+                              <div className="glass-surface rounded-2xl p-4 shadow-sm">
+                                <h4 className="text-[11px] font-bold text-indigo-400 uppercase mb-3 tracking-widest flex items-center gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                                  {t('cozyPal.memory.facts')}
+                                </h4>
+                                <div className="flex flex-wrap gap-2">
+                                  {diagnostics?.user_profile?.facts?.length ? diagnostics.user_profile.facts.map((f, i) => (
+                                    <motion.div
+                                      key={i}
+                                      whileHover={{ scale: 1.05, y: -2 }}
+                                      className="group relative text-xs bg-white text-indigo-700 pl-3 pr-2 py-1.5 rounded-xl border border-indigo-100 shadow-sm flex items-center gap-2"
+                                    >
+                                      <span className="font-medium">{f}</span>
+                                      <div className="flex items-center opacity-0 group-hover:opacity-100 transition-all ml-1 border-l border-indigo-50 pl-1 gap-1">
+                                        <button onClick={() => { setEditingProfileItem({ category: 'facts', value: f }); setEditValue(f); }} className="p-1 hover:bg-indigo-50 rounded transition-colors text-indigo-400 hover:text-indigo-600"><Edit3 size={12} /></button>
+                                        <button onClick={() => handleDeleteProfileItem('facts', f)} className="p-1 hover:bg-red-50 rounded transition-colors text-indigo-400 hover:text-red-500"><Trash2 size={12} /></button>
+                                      </div>
+                                    </motion.div>
+                                  )) : <p className="text-xs text-gray-400 font-medium">{t('cozyPal.memory.noFacts')}</p>}
                                 </div>
-                              )) : <div className="text-[10px] text-gray-400 italic px-1">{t('cozyPal.memory.noFragments')}</div>}
+                              </div>
+
+                              <div className="glass-surface rounded-2xl p-4 shadow-sm">
+                                <h4 className="text-[11px] font-bold text-amber-500 uppercase mb-3 tracking-widest flex items-center gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                  {t('cozyPal.memory.preferences')}
+                                </h4>
+                                <div className="flex flex-wrap gap-2">
+                                  {diagnostics?.user_profile?.preferences?.length ? diagnostics.user_profile.preferences.map((p, i) => (
+                                    <motion.div
+                                      key={i}
+                                      whileHover={{ scale: 1.05, y: -2 }}
+                                      className="group relative text-xs bg-white text-amber-700 pl-3 pr-2 py-1.5 rounded-xl border border-amber-100 shadow-sm flex items-center gap-2"
+                                    >
+                                      <span className="font-medium">{p}</span>
+                                      <div className="flex items-center opacity-0 group-hover:opacity-100 transition-all ml-1 border-l border-amber-50 pl-1 gap-1">
+                                        <button onClick={() => { setEditingProfileItem({ category: 'preferences', value: p }); setEditValue(p); }} className="p-1 hover:bg-amber-50 rounded transition-colors text-amber-400 hover:text-amber-600"><Edit3 size={12} /></button>
+                                        <button onClick={() => handleDeleteProfileItem('preferences', p)} className="p-1 hover:bg-red-50 rounded transition-colors text-amber-400 hover:text-red-500"><Trash2 size={12} /></button>
+                                      </div>
+                                    </motion.div>
+                                  )) : <p className="text-xs text-gray-400 font-medium">{t('cozyPal.memory.noPreferences')}</p>}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Timeline Card */}
+                            <div className="glass-surface rounded-2xl p-4 shadow-sm">
+                              <h4 className="text-[11px] font-bold text-indigo-400 uppercase mb-4 tracking-widest flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                                {t('cozyPal.memory.timeline')}
+                              </h4>
+                              <div className="space-y-3">
+                                {memoryFragments.length > 0 ? memoryFragments.map((f) => (
+                                  <motion.div
+                                    key={f.id}
+                                    whileHover={{ x: 4 }}
+                                    className="bg-white/60 p-3 rounded-xl border border-white text-xs text-indigo-900 group shadow-sm transition-all"
+                                  >
+                                    <div className="flex justify-between items-center mb-2">
+                                      <span className="text-[9px] bg-indigo-50 text-indigo-400 font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter">
+                                        {new Date(f.created_at).toLocaleDateString()}
+                                      </span>
+                                      <div className="flex items-center opacity-0 group-hover:opacity-100 transition-all gap-1">
+                                        <button onClick={() => { setEditingFragment({ id: f.id, content: f.content }); setEditValue(f.content); }} className="p-1.5 hover:bg-indigo-50 rounded-lg transition-colors text-indigo-400 hover:text-indigo-600"><Edit3 size={12} /></button>
+                                        <button onClick={() => handleDeleteFragment(f.id)} className="p-1.5 hover:bg-red-50 rounded-lg transition-colors text-indigo-400 hover:text-red-500"><Trash2 size={12} /></button>
+                                      </div>
+                                    </div>
+                                    <div className="leading-relaxed">"{f.content}"</div>
+                                  </motion.div>
+                                )) : <div className="text-xs text-gray-400 px-1">{t('cozyPal.memory.noFragments')}</div>}
+                              </div>
                             </div>
                           </div>
 
-                          <div className="pt-2 mt-4 border-t border-indigo-100/50 flex justify-center">
-                            <button onClick={handleResetMemory} disabled={isSavingEdit} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-red-400 hover:text-red-600 hover:bg-red-50 transition-all border border-red-100/50">
-                              <Trash2 size={12} /> {t('cozyPal.memory.resetMemory')}
-                            </button>
+                          <div className="mt-auto pt-6 border-t border-indigo-50 flex justify-center">
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={handleResetMemory}
+                              disabled={isSavingEdit}
+                              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-[11px] font-bold uppercase tracking-widest text-red-500 hover:bg-red-50 transition-all border border-red-100 shadow-sm"
+                            >
+                              <Trash2 size={14} /> {t('cozyPal.memory.resetMemory')}
+                            </motion.button>
                           </div>
                         </motion.div>
                       )}
@@ -870,7 +923,7 @@ const CozyPal = forwardRef<CozyPalHandle, CozyPalProps>(({ themeName, phase, tim
                               <div className="flex items-center justify-center h-full animate-pulse text-indigo-400">
                                 {t('cozyPal.debug.loading')}
                               </div>
-                            ) : (diagnostics?.full_prompt ? renderHighlightedPrompt() : <div className="text-gray-500 italic">{t('cozyPal.debug.noData')}</div>)}
+                            ) : (diagnostics?.full_prompt ? renderHighlightedPrompt() : <div className="text-gray-500">{t('cozyPal.debug.noData')}</div>)}
 
                             <AnimatePresence>
                               {editingFragment && (

@@ -2,7 +2,8 @@ import os
 from abc import ABC, abstractmethod
 from typing import AsyncGenerator, Optional, List
 import logging
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from openai import AsyncOpenAI
 import json
 from .. import schemas
@@ -44,19 +45,14 @@ class AIServiceProvider(ABC):
 
 class GeminiProvider(AIServiceProvider):
     """
-    Google Gemini implementation of the AI Service Provider.
+    Google Gemini implementation of the AI Service Provider using the official V1 SDK.
     """
 
     def __init__(self):
         self.default_model_name = "gemini-2.0-flash"
-        self._configured_key = None
-        self.model = None
 
-    def _get_model_instance(self, api_key: str, model_name: str, system_instruction: Optional[str] = None):
-        # Always re-instantiate if system_instruction is provided to ensure it's applied
-        return genai.GenerativeModel(
-            model_name, system_instruction=system_instruction
-        )
+    def _get_client(self, api_key: str) -> genai.Client:
+        return genai.Client(api_key=api_key)
 
     async def stream_chat(
         self,
@@ -73,29 +69,31 @@ class GeminiProvider(AIServiceProvider):
             yield "Error: No Google API Key provided. Please set it in Settings."
             return
 
-        # Configure API key
-        genai.configure(api_key=current_key)
-        
-        # Pass system_prompt directly to model instantiation for better adherence
-        model_inst = self._get_model_instance(current_key, target_model, system_instruction=system_prompt)
-        if not model_inst:
-            yield "Error: Failed to initialize Gemini model."
-            return
-
-        # Construct structured contents list instead of raw string
-        contents = []
-        if chat_history:
-            for msg in chat_history:
-                role = "user" if msg.role == "user" else "model"
-                contents.append({"role": role, "parts": [msg.content]})
-
-        # Add current user message
-        contents.append({"role": "user", "parts": [message]})
-
         try:
-            # Use the contents list which preserves conversational structure
-            response = await model_inst.generate_content_async(contents, stream=True)
-            async for chunk in response:
+            client = self._get_client(current_key)
+
+            contents = []
+            if chat_history:
+                for msg in chat_history:
+                    role = "user" if msg.role == "user" else "model"
+                    contents.append(
+                        types.Content(role=role, parts=[types.Part(text=msg.content)])
+                    )
+
+            contents.append(
+                types.Content(role="user", parts=[types.Part(text=message)])
+            )
+
+            config = types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                temperature=0.7,
+            )
+
+            async for chunk in await client.aio.models.generate_content_stream(
+                model=target_model,
+                contents=contents,
+                config=config,
+            ):
                 if chunk.text:
                     yield chunk.text
         except Exception as e:
@@ -107,11 +105,16 @@ class GeminiProvider(AIServiceProvider):
         if not current_key:
             return []
         try:
-            genai.configure(api_key=current_key)
+            client = self._get_client(current_key)
             models = []
-            for m in genai.list_models():
-                if "generateContent" in m.supported_generation_methods:
-                    models.append(m.name.replace("models/", ""))
+            for m in client.models.list():
+                if m.name and (
+                    m.supported_actions and "generateContent" in m.supported_actions
+                ):
+                    name = m.name
+                    if name.startswith("models/"):
+                        name = name.split("/", 1)[1]
+                    models.append(name)
             return sorted(models)
         except Exception as e:
             logger.error(f"Failed to list Gemini models: {e}")
@@ -155,23 +158,29 @@ class OpenAICompatibleProvider(AIServiceProvider):
 
         # Zhipu AI doesn't support "system" role - convert to user message with meta-instructions
         is_zhipu = self.api_key_env_var == "ZHIPU_API_KEY"
-        
+
         messages = []
         if is_zhipu:
             # For Zhipu: Add system prompt as first user message with meta-instruction
-            messages.append({
-                "role": "user",
-                "content": f"[SYSTEM INSTRUCTIONS - Please follow these guidelines in all responses]\n{system_prompt}\n\n[END OF SYSTEM INSTRUCTIONS]"
-            })
+            messages.append(
+                {
+                    "role": "user",
+                    "content": f"[SYSTEM INSTRUCTIONS - Please follow these guidelines in all responses]\n{system_prompt}\n\n[END OF SYSTEM INSTRUCTIONS]",
+                }
+            )
             # Add a brief assistant acknowledgment
-            messages.append({
-                "role": "assistant",
-                "content": "我明白了，我会遵循这些指导原则。" if "zh" in system_prompt[:200].lower() else "Understood. I will follow these guidelines."
-            })
+            messages.append(
+                {
+                    "role": "assistant",
+                    "content": "我明白了，我会遵循这些指导原则。"
+                    if "zh" in system_prompt[:200].lower()
+                    else "Understood. I will follow these guidelines.",
+                }
+            )
         else:
             # Standard OpenAI format for other providers
             messages.append({"role": "system", "content": system_prompt})
-        
+
         if chat_history:
             for msg in chat_history:
                 # Normalize roles for Zhipu and other OpenAI-compatible providers
@@ -198,12 +207,14 @@ class OpenAICompatibleProvider(AIServiceProvider):
 
     async def list_models(self, api_key: Optional[str] = None) -> List[str]:
         current_key = api_key or self.default_api_key
-        # Special handling for Ollama 
+        # Special handling for Ollama
         if not current_key and self.api_key_env_var != "OLLAMA_API_KEY":
             return []
-        
+
         try:
-            client = AsyncOpenAI(api_key=current_key or "ollama", base_url=self.base_url)
+            client = AsyncOpenAI(
+                api_key=current_key or "ollama", base_url=self.base_url
+            )
             models_resp = await client.models.list()
             return sorted([m.id for m in models_resp.data])
         except Exception as e:
@@ -303,7 +314,14 @@ class AIChatService:
                         "(Context from past conversations that might be relevant):\n"
                     )
                     for f in fragments_data:
-                        memory_fragments_context += f"- {f['content']}\n"
+                        # Handle both dict (if include_scores=True) and object
+                        content = (
+                            f.get("content")
+                            if isinstance(f, dict)
+                            else getattr(f, "content", "")
+                        )
+                        if content:
+                            memory_fragments_context += f"- {content}\n"
 
             except Exception as e:
                 logger.error(f"Error retrieving memory: {e}")
@@ -314,10 +332,14 @@ class AIChatService:
         # Add document context if provided
         if document_id and document_title:
             document_context = f"\n[DOCUMENT CONTEXT]\n"
-            document_context += f"The user is currently reading a document titled: {document_title}\n"
+            document_context += (
+                f"The user is currently reading a document titled: {document_title}\n"
+            )
             if document_content:
                 # Add a summary of the document content
-                content_preview = document_content[:1000]  # Limit to first 1000 characters
+                content_preview = document_content[
+                    :1000
+                ]  # Limit to first 1000 characters
                 document_context += f"Document preview: {content_preview}...\n"
             document_context += "(INSTRUCTION: Use this document context to provide relevant responses to the user's questions about the document.)\n"
             augmented_system_prompt += document_context
@@ -347,7 +369,9 @@ class AIChatService:
         ):
             yield chunk
 
-    async def list_models(self, provider: str, api_key: Optional[str] = None) -> List[str]:
+    async def list_models(
+        self, provider: str, api_key: Optional[str] = None
+    ) -> List[str]:
         """
         List available models for a specific provider.
         """

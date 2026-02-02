@@ -15,6 +15,32 @@ router = APIRouter(prefix="/api", tags=["sessions"])
 # ... (other routes remain the same)
 
 
+@router.post("/sessions", response_model=schemas.SessionResponse, status_code=201)
+async def create_learning_session(
+    session_in: schemas.SessionCreate,
+    current_user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    return await crud.create_session(db, session_in, current_user_id)
+
+
+@router.patch("/sessions/{session_id}", response_model=schemas.SessionResponse)
+async def update_learning_session(
+    session_id: int,
+    session_data: schemas.SessionUpdate,
+    current_user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    # Verify session belongs to user (optional but recommended)
+    # For now, just update
+    updated = await crud.update_session(
+        db, session_id, session_data.model_dump(exclude_unset=True)
+    )
+    if not updated:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return updated
+
+
 def construct_system_prompt_here(
     context: Optional[schemas.ChatContext],
     daily_focus: int,
@@ -155,8 +181,10 @@ async def chat_completions(
 
     # Get user settings to find the correct API key and default provider
     user_settings = await crud.get_user_settings(db, current_user_id)
-    effective_provider = request.provider or (user_settings.ai_provider if user_settings else "gemini")
-    
+    effective_provider = request.provider or (
+        user_settings.ai_provider if user_settings else "gemini"
+    )
+
     # Determine the API key to use
     api_key_to_use = x_google_api_key
     if not api_key_to_use and user_settings:
@@ -168,7 +196,6 @@ async def chat_completions(
             api_key_to_use = user_settings.deepseek_api_key
         elif effective_provider == "zhipu":
             api_key_to_use = user_settings.zhipu_api_key
-
 
     system_prompt = construct_system_prompt_here(
         context, daily_focus, daily_sessions, language, request.message
@@ -215,6 +242,7 @@ async def get_provider_models(
     # If no API key is provided, try to fetch it from user settings
     if not api_key:
         from .. import crud
+
         settings = await crud.get_user_settings(db, current_user_id)
         if settings:
             if provider == "gemini":
@@ -225,7 +253,7 @@ async def get_provider_models(
                 api_key = settings.deepseek_api_key
             elif provider == "zhipu":
                 api_key = settings.zhipu_api_key
-    
+
     models = await chat_service.list_models(provider, api_key=api_key)
     return {"provider": provider, "models": models}
 

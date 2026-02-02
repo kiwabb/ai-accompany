@@ -78,11 +78,20 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl }) => {
     const [pageNumber, setPageNumber] = useState<number>(1);
     const [scale, setScale] = useState<number>(1.0);
     const [isLoaded, setIsLoaded] = useState(false);
+    const [firstPageRendered, setFirstPageRendered] = useState(false);
 
     function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
         setNumPages(numPages);
-        setIsLoaded(true);
+        // Don't set isLoaded here immediately, wait for first page render
     }
+
+    // Callback when the first page finishes rendering
+    const onFirstPageRenderSuccess = () => {
+        if (!firstPageRendered) {
+            setFirstPageRendered(true);
+            setTimeout(() => setIsLoaded(true), 100); // Small buffer to ensure visual readiness
+        }
+    };
 
     return (
         <div className="flex flex-col items-center w-full transition-all duration-500">
@@ -121,17 +130,20 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl }) => {
             </div>
 
             {/* Content Area - Virtualized Scrolling List */}
-            <div className={`w-full flex flex-col items-center py-8 transition-opacity duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
+            <div className={`w-full flex flex-col items-center py-8 transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
+                {/* Custom Loading State - Shown until first page is ready */}
+                {!isLoaded && (
+                    <div className="absolute inset-0 top-20 flex flex-col items-center justify-center gap-4 z-40 bg-[#faf9f6]">
+                        <Loader2 className="animate-spin text-[#d97706] w-10 h-10" />
+                        <p className="text-[#8d8876] font-medium animate-pulse">{t('reader.opening')}</p>
+                    </div>
+                )}
+
                 <Document
                     file={fileUrl}
                     onLoadSuccess={onDocumentLoadSuccess}
-                    className="flex flex-col items-center"
-                    loading={
-                        <div className="flex flex-col items-center justify-center gap-4 py-32">
-                            <Loader2 className="animate-spin text-[#d97706] w-10 h-10" />
-                            <p className="text-[#8d8876] font-medium animate-pulse">{t('reader.opening')}</p>
-                        </div>
-                    }
+                    className="flex flex-col items-center min-h-screen"
+                    loading={null} // We handle loading state externally
                     error={
                         <div className="text-red-500 p-8 bg-red-50 rounded-2xl border border-red-100 mt-10">
                             <p className="font-semibold">{t('reader.loadError')}</p>
@@ -139,10 +151,26 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl }) => {
                         </div>
                     }
                 >
-                    {Array.from(new Array(numPages), (_, index) => (
+                    {numPages > 0 && (
+                        /* First Page - Critical for initial load */
+                        <div className="pdf-page-wrapper w-full flex justify-center py-4 mb-4">
+                            <Page
+                                pageNumber={1}
+                                scale={scale}
+                                renderTextLayer={false}
+                                renderAnnotationLayer={false}
+                                className="shadow-[0_4px_24px_rgba(0,0,0,0.06)] border border-[#e9e6da]"
+                                onRenderSuccess={onFirstPageRenderSuccess}
+                                loading={null}
+                            />
+                        </div>
+                    )}
+
+                    {/* Remaining Pages - Lazy Loaded */}
+                    {numPages > 1 && Array.from(new Array(numPages - 1), (_, index) => (
                         <LazyPage
-                            key={`page_${index + 1}`}
-                            pageNumber={index + 1}
+                            key={`page_${index + 2}`}
+                            pageNumber={index + 2}
                             scale={scale}
                             onVisible={(pg) => setPageNumber(pg)}
                         />

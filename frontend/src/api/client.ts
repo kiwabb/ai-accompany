@@ -45,6 +45,7 @@ export interface UserSettingsBackend {
   ai_proactivity?: boolean;
   ai_actionable?: boolean;
   auto_start_next?: boolean;
+  active_theme_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -124,6 +125,7 @@ export const getUserSettings = async (): Promise<TimerSettings> => {
     aiProactivity: backendSettings.ai_proactivity,
     aiActionable: backendSettings.ai_actionable,
     autoStartNext: backendSettings.auto_start_next ?? false,
+    activeThemeId: backendSettings.active_theme_id,
   };
 };
 
@@ -142,6 +144,7 @@ export const upsertUserSettings = async (settings: TimerSettings): Promise<Timer
     ai_proactivity: settings.aiProactivity,
     ai_actionable: settings.aiActionable,
     auto_start_next: settings.autoStartNext,
+    active_theme_id: settings.activeThemeId,
   };
 
   const response = await fetch(`${API_BASE_URL}/settings`, {
@@ -165,6 +168,7 @@ export const upsertUserSettings = async (settings: TimerSettings): Promise<Timer
     aiProactivity: updatedBackendSettings.ai_proactivity,
     aiActionable: updatedBackendSettings.ai_actionable,
     autoStartNext: updatedBackendSettings.auto_start_next ?? settings.autoStartNext,
+    activeThemeId: updatedBackendSettings.active_theme_id,
   };
 };
 

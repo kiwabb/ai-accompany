@@ -56,6 +56,7 @@ async def test_topic_relationships(db_session):
 
     # Create a LearningSession linked to the topic
     learning_session = LearningSession(
+        user_id=user_id,
         theme_name="Learning Theme",
         duration_seconds=1500,
         phase_type="focus",
@@ -73,6 +74,7 @@ async def test_topic_relationships(db_session):
 
     # Create a ChatHistory entry linked to the topic
     chat_entry = ChatHistory(
+        user_id=user_id,
         session_id=learning_session.id,
         role="user",
         content="Hello in a topic!",

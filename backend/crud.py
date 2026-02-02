@@ -5,8 +5,10 @@ from datetime import date
 from typing import Dict, List, Optional
 
 
-async def create_session(db: AsyncSession, session_in: schemas.SessionCreate):
-    db_session = models.LearningSession(**session_in.model_dump())
+async def create_session(
+    db: AsyncSession, session_in: schemas.SessionCreate, user_id: str
+):
+    db_session = models.LearningSession(**session_in.model_dump(), user_id=user_id)
     db.add(db_session)
     await db.commit()
     await db.refresh(db_session)
@@ -228,12 +230,16 @@ async def delete_topic(db: AsyncSession, topic_id: int, user_id: str) -> bool:
 
 async def get_countdowns(db: AsyncSession, user_id: str) -> List[models.Countdown]:
     result = await db.execute(
-        select(models.Countdown).where(models.Countdown.user_id == user_id).order_by(models.Countdown.target_date.asc())
+        select(models.Countdown)
+        .where(models.Countdown.user_id == user_id)
+        .order_by(models.Countdown.target_date.asc())
     )
     return list(result.scalars().all())
 
 
-async def create_countdown(db: AsyncSession, user_id: str, countdown_in: schemas.CountdownCreate) -> models.Countdown:
+async def create_countdown(
+    db: AsyncSession, user_id: str, countdown_in: schemas.CountdownCreate
+) -> models.Countdown:
     db_countdown = models.Countdown(**countdown_in.model_dump(), user_id=user_id)
     db.add(db_countdown)
     await db.commit()

@@ -16,6 +16,8 @@ async def test_process_exchange(db_session: AsyncSession):
     ai_msg = "That's great! Rust is a powerful language."
 
     service = MemoryService()
+    service.client = MagicMock()
+    service.client = MagicMock()
 
     # Mock extraction response
     mock_response = MagicMock()
@@ -84,6 +86,7 @@ async def test_process_exchange_merge_data(db_session: AsyncSession):
     ai_msg = "Python is great too!"
 
     service = MemoryService()
+    service.client = MagicMock()
 
     mock_response = MagicMock()
     mock_response.text = json.dumps(
@@ -122,6 +125,7 @@ async def test_process_exchange_merge_data(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_extract_memory_invalid_json():
     service = MemoryService()
+    service.client = MagicMock()
     user_msg = "test"
     ai_msg = "test"
 
@@ -134,26 +138,32 @@ async def test_extract_memory_invalid_json():
         mock_gen.return_value = mock_response
 
         # This should return {} and log an error
-        result = await service._extract_memory(user_msg, ai_msg)
+        result = await service._extract_memory(
+            service.client, "test_user", user_msg, ai_msg
+        )
         assert result == {}
 
 
 @pytest.mark.asyncio
 async def test_extract_memory_api_error():
     service = MemoryService()
+    service.client = MagicMock()
 
     with patch.object(
         service.client.aio.models,
         "generate_content",
         side_effect=Exception("API Error"),
     ):
-        result = await service._extract_memory("test", "test")
+        result = await service._extract_memory(
+            service.client, "test_user", "test", "test"
+        )
         assert result == {}
 
 
 @pytest.mark.asyncio
 async def test_generate_embedding_api_error():
     service = MemoryService()
+    service.client = MagicMock()
 
     with patch.object(
         service.client.aio.models,
@@ -168,6 +178,7 @@ async def test_generate_embedding_api_error():
 @pytest.mark.asyncio
 async def test_extract_memory_missing_keys(db_session: AsyncSession):
     service = MemoryService()
+    service.client = MagicMock()
 
     mock_response = MagicMock()
     # Missing 'emotional_state'

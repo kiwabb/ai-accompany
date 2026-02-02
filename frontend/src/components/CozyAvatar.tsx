@@ -14,17 +14,39 @@ const CozyAvatar: React.FC<CozyAvatarProps> = ({ state, size = 64 }) => {
 
   // Animation variants
   const containerVariants = {
-    idle: { y: [0, -5, 0], transition: { duration: 3, repeat: Infinity, ease: "easeInOut" } },
-    speaking: { y: [0, -2, 0], scale: [1, 1.05, 1], transition: { duration: 0.4, repeat: Infinity } },
-    thinking: { rotate: [0, 5, -5, 0], transition: { duration: 2, repeat: Infinity } },
-    focused: { y: 0 }
+    idle: { 
+      y: [0, -8, 0], 
+      rotate: [0, -1, 1, 0],
+      transition: { duration: 4, repeat: Infinity, ease: "easeInOut" } 
+    },
+    speaking: { 
+      y: [0, -2, 0], 
+      scale: [1, 1.08, 1], 
+      transition: { duration: 0.3, repeat: Infinity } 
+    },
+    thinking: { 
+      rotate: [0, 8, -8, 0], 
+      scale: [1, 0.95, 1],
+      transition: { duration: 2.5, repeat: Infinity, ease: "easeInOut" } 
+    },
+    focused: { 
+      scale: 1.1,
+      y: [0, -2, 0],
+      transition: { duration: 3, repeat: Infinity, ease: "easeInOut" }
+    }
   };
 
   const eyeVariants = {
-    idle: { scaleY: [1, 1, 0.1, 1], transition: { duration: 4, repeat: Infinity, times: [0, 0.9, 0.95, 1] } },
-    thinking: { x: [0, 5, -5, 0], transition: { duration: 2, repeat: Infinity } },
-    speaking: { scaleY: 1 },
-    focused: { scaleY: 0.8 } // Slightly narrowed eyes for focus
+    idle: { 
+      scaleY: [1, 1, 0.1, 1], 
+      transition: { duration: 5, repeat: Infinity, times: [0, 0.85, 0.9, 1] } 
+    },
+    thinking: { 
+      x: [0, 4, -4, 0], 
+      transition: { duration: 3, repeat: Infinity } 
+    },
+    speaking: { scaleY: 1.1 },
+    focused: { scaleY: 0.7, y: 1 } 
   };
 
   const mouthVariants = {

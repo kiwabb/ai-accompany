@@ -13,6 +13,7 @@ async def test_learning_session_model_has_ai_fields(db_session):
     """
     # Simulate data containing new AI fields
     session_data = {
+        "user_id": "test_user",
         "theme_name": "test_theme",
         "duration_seconds": 1500,
         "phase_type": "focus",

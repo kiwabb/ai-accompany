@@ -1,9 +1,6 @@
-import React, { useEffect, useRef } from 'react';
 import { Settings as SettingsIcon, Book as BookIcon } from 'lucide-react';
 import { motion, LayoutGroup, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import type { CozyPalHandle } from './CozyPal';
-import CozyPal from './CozyPal';
 import { TimerDisplay } from './TimerDisplay';
 import TimerControls from './TimerControls';
 import CountdownWidget from './CountdownWidget';
@@ -11,9 +8,8 @@ import { useTimerContext } from '../contexts/TimerContext';
 import { useNavigate } from 'react-router-dom';
 
 const PomodoroTimer: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
-  const currentLanguage = i18n.language;
 
   const {
     state,
@@ -24,176 +20,112 @@ const PomodoroTimer: React.FC = () => {
     handleToggle,
     handleReset,
     handleSkip,
-    activeTheme,
     initialLoaded
   } = useTimerContext();
 
-  const { phase, completedSessions, settings } = state;
-
-  const cozyPalRef = useRef<CozyPalHandle>(null);
-  const prevPhaseRef = useRef(phase);
-
-  // AI Proactive Messages (UI Side)
-  // We keep this here because CozyPal is part of the view.
-  // If the user navigates away, they won't see the message, which is expected behavior for now.
-  useEffect(() => {
-    if (prevPhaseRef.current !== phase) {
-      if (phase === 'focus') {
-        cozyPalRef.current?.triggerProactiveMessage('focus_start', totalTimeValue);
-      } else if (phase === 'shortBreak' || phase === 'longBreak') {
-        cozyPalRef.current?.triggerProactiveMessage('break_start', totalTimeValue);
-      }
-      prevPhaseRef.current = phase;
-    }
-  }, [phase, totalTimeValue]);
-
-  useEffect(() => {
-    if (isActive) {
-      if (phase === 'focus' && timeLeft === 60) {
-        cozyPalRef.current?.triggerProactiveMessage('focus_near_end', 60);
-      } else if (phase !== 'focus' && timeLeft === 30) {
-        cozyPalRef.current?.triggerProactiveMessage('break_near_end', 30);
-      }
-    }
-  }, [timeLeft, phase, isActive]);
-
-  const handleStartCallback = React.useCallback(() => {
-    // Trigger message on manual start if at beginning
-    if (timeLeft === totalTimeValue) {
-      if (phase === 'focus') {
-        cozyPalRef.current?.triggerProactiveMessage('focus_start', totalTimeValue);
-      } else {
-        cozyPalRef.current?.triggerProactiveMessage('break_start', totalTimeValue);
-      }
-    }
-    handleToggle();
-  }, [timeLeft, totalTimeValue, phase, handleToggle]);
-
+  const { phase, completedSessions } = state;
 
   return (
     <LayoutGroup>
       <motion.div
         layout
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-[420px] md:max-w-[480px] lg:max-w-[1024px] xl:max-w-[1100px] rounded-[48px] md:rounded-[72px] p-6 md:p-10 lg:p-16 flex flex-col lg:flex-row items-center lg:items-center gap-6 md:gap-10 lg:gap-24 relative transition-all duration-700 mx-auto"
-        style={{
-          background: 'linear-gradient(135deg, #FFFFFF 0%, #FFF9F0 50%, #FFFFFF 100%)',
-          boxShadow: '0 20px 60px -10px rgba(74, 68, 57, 0.12), 0 8px 30px -8px rgba(74, 68, 57, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9)'
-        }}
+        initial={{ opacity: 0, scale: 0.95, y: 30 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="w-full max-w-5xl rounded-[64px] p-10 md:p-16 flex flex-col lg:flex-row items-center gap-12 md:gap-24 relative transition-all duration-700 mx-auto bg-white/60 backdrop-blur-3xl border border-white shadow-[0_40px_100px_-20px_rgba(0,0,0,0.1)]"
       >
         <AnimatePresence>
           {!initialLoaded && (
             <motion.div
               initial={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 z-50 bg-white/90 flex items-center justify-center rounded-[56px] md:rounded-[72px]"
+              className="absolute inset-0 z-50 bg-white/40 backdrop-blur-3xl flex items-center justify-center rounded-[64px]"
             >
-              <div className="text-cozy-text font-bold">Loading settings...</div>
+              <div className="flex flex-col items-center gap-6">
+                <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-500 rounded-full animate-spin" />
+                <div className="text-slate-900 font-bold uppercase tracking-[0.2em] text-[10px]">{t('timer.loading')}</div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <motion.div layout className="flex-shrink-0 flex flex-col items-center justify-center gap-6">
+        {/* Left Side: Timer Circle */}
+        <motion.div layout className="flex-shrink-0 flex flex-col items-center justify-center gap-8">
           <TimerDisplay timeLeft={timeLeft} totalTime={totalTimeValue} phase={phase} />
           <CountdownWidget />
         </motion.div>
 
-        <motion.div layout className="flex-grow flex flex-col items-center lg:items-start justify-center relative z-10 w-full lg:max-w-[420px] min-w-0">
-          <div className="w-full mb-8 lg:mb-12">
-            <div className="flex flex-col">
-              <span className="text-[11px] md:text-xs font-black uppercase tracking-[0.3em] text-cozy-text-light/50 ml-1 mb-2">{t('timer.focusCompanion')}</span>
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-normal text-cozy-text/90 leading-tight font-heading">{t('timer.studyBuddy')}</h1>
-            </div>
+        {/* Right Side: Info & Controls */}
+        <motion.div layout className="flex-grow flex flex-col items-center lg:items-start justify-center relative z-10 w-full min-w-0">
+          <div className="w-full mb-10 text-center lg:text-left">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/5 text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-4 border border-slate-200"
+            >
+              {t('timer.focusCompanion')}
+            </motion.div>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-normal text-slate-900 leading-tight font-heading">
+              {t('timer.studyBuddy')}
+            </h1>
           </div>
 
-
-          <div className="w-full flex flex-col items-center lg:items-start">
+          <div className="w-full flex flex-col items-center lg:items-start space-y-8">
             <motion.div
               key={completedSessions}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="mb-6 lg:mb-14 px-8 py-2.5 bg-cozy-cream/50 rounded-full text-xs md:text-sm font-black uppercase tracking-[0.2em] text-cozy-text-light/70 border border-white shadow-sm"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="px-8 py-3 bg-white/80 rounded-2xl text-xs font-bold uppercase tracking-widest text-slate-400 border border-slate-100 shadow-sm"
             >
               {t('timer.cycle')} #{completedSessions + 1}
             </motion.div>
-            <div className="lg:pl-2">
-              <TimerControls
-                isActive={isActive}
-                onStartPause={handleStartCallback}
-                onReset={handleReset}
-                onSkip={handleSkip}
-              />
-            </div>
+
+            <TimerControls
+              isActive={isActive}
+              onStartPause={handleToggle}
+              onReset={handleReset}
+              onSkip={handleSkip}
+            />
 
             {todayStats && (
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 transition={{ delay: 0.6 }}
-                className="mt-6 lg:mt-8 text-sm text-cozy-text-light/80 text-center lg:text-left"
+                className="pt-8 border-t border-slate-100 w-full flex flex-col sm:flex-row gap-8 justify-center lg:justify-start"
               >
-                {t('timer.todayFocus')}: <span className="font-bold text-cozy-orange">{todayStats.total_focus_minutes} {t('timer.minutes')}</span>
-                <br />{t('timer.totalSessions')}: <span className="font-bold text-cozy-orange">{todayStats.total_sessions}</span>
+                <div className="space-y-1 text-center lg:text-left">
+                  <div className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{t('timer.todayFocus')}</div>
+                  <div className="text-2xl font-bold text-indigo-500">{todayStats.total_focus_minutes} <span className="text-xs uppercase font-bold text-slate-400">{t('timer.minutes')}</span></div>
+                </div>
+                <div className="space-y-1 text-center lg:text-left">
+                  <div className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{t('timer.totalSessions')}</div>
+                  <div className="text-2xl font-bold text-rose-500">{todayStats.total_sessions}</div>
+                </div>
               </motion.div>
             )}
-
           </div>
         </motion.div>
 
-        {/* Responsive Navigation Bar */}
-        <div className="absolute lg:right-[-28px] xl:right-[-40px] lg:top-1/2 lg:-translate-y-1/2 bottom-[-20px] left-1/2 -translate-x-1/2 lg:left-auto lg:translate-x-0 flex flex-col gap-3 z-50">
-          <motion.div
-            initial={{ opacity: 0, y: 20, x: 0 }}
-            animate={{ opacity: 1, y: 0, x: 0 }}
-            transition={{ delay: 0.5 }}
-            className="flex flex-row lg:flex-col bg-white/90 backdrop-blur-2xl p-1.5 rounded-[32px] lg:rounded-[40px] shadow-2xl border border-white items-center"
+        {/* Right Floating Nav (Pro Max Design) */}
+        <div className="absolute right-[-40px] top-1/2 -translate-y-1/2 hidden xl:flex flex-col gap-4">
+          <motion.button
+            whileHover={{ x: 8 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => navigate('/library')}
+            className="w-20 h-20 bg-white/80 backdrop-blur-2xl rounded-3xl shadow-xl flex items-center justify-center text-indigo-500 group border border-white"
           >
-            <motion.button
-              whileHover={{ scale: 1.05, backgroundColor: 'rgba(99, 102, 241, 0.05)' }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => navigate('/library')}
-              className="flex flex-col items-center gap-1 p-3 md:p-4 rounded-[24px] lg:rounded-[32px] text-indigo-500 transition-all group min-w-[70px] md:min-w-0"
-            >
-              <div className="p-2 md:p-2.5 bg-indigo-50/50 group-hover:bg-indigo-100/50 rounded-xl lg:rounded-2xl transition-colors">
-                <BookIcon size={20} strokeWidth={2.5} />
-              </div>
-              <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-indigo-400/80 group-hover:text-indigo-600 transition-colors">
-                {t('common.library')}
-              </span>
-            </motion.button>
-
-            <div className="w-px h-8 lg:w-10 lg:h-px bg-gray-100/80 mx-2 lg:mx-auto lg:my-1" />
-
-            <motion.button
-              whileHover={{ scale: 1.05, backgroundColor: 'rgba(249, 115, 22, 0.05)' }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => navigate('/settings')}
-              className="flex flex-col items-center gap-1 p-3 md:p-4 rounded-[24px] lg:rounded-[32px] text-orange-500 transition-all group min-w-[70px] md:min-w-0"
-            >
-              <div className="p-2 md:p-2.5 bg-orange-50/50 group-hover:bg-orange-100/50 rounded-xl lg:rounded-2xl transition-colors">
-                <SettingsIcon size={20} strokeWidth={2.5} />
-              </div>
-              <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-orange-400/80 group-hover:text-orange-600 transition-colors">
-                {t('common.settings')}
-              </span>
-            </motion.button>
-          </motion.div>
+            <BookIcon size={24} strokeWidth={2.5} className="group-hover:rotate-6 transition-transform" />
+          </motion.button>
+          <motion.button
+            whileHover={{ x: 8 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => navigate('/settings')}
+            className="w-20 h-20 bg-white/80 backdrop-blur-2xl rounded-3xl shadow-xl flex items-center justify-center text-orange-500 group border border-white"
+          >
+            <SettingsIcon size={24} strokeWidth={2.5} className="group-hover:rotate-6 transition-transform" />
+          </motion.button>
         </div>
       </motion.div>
-      <CozyPal
-        ref={cozyPalRef}
-        themeName={activeTheme?.name || 'English'}
-        phase={phase}
-        timeLeft={timeLeft}
-        apiKey={settings.googleApiKey}
-        currentLanguage={currentLanguage}
-        aiPersona={settings.aiPersona || 'gentle_encourager'}
-        aiProvider={settings.aiProvider || 'gemini'}
-        aiModel={settings.aiModel}
-        dailyCompletedPomodoros={todayStats?.total_sessions || 0}
-        totalFocusMinutes={todayStats?.total_focus_minutes || 0}
-      />
     </LayoutGroup>
   );
 };

@@ -1,8 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { Play, Pause, RotateCcw, SkipForward, BookOpen } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Play, Pause, RotateCcw, SkipForward } from 'lucide-react';
 
 interface TimerControlsProps {
   isActive: boolean;
@@ -18,7 +17,6 @@ const TimerControls: React.FC<TimerControlsProps> = ({
   onSkip,
 }) => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
 
   // Keyboard shortcuts
   React.useEffect(() => {
@@ -78,15 +76,6 @@ const TimerControls: React.FC<TimerControlsProps> = ({
         <SkipForward className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8" strokeWidth={2.5} />
       </motion.button>
 
-      <motion.button
-        whileHover={{ scale: 1.15, rotate: -5 }}
-        whileTap={{ scale: 0.9 }}
-        onClick={() => navigate('/library')}
-        className="p-4 md:p-5 lg:p-6 rounded-3xl md:rounded-[2rem] glass-surface text-cozy-text-light hover:text-indigo-500 transition-all duration-300 shadow-sm flex items-center justify-center group"
-        aria-label="Library"
-      >
-        <BookOpen className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8" strokeWidth={2.5} />
-      </motion.button>
     </div>
   );
 };

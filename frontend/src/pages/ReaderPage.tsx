@@ -5,64 +5,78 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getAuthHeaders } from '../api/client';
 import PdfReader from '../components/PdfReader';
-import CozyPal from '../components/CozyPal';
-
-import FloatingTimer from '../components/FloatingTimer';
+import AmbientBackground from '../components/AmbientBackground';
+import { useTimerContext } from '../contexts/TimerContext';
 
 const ReaderPage: React.FC = () => {
     const { t } = useTranslation();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { setDocumentContext } = useTimerContext();
+
     const [content, setContent] = useState<string>('');
     const [title, setTitle] = useState<string>('');
     const [fileType, setFileType] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
     const [pdfUrl, setPdfUrl] = useState<string>('');
-    const [documentId, setDocumentId] = useState<number | null>(null);
-    const [documentTitle, setDocumentTitle] = useState<string>('');
-    const [documentContent, setDocumentContent] = useState<string>('');
-    const [apiKey, setApiKey] = useState<string>('');
-    const [currentLanguage, setCurrentLanguage] = useState<string>('zh');
-    const [aiPersona, setAiPersona] = useState<string>('friendly');
-    const [aiProvider, setAiProvider] = useState<string>('gemini');
-    const [aiModel, setAiModel] = useState<string>('');
-    const [dailyCompletedPomodoros, setDailyCompletedPomodoros] = useState<number>(0);
-    const [totalFocusMinutes, setTotalFocusMinutes] = useState<number>(0);
 
-    // Sidebar States
-    const [sidebarWidth, setSidebarWidth] = useState(0);
+    // Ref to track current PDF URL for cleanup
+    const pdfUrlRef = React.useRef<string>('');
 
     useEffect(() => {
-        if (id) {
-            fetchDocumentContent(id);
-        }
-        return () => {
-            if (pdfUrl) URL.revokeObjectURL(pdfUrl);
-        };
-    }, [id]);
+        const abortController = new AbortController();
 
-    const fetchDocumentContent = async (docId: string) => {
+        if (id) {
+            fetchDocumentContent(id, abortController.signal);
+        }
+
+        return () => {
+            abortController.abort();
+            setDocumentContext(undefined); // Clear context on exit
+            if (pdfUrlRef.current) {
+                URL.revokeObjectURL(pdfUrlRef.current);
+                pdfUrlRef.current = '';
+            }
+        };
+    }, [id, setDocumentContext]);
+
+    const fetchDocumentContent = async (docId: string, signal: AbortSignal) => {
         setIsLoading(true);
         try {
             const response = await fetch(`/api/documents/${docId}`, {
                 headers: getAuthHeaders(),
+                signal,
             });
             if (response.ok) {
                 const data = await response.json();
-                setContent(data.content || t('reader.noExtraction'));
-                setTitle(data.title || t('common.library'));
+                const docTitle = data.title || t('common.library');
+                const docContent = data.content || '';
+
+                setContent(docContent || t('reader.noExtraction'));
+                setTitle(docTitle);
                 setFileType(data.file_type || '');
-                setDocumentId(parseInt(docId));
-                setDocumentTitle(data.title || '');
-                setDocumentContent(data.content || '');
+
+                // Set Global AI Context
+                setDocumentContext({
+                    id: parseInt(docId),
+                    title: docTitle,
+                    content: docContent
+                });
 
                 if (data.file_type === 'pdf') {
                     const fileResponse = await fetch(`/api/documents/${docId}/file`, {
                         headers: getAuthHeaders(),
+                        signal,
                     });
                     if (fileResponse.ok) {
                         const blob = await fileResponse.blob();
                         const url = URL.createObjectURL(blob);
+
+                        if (pdfUrlRef.current) {
+                            URL.revokeObjectURL(pdfUrlRef.current);
+                        }
+
+                        pdfUrlRef.current = url;
                         setPdfUrl(url);
                     }
                 }
@@ -70,53 +84,64 @@ const ReaderPage: React.FC = () => {
                 setContent(t('reader.errorDetail'));
             }
         } catch (error) {
+            if (error instanceof Error && error.name === 'AbortError') return;
             console.error('Failed to fetch document content', error);
             setContent(t('reader.errorLoading'));
         } finally {
-            setIsLoading(false);
+            if (!signal.aborted) {
+                setIsLoading(false);
+            }
         }
     };
 
     return (
-        <div className="h-screen bg-[#faf9f6] flex flex-col overflow-hidden relative">
-            <FloatingTimer />
-            {/* Header */}
-            <div className="h-16 bg-white/90 backdrop-blur-sm border-b border-gray-100 flex items-center justify-between px-4 md:px-8 z-50 flex-shrink-0">
-                <button
+        <div className="h-screen bg-[#FCFAF7] flex flex-col overflow-hidden relative">
+            <AmbientBackground />
+
+            {/* Premium Header */}
+            <div className="h-20 bg-white/60 backdrop-blur-3xl border-b border-slate-100 flex items-center justify-between px-8 z-50 flex-shrink-0">
+                <motion.button
+                    whileHover={{ x: -2 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => navigate('/library')}
-                    className="flex items-center gap-2 text-gray-500 hover:text-gray-800 transition-colors p-2 hover:bg-gray-100 rounded-lg"
+                    className="flex items-center gap-2 group text-slate-400 hover:text-slate-900 transition-colors font-bold uppercase tracking-widest text-[10px]"
                 >
-                    <ArrowLeft size={20} />
-                    <span className="hidden sm:inline">{t('common.back')}</span>
-                </button>
+                    <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                    <span>{t('common.back')}</span>
+                </motion.button>
 
-                <h1 className="font-semibold text-gray-800 truncate max-w-md text-center">{title}</h1>
+                <div className="flex flex-col items-center max-w-xl">
+                    <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mb-1">
+                        {fileType.toUpperCase()} READER
+                    </span>
+                    <h1 className="font-bold text-slate-800 truncate w-full text-center leading-tight">
+                        {title}
+                    </h1>
+                </div>
 
-                {/* Placeholders for header right side if needed */}
-                <div className="w-10"></div>
+                <div className="w-20" />
             </div>
 
-            <div className="flex flex-1 relative overflow-hidden h-full">
+            <div className="flex flex-1 relative overflow-hidden h-full z-10">
                 {/* Main Content Area */}
-                <motion.div
-                    className="flex-1 overflow-y-auto pb-20 px-0 transition-all duration-300 ease-out h-full"
-                    animate={{ marginRight: sidebarWidth }}
-                >
+                <motion.div className="flex-1 overflow-y-auto pb-20 transition-all duration-300 ease-out h-full">
                     {isLoading ? (
-                        <div className="flex justify-center items-center h-80 pt-24">
-                            <Loader2 className="animate-spin text-indigo-500 w-8 h-8" />
+                        <div className="flex flex-col justify-center items-center h-full gap-4">
+                            <Loader2 className="animate-spin text-indigo-500 w-10 h-10" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                {t('timer.loading')}
+                            </span>
                         </div>
                     ) : fileType === 'pdf' ? (
-                        <div className="w-full relative h-full">
-                            {/* Make PDF reader fill the available space */}
+                        <div className="w-full relative h-full bg-slate-50/50">
                             <PdfReader fileUrl={pdfUrl} title={title} />
                         </div>
                     ) : (
-                        <div className="max-w-3xl mx-auto px-4 md:px-8 pt-8">
+                        <div className="max-w-4xl mx-auto px-8 py-16">
                             <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="prose prose-indigo md:prose-lg lg:prose-xl whitespace-pre-wrap font-serif text-gray-800 leading-relaxed selection:bg-indigo-100 selection:text-indigo-900"
+                                initial={{ opacity: 0, scale: 0.98 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="bg-white/80 backdrop-blur-xl p-12 md:p-20 rounded-[48px] shadow-2xl border border-white prose prose-slate prose-lg lg:prose-xl whitespace-pre-wrap text-slate-800 leading-relaxed selection:bg-indigo-100 selection:text-indigo-900"
                             >
                                 {content}
                             </motion.div>
@@ -124,24 +149,6 @@ const ReaderPage: React.FC = () => {
                     )}
                 </motion.div>
             </div>
-
-            {/* Cozy Pal AI Companion with Document Context */}
-            <CozyPal
-                themeName="default"
-                phase="focus"
-                timeLeft={0}
-                apiKey={apiKey}
-                currentLanguage={currentLanguage}
-                aiPersona={aiPersona}
-                aiProvider={aiProvider}
-                aiModel={aiModel}
-                dailyCompletedPomodoros={dailyCompletedPomodoros}
-                totalFocusMinutes={totalFocusMinutes}
-                documentId={documentId || undefined}
-                documentTitle={documentTitle}
-                documentContent={documentContent}
-                onDimensionsChange={setSidebarWidth}
-            />
         </div>
     );
 };
