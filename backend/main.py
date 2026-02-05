@@ -33,7 +33,7 @@ app.include_router(topics.router, prefix="/api/topics", tags=["topics"])
 app.include_router(countdowns.router)
 app.include_router(diagnostics.router)
 app.include_router(documents.router)
-app.include_router(achievements.router, prefix="/api/achievements", tags=["achievements"])
+app.include_router(achievements.router)
 
 
 @app.get("/")

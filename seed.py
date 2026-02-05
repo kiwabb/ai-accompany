@@ -22,7 +22,9 @@ async def seed_data():
             print("Seeding initial data for default_user...")
 
             # 1. Default User Settings
-            default_settings = await session.get(UserSettings, "default_user")
+            stmt = select(UserSettings).where(UserSettings.user_id == "default_user")
+            result = await session.execute(stmt)
+            default_settings = result.scalar_one_or_none()
             if not default_settings:
                 print("Creating default user settings...")
                 session.add(UserSettings(user_id="default_user"))

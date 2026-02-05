@@ -24,11 +24,11 @@ export const ThemeDistributionChart: React.FC<ThemeDistributionChartProps> = ({
 
     // Pie Chart Helpers
     const themeEntries = Object.entries(pieStats?.sessions_by_theme || {});
-    const totalMinutes = pieStats?.total_focus_minutes || 1;
+    const totalMinutes = pieStats?.total_focus_minutes || 0;
     
     let currentPercentage = 0;
     const pieSegments = themeEntries.map(([theme, minutes]) => {
-        const percentage = (minutes / totalMinutes) * 100;
+        const percentage = totalMinutes > 0 ? (minutes / totalMinutes) * 100 : 0;
         const start = currentPercentage;
         currentPercentage += percentage;
         return { theme, minutes, percentage, start };

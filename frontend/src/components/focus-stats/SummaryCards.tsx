@@ -31,7 +31,7 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
             label: t('timer.dailyAverage', 'Daily Average'),
             value: (() => {
                 const totalMins = stats?.total_focus_minutes || 0;
-                const focusedDays = stats?.daily_stats.filter(day => day.total_focus_minutes > 0).length || 1;
+                const focusedDays = stats?.daily_stats?.filter(day => day.total_focus_minutes > 0).length || 1;
                 const averageMins = Math.round(totalMins / focusedDays);
                 return formatDuration(averageMins);
             })(),

@@ -43,6 +43,8 @@ async def nuke_and_rebuild():
     # Connect to the newly created database to create tables
     new_engine = create_async_engine(DATABASE_URL)
     async with new_engine.begin() as conn:
+        print("Enabling pgvector extension...")
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         print("Creating all tables from metadata...")
         await conn.run_sync(Base.metadata.create_all)
 

@@ -8,6 +8,7 @@ from ..database import get_db, AsyncSessionLocal
 from .. import crud, schemas
 from ..services.chat_service import chat_service
 from ..services.memory_service import memory_service
+from ..services.achievement_service import achievement_service
 from .users import get_current_user_id
 
 router = APIRouter(prefix="/api", tags=["sessions"])
@@ -18,10 +19,26 @@ router = APIRouter(prefix="/api", tags=["sessions"])
 @router.post("/sessions", response_model=schemas.SessionResponse, status_code=201)
 async def create_learning_session(
     session_in: schemas.SessionCreate,
+    background_tasks: BackgroundTasks,
     current_user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    return await crud.create_session(db, session_in, current_user_id)
+    session = await crud.create_session(db, session_in, current_user_id)
+    
+    # Check achievements in background
+    if session.phase_type == "focus" and session.status == "completed":
+        background_tasks.add_task(
+            achievement_service.check_achievements,
+            db=AsyncSessionLocal(),
+            user_id=current_user_id,
+            event_type="session_complete",
+            context={
+                "duration_seconds": session.duration_seconds,
+                "start_time": session.start_time.isoformat()
+            }
+        )
+    
+    return session
 
 
 @router.patch("/sessions/{session_id}", response_model=schemas.SessionResponse)
@@ -272,3 +289,15 @@ async def get_daily_learning_stats(
             sessions_by_theme={},
         )
     return stats
+
+
+@router.get("/stats/range", response_model=schemas.StatsRangeResponse)
+async def get_learning_stats_range(
+    start_date: date = Query(...),
+    end_date: date = Query(...),
+    current_user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    return await crud.get_stats_range(
+        db=db, user_id=current_user_id, start_date=start_date, end_date=end_date
+    )

@@ -248,3 +248,44 @@ class DocumentResponse(DocumentBase):
 
 class DocumentDetailResponse(DocumentResponse):
     content: str
+
+
+class AchievementBase(BaseModel):
+    key: str
+    name: str
+    description: str
+    category: str
+    target_type: str
+    target_value: int
+    is_hidden: bool = False
+
+
+class AchievementResponse(AchievementBase):
+    id: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserAchievementBase(BaseModel):
+    achievement_id: int
+    current_progress: int
+    status: str
+    unlocked_at: Optional[datetime] = None
+
+
+class UserAchievementResponse(UserAchievementBase):
+    id: int
+    user_id: str
+    updated_at: datetime
+    achievement: AchievementResponse
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class StatsRangeResponse(BaseModel):
+    total_focus_minutes: int
+    total_sessions: int
+    daily_stats: List[DailyStats]
+    sessions_by_theme: Dict[str, int]
+    sessions_details: List[SessionResponse]

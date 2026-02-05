@@ -132,3 +132,29 @@ class Document(Base):
     file_type = Column(String, nullable=False)
     file_path = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Achievement(Base):
+    __tablename__ = "achievements"
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String, unique=True, index=True, nullable=False)
+    name = Column(String, nullable=False)
+    description = Column(String, nullable=False)
+    category = Column(String, nullable=False)  # 'milestone', 'challenge'
+    target_type = Column(String, nullable=False)  # 'session_count', 'total_focus_time', etc.
+    target_value = Column(Integer, nullable=False)
+    is_hidden = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class UserAchievement(Base):
+    __tablename__ = "user_achievements"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, index=True, nullable=False)
+    achievement_id = Column(Integer, ForeignKey("achievements.id"), nullable=False)
+    current_progress = Column(Integer, default=0)
+    status = Column(String, default="in_progress")  # 'in_progress', 'unlocked'
+    unlocked_at = Column(DateTime(timezone=True), nullable=True)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    achievement = relationship("Achievement")

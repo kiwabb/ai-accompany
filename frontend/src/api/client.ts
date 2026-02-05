@@ -282,6 +282,8 @@ export interface UserAchievementResponse {
   achievement: AchievementResponse;
 }
 
+export type UserAchievementBackend = UserAchievementResponse;
+
 export const getAchievements = async (): Promise<UserAchievementResponse[]> => {
   const response = await fetch(`${API_BASE_URL}/achievements`, {
     headers: getAuthHeaders(),

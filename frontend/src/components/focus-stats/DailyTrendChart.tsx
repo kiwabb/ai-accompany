@@ -95,7 +95,7 @@ export const DailyTrendChart: React.FC<DailyTrendChartProps> = ({
                     className="h-full overflow-x-auto pb-2 custom-scrollbar scroll-smooth"
                 >
                     <div className="h-full flex items-end justify-between gap-2 md:gap-4 relative min-w-full px-1" style={{ width: timeRange === 'month' ? 'max(100%, 800px)' : '100%' }}>
-                        {stats?.daily_stats.map((day, index) => {
+                        {stats?.daily_stats?.map((day, index) => {
                             const totalMinutes = day.total_focus_minutes;
                             const heightPercentage = maxDailyMinutes > 0
                                 ? Math.max((totalMinutes / maxDailyMinutes) * 100, totalMinutes > 0 ? 5 : 0)
