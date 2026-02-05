@@ -38,3 +38,33 @@ export interface CountdownEvent {
   title: string;
   targetDate: string;
 }
+
+export interface VisualTheme {
+  id: string;
+  name: string;
+  colors: {
+    bg: string;
+    surface: string;
+    glass: string;
+    primary: string;
+    secondary: string;
+    accent: string;
+    text: string;
+    textMuted: string;
+    border: string;
+  };
+  shadows: {
+    cozy: string;
+    elevated: string;
+  };
+  borderRadius: string;
+  fontHeading: string;
+  fontSans: string;
+  // Chiikawa specific
+  decorations?: {
+    enabled: boolean;
+    pattern?: string;
+    floatingElements?: boolean;
+    cursorStyle?: string;
+  };
+}

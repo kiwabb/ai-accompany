@@ -25,25 +25,31 @@ export const VISUAL_THEMES: VisualTheme[] = [
   },
   {
     id: 'chiikawa',
-    name: 'Chiikawa',
+    name: 'Chiikawa ♡',
     colors: {
-      bg: '#FFF0F5',
-      surface: 'rgba(255, 255, 255, 0.6)',
-      glass: 'rgba(255, 255, 255, 0.4)',
-      primary: '#FFB6C1',
-      secondary: '#E0FFFF',
-      accent: '#FFFACD',
-      text: '#452A22',
-      textMuted: '#7D6B66',
-      border: '#FFC0CB',
+      bg: '#FFF5F8',           // 超柔和的粉色背景
+      surface: 'rgba(255, 255, 255, 0.85)',
+      glass: 'rgba(255, 248, 250, 0.7)',
+      primary: '#FFB5C5',      // Chiikawa的经典粉色
+      secondary: '#B8E6F0',    // Hachiware的蓝绿色
+      accent: '#FFFACD',       // Usagi的黄色
+      text: '#5D4037',         // 温暖的棕色文字
+      textMuted: '#A1887F',
+      border: 'rgba(255, 182, 193, 0.5)',
     },
     shadows: {
-      cozy: '0 20px 50px -10px rgba(0, 0, 0, 0.1)',
-      elevated: '0 40px 100px -20px rgba(0, 0, 0, 0.15)',
+      cozy: '0 8px 32px rgba(255, 182, 193, 0.25), 0 4px 16px rgba(255, 182, 193, 0.15)',
+      elevated: '0 16px 48px rgba(255, 182, 193, 0.3), 0 8px 24px rgba(255, 182, 193, 0.2)',
     },
-    borderRadius: '4rem',
-    fontHeading: '"Varela Round"',
-    fontSans: '"Quicksand"',
+    borderRadius: '2.5rem',
+    fontHeading: '"M PLUS Rounded 1c", "Nunito"',
+    fontSans: '"M PLUS Rounded 1c", "Nunito"',
+    decorations: {
+      enabled: true,
+      pattern: 'chiikawa-dots',
+      floatingElements: true,
+      cursorStyle: 'chiikawa',
+    },
   },
   {
     id: 'dark',
@@ -67,7 +73,16 @@ export const VISUAL_THEMES: VisualTheme[] = [
     fontHeading: '"Fredoka"',
     fontSans: '"Nunito"',
   }
-
 ];
 
 export const DEFAULT_VISUAL_THEME_ID = 'cozy';
+
+// Chiikawa character emojis and decorative elements
+export const CHIIKAWA_ELEMENTS = {
+  characters: ['🐱', '🐰', '🦔', '🐻', '🌸', '✨', '💫', '🎀', '🌷', '🍀'],
+  stickers: [
+    '( ˘ω˘ )', '(◕‿◕)', '(｡♥‿♥｡)', '(◠‿◠)', '♡(◕ᗜ◕✿)',
+    '(◕ᴗ◕✿)', '(✿◠‿◠)', '٩(◕‿◕)۶', '(◕દ◕)', '♪(´ε｀ )'
+  ],
+  sparkles: ['✦', '✧', '★', '☆', '✩', '✪', '✫', '✬', '✭', '✮'],
+};

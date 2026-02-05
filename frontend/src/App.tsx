@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { TimerProvider, useTimerContext } from './contexts/TimerContext';
+import { useVisualTheme } from './hooks/useVisualTheme';
 import FocusListPage from './pages/FocusListPage';
 import TimerPage from './pages/TimerPage';
 import LibraryPage from './pages/LibraryPage';
@@ -11,10 +11,17 @@ import AchievementWall from './pages/AchievementWall';
 import FocusStatsPage from './pages/FocusStatsPage';
 import FloatingTimer from './components/FloatingTimer';
 import AchievementToast from './components/AchievementToast';
+import ChiikawaDecorations from './components/ChiikawaDecorations';
 import { getLatestUnlocks, type UserAchievementBackend } from './api/client';
 
 const AppContent: React.FC = () => {
+  const { state } = useTimerContext();
   const [unlockedAchievement, setUnlockedAchievement] = useState<UserAchievementBackend | null>(null);
+
+  // Apply visual theme
+  const { isChiikawaTheme, showFloatingElements, themeColors } = useVisualTheme({
+    activeVisualThemeId: state.activeVisualThemeId,
+  });
 
   useEffect(() => {
     const checkAchievements = async () => {
@@ -25,6 +32,7 @@ const AppContent: React.FC = () => {
           setTimeout(() => setUnlockedAchievement(null), 8000);
         }
       } catch (e) {
+        // ignore
       }
     };
 
@@ -33,7 +41,16 @@ const AppContent: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-cozy-cream font-sans text-cozy-text selection:bg-cozy-orange/30">
+    <div
+      className="min-h-screen font-sans selection:bg-[var(--theme-primary)]/30 transition-colors duration-500"
+      style={{
+        backgroundColor: themeColors.bg,
+        color: themeColors.text,
+      }}
+    >
+      {/* Chiikawa theme decorations */}
+      <ChiikawaDecorations enabled={isChiikawaTheme && showFloatingElements} />
+
       <Routes>
         <Route path="/" element={<FocusListPage />} />
         <Route path="/timer/:id" element={<TimerPage />} />
@@ -44,9 +61,9 @@ const AppContent: React.FC = () => {
         <Route path="/stats" element={<FocusStatsPage />} />
       </Routes>
       <FloatingTimer />
-      <AchievementToast 
-        achievement={unlockedAchievement} 
-        onDismiss={() => setUnlockedAchievement(null)} 
+      <AchievementToast
+        achievement={unlockedAchievement}
+        onDismiss={() => setUnlockedAchievement(null)}
       />
     </div>
   );
@@ -61,6 +78,5 @@ function App() {
     </Router>
   );
 }
-
 
 export default App;

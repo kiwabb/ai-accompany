@@ -1,10 +1,12 @@
 import { useReducer, useEffect, useMemo } from 'react';
 import type { FocusTheme, TimerSettings, Phase } from '../types/pomodoro';
 import { DEFAULT_THEMES, DEFAULT_SETTINGS } from '../constants/pomodoro';
+import { DEFAULT_VISUAL_THEME_ID } from '../constants/themes';
 
 export interface PomodoroState {
     themes: FocusTheme[];
     activeThemeId: string;
+    activeVisualThemeId: string;
     settings: TimerSettings;
     phase: Phase;
     completedSessions: number;
@@ -17,6 +19,7 @@ export interface PomodoroState {
 
 export type PomodoroAction =
     | { type: 'SET_ACTIVE_THEME'; themeId: string }
+    | { type: 'SET_VISUAL_THEME'; themeId: string }
     | { type: 'SAVE_SETTINGS'; settings: TimerSettings; themes: FocusTheme[] }
     | { type: 'SET_THEMES'; themes: FocusTheme[] }
     | { type: 'NEXT_PHASE' }
@@ -26,6 +29,7 @@ export type PomodoroAction =
 const initialState: PomodoroState = {
     themes: DEFAULT_THEMES,
     activeThemeId: DEFAULT_THEMES && DEFAULT_THEMES.length > 0 ? DEFAULT_THEMES[0].id : '',
+    activeVisualThemeId: DEFAULT_VISUAL_THEME_ID,
     settings: DEFAULT_SETTINGS,
     phase: 'focus',
     completedSessions: 0,
@@ -35,6 +39,8 @@ function pomodoroReducer(state: PomodoroState, action: PomodoroAction): Pomodoro
     switch (action.type) {
         case 'SET_ACTIVE_THEME':
             return { ...state, activeThemeId: action.themeId, phase: 'focus' };
+        case 'SET_VISUAL_THEME':
+            return { ...state, activeVisualThemeId: action.themeId };
         case 'SAVE_SETTINGS': {
             const newThemes = action.themes && action.themes.length > 0 ? action.themes : state.themes;
             // Priority: action.settings.activeThemeId (backend) > current state.activeThemeId (local) > first theme
@@ -87,6 +93,7 @@ const loadInitialState = (): PomodoroState => {
             return {
                 ...initialState,
                 activeThemeId: parsed.activeThemeId || initialState.activeThemeId,
+                activeVisualThemeId: parsed.activeVisualThemeId || initialState.activeVisualThemeId,
                 phase: parsed.phase || initialState.phase,
                 settings: parsed.settings || initialState.settings,
                 themes: parsed.themes || initialState.themes
@@ -104,12 +111,13 @@ export const usePomodoroState = () => {
     useEffect(() => {
         const stateToSave = {
             activeThemeId: state.activeThemeId,
+            activeVisualThemeId: state.activeVisualThemeId,
             phase: state.phase,
             settings: state.settings,
             themes: state.themes
         };
         localStorage.setItem(CONTEXT_STORAGE_KEY, JSON.stringify(stateToSave));
-    }, [state.activeThemeId, state.phase, state.settings, state.themes]);
+    }, [state.activeThemeId, state.activeVisualThemeId, state.phase, state.settings, state.themes]);
 
     const activeTheme = useMemo(() => {
         return state.themes.find(t => t.id === state.activeThemeId) || state.themes[0];

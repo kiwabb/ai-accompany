@@ -417,3 +417,141 @@ a,
   outline: 3px solid var(--color-cozy-orange);
   outline-offset: 2px;
 }
+
+/* ========== Chiikawa Theme Specific Styles ========== */
+
+/* Chiikawa theme body styles */
+body.theme-chiikawa {
+  --color-cozy-orange: #FFB5C5;
+  --color-cozy-cream: #FFF5F8;
+  --shadow-cozy: 0 8px 32px rgba(255, 182, 193, 0.25);
+  --shadow-elevated: 0 16px 48px rgba(255, 182, 193, 0.3);
+}
+
+body.theme-chiikawa * {
+  border-radius: inherit;
+}
+
+/* Chiikawa pink glow effect */
+body.theme-chiikawa .glow-hover:hover {
+  box-shadow: 0 0 20px rgba(255, 181, 197, 0.5), 0 0 40px rgba(255, 181, 197, 0.3);
+}
+
+/* Chiikawa card styles */
+body.theme-chiikawa .glass-surface,
+body.theme-chiikawa .glass-effect {
+  background: rgba(255, 255, 255, 0.85);
+  border: 2px solid rgba(255, 181, 197, 0.4);
+  box-shadow: 0 8px 32px rgba(255, 182, 193, 0.15);
+}
+
+body.theme-chiikawa .glass-surface:hover,
+body.theme-chiikawa .glass-effect:hover {
+  border-color: rgba(255, 181, 197, 0.6);
+  box-shadow: 0 12px 40px rgba(255, 182, 193, 0.25);
+}
+
+/* Chiikawa button styles */
+body.theme-chiikawa button:not([disabled]) {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.theme-chiikawa button:not([disabled]):hover {
+  transform: translateY(-2px) scale(1.02);
+}
+
+body.theme-chiikawa button:not([disabled]):active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Chiikawa special animations */
+@keyframes chiikawa-wiggle {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+@keyframes chiikawa-bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-8px) scale(1.05); }
+}
+
+@keyframes chiikawa-sparkle {
+  0%, 100% { opacity: 0.4; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+@keyframes chiikawa-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-10px) rotate(5deg); }
+  75% { transform: translateY(-5px) rotate(-5deg); }
+}
+
+@keyframes chiikawa-heart-beat {
+  0%, 100% { transform: scale(1); }
+  25% { transform: scale(1.1); }
+  50% { transform: scale(1); }
+  75% { transform: scale(1.15); }
+}
+
+body.theme-chiikawa .animate-chiikawa-wiggle {
+  animation: chiikawa-wiggle 2s ease-in-out infinite;
+}
+
+body.theme-chiikawa .animate-chiikawa-bounce {
+  animation: chiikawa-bounce 3s ease-in-out infinite;
+}
+
+body.theme-chiikawa .animate-chiikawa-sparkle {
+  animation: chiikawa-sparkle 2s ease-in-out infinite;
+}
+
+body.theme-chiikawa .animate-chiikawa-float {
+  animation: chiikawa-float 6s ease-in-out infinite;
+}
+
+body.theme-chiikawa .animate-chiikawa-heart {
+  animation: chiikawa-heart-beat 1.5s ease-in-out infinite;
+}
+
+/* Chiikawa scrollbar */
+body.theme-chiikawa ::-webkit-scrollbar {
+  width: 8px;
+}
+
+body.theme-chiikawa ::-webkit-scrollbar-track {
+  background: rgba(255, 245, 248, 0.5);
+  border-radius: 10px;
+}
+
+body.theme-chiikawa ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #FFB5C5, #FFC0CB);
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+body.theme-chiikawa ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #FFA0B5, #FFB0C0);
+}
+
+/* Chiikawa selection color */
+body.theme-chiikawa ::selection {
+  background: rgba(255, 181, 197, 0.4);
+  color: #5D4037;
+}
+
+/* Chiikawa focus ring */
+body.theme-chiikawa :focus-visible {
+  outline: 3px solid #FFB5C5;
+  outline-offset: 2px;
+}
+
+/* Dark theme adjustments */
+body.theme-dark {
+  --color-cozy-orange: #818CF8;
+  --color-cozy-cream: #0F172A;
+}
+
+body.theme-dark :focus-visible {
+  outline: 3px solid #818CF8;
+  outline-offset: 2px;
+}
