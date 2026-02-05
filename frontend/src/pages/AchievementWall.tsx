@@ -31,7 +31,7 @@ const AchievementWall: React.FC = () => {
         <div className="min-h-screen bg-cozy-cream relative overflow-hidden flex flex-col items-center">
             <AmbientBackground />
             
-            <div className="sticky top-0 z-[100] w-full bg-white/60 backdrop-blur-2xl border-b border-black/5 shadow-sm py-4 px-6 mb-12">
+            <div className="sticky top-0 z-[100] w-full bg-white/60 backdrop-blur-2xl border-b border-white/10 shadow-sm py-4 px-6 mb-12">
                 <div className="max-w-4xl mx-auto flex items-center justify-between">
                     <motion.button
                         whileHover={{ x: -2 }}
@@ -86,13 +86,13 @@ const AchievementWall: React.FC = () => {
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-1">
                                                 <h3 className="text-lg font-bold text-cozy-text truncate">
-                                                    {isHidden ? '???' : t(`achievement_items.${ua.achievement?.key}.name`, { defaultValue: ua.achievement?.name })}
+                                                    {isHidden ? '???' : t(`achievements.items.${ua.achievement?.key}.name`, { defaultValue: ua.achievement?.name })}
                                                 </h3>
                                                 {isUnlocked && <CheckCircle2 size={16} className="text-emerald-500" />}
                                             </div>
                                             
                                             <p className="text-sm text-cozy-text-light font-medium line-clamp-2 mb-4">
-                                                {isHidden ? t('achievements.hiddenDescription') : t(`achievement_items.${ua.achievement?.key}.description`, { defaultValue: ua.achievement?.description })}
+                                                {isHidden ? t('achievements.hiddenDescription') : t(`achievements.items.${ua.achievement?.key}.description`, { defaultValue: ua.achievement?.description })}
                                             </p>
                                             
                                             {!isUnlocked && ua.achievement && (

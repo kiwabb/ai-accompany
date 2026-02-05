@@ -24,7 +24,9 @@
     "networkError": "网络错误",
     "savedSuccess": "设置保存成功！",
     "gridView": "网格视图",
-    "listView": "列表视图"
+    "listView": "列表视图",
+    "achievements": "成就墙",
+    "stats": "专注分析"
   },
   "timer": {
     "focusCompanion": "专注伴侣",
@@ -123,5 +125,45 @@
     "eventName": "事件名称...",
     "save": "保存",
     "days": "天"
+  },
+  "achievements": {
+    "title": "我的成就墙",
+    "hiddenDescription": "这是一个隐藏成就，达成后才能查看描述哦",
+    "progress": "达成进度",
+    "unlockedOn": "解锁于 {{date}}",
+    "items": {
+      "first_session": {
+        "name": "第一步",
+        "description": "完成第一次专注会话"
+      },
+      "focus_10h": {
+        "name": "专注学徒",
+        "description": "累计专注时长达到 10 小时"
+      },
+      "night_owl": {
+        "name": "熬夜冠军",
+        "description": "在凌晨 0:00 到 4:00 之间完成一次专注"
+      },
+      "streak_7d": {
+        "name": "坚持就是胜利",
+        "description": "连续 7 天保持专注记录"
+      }
+    }
+  },
+  "stats": {
+    "title": "专注数据分析",
+    "summary": "数据概览",
+    "dailyTrend": "专注趋势",
+    "themes": "主题分布",
+    "completed": "次专注",
+    "perDay": "每日平均",
+    "totalSessions": "总专注次数",
+    "viewDetails": "查看详情",
+    "noData": "暂无数据记录",
+    "ranges": {
+      "day": "今日",
+      "week": "本周",
+      "month": "本月"
+    }
   }
 }

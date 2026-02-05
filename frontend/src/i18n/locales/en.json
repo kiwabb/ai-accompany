@@ -24,7 +24,9 @@
     "networkError": "Network error",
     "savedSuccess": "Settings Saved Successfully!",
     "gridView": "Grid View",
-    "listView": "List View"
+    "listView": "List View",
+    "achievements": "Achievements",
+    "stats": "Focus Stats"
   },
   "timer": {
     "focusCompanion": "Focus Companion",
@@ -123,5 +125,45 @@
     "eventName": "Event name...",
     "save": "Save",
     "days": "days"
+  },
+  "achievements": {
+    "title": "Achievement Wall",
+    "hiddenDescription": "This is a hidden achievement. Unlock it to see the description!",
+    "progress": "Progress",
+    "unlockedOn": "Unlocked on {{date}}",
+    "items": {
+      "first_session": {
+        "name": "First Step",
+        "description": "Complete your first focus session"
+      },
+      "focus_10h": {
+        "name": "Deep Focus Apprentice",
+        "description": "Focus for 10 hours in total"
+      },
+      "night_owl": {
+        "name": "Night Owl",
+        "description": "Complete a focus session between 00:00 and 04:00"
+      },
+      "streak_7d": {
+        "name": "Consistency King",
+        "description": "Maintain a focus streak for 7 days"
+      }
+    }
+  },
+  "stats": {
+    "title": "Focus Analytics",
+    "summary": "Overview",
+    "dailyTrend": "Daily Trend",
+    "themes": "Theme Distribution",
+    "completed": "Sessions",
+    "perDay": "daily avg",
+    "totalSessions": "Total Sessions",
+    "viewDetails": "View Details",
+    "noData": "No activity data",
+    "ranges": {
+      "day": "Today",
+      "week": "This Week",
+      "month": "This Month"
+    }
   }
 }
