@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 
 class UserSettingsBase(BaseModel):
