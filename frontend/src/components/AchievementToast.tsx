@@ -30,13 +30,13 @@ const AchievementToast: React.FC<AchievementToastProps> = ({ achievement, onDism
               <div className="flex flex-col">
                 <div className="flex items-center gap-1.5">
                   <Star size={12} className="text-amber-500 fill-amber-500" />
-                  <span className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">{t('achievements.toastTitle')}</span>
+                  <span className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">{t('achievements.title')}</span>
                 </div>
                 <h3 className="text-sm font-extrabold text-gray-900 leading-tight">
-                  {t(`achievement_items.${achievement.achievement?.key}.name`, { defaultValue: achievement.achievement?.name })}
+                  {t(`achievements.items.${achievement.achievement?.key}.name`, { defaultValue: achievement.achievement?.name })}
                 </h3>
                 <p className="text-[11px] text-gray-500 font-medium">
-                  {t(`achievement_items.${achievement.achievement?.key}.description`, { defaultValue: achievement.achievement?.description })}
+                  {t(`achievements.items.${achievement.achievement?.key}.description`, { defaultValue: achievement.achievement?.description })}
                 </p>
               </div>
               <button 

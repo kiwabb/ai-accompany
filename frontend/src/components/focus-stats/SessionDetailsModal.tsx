@@ -43,41 +43,44 @@ export const SessionDetailsModal: React.FC<SessionDetailsModalProps> = ({
                     exit={{ scale: 0.95, y: 20 }}
                     transition={{ type: 'spring', damping: 20, stiffness: 300 }}
                     onClick={(e) => e.stopPropagation()}
-                    className="bg-theme-surface rounded-[var(--radius-theme)] shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-white/10"
+                    className="bg-white/95 backdrop-blur-2xl rounded-[3rem] shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-white/80 overflow-hidden"
                 >
                     {/* Modal Header */}
-                    <div className="p-6 flex items-center justify-between border-b border-theme-border flex-shrink-0">
+                    <div className="p-8 flex items-center justify-between border-b border-black/5 flex-shrink-0">
                         <div>
-                            <h2 className="text-xl font-bold text-theme-text">{t('stats.totalSessions', 'History of your focus sessions')}</h2>
-                            <p className="text-sm text-theme-text-muted mt-1">{t('stats.reviewSessions', 'Review your past performance and find patterns.')}</p>
+                            <h2 className="text-2xl font-black text-cozy-text tracking-tight">{t('stats.totalSessions', 'History of your focus sessions')}</h2>
+                            <p className="text-sm text-cozy-text-light font-medium mt-1">{t('stats.reviewSessions', 'Review your past performance and find patterns.')}</p>
                         </div>
                         <motion.button
                             whileHover={{ scale: 1.1, rotate: 90 }}
                             whileTap={{ scale: 0.9 }}
                             onClick={onClose}
-                            className="p-2 rounded-full bg-theme-text/5 hover:bg-theme-text/10 text-theme-text-muted transition-colors"
+                            className="p-3 rounded-2xl bg-slate-100 text-slate-400 hover:text-cozy-text hover:bg-slate-200 transition-colors"
                         >
-                            <X size={20} strokeWidth={2.5} />
+                            <X size={20} strokeWidth={3} />
                         </motion.button>
                     </div>
 
                     {/* Table Body */}
-                    <div className="p-2 sm:p-4 md:p-6 overflow-y-auto flex-grow">
-                        <div className="space-y-2">
+                    <div className="p-4 sm:p-8 overflow-y-auto flex-grow custom-scrollbar">
+                        <div className="space-y-3">
                             {/* Header */}
-                            <div className="grid grid-cols-12 gap-4 px-4 pb-2 text-[10px] font-bold text-theme-text-muted/40 uppercase tracking-wider">
+                            <div className="grid grid-cols-12 gap-4 px-6 pb-2 text-[10px] font-black text-cozy-text-light/30 uppercase tracking-[0.2em]">
                                 <div className="col-span-5">{t('stats.theme', 'Theme')}</div>
                                 <div className="col-span-3 text-right">{t('stats.duration', 'Duration')}</div>
-                                <div className="col-span-4">{t('stats.time', 'Time')}</div>
+                                <div className="col-span-4 pl-4">{t('stats.time', 'Time')}</div>
                             </div>
 
                             {(() => {
                                 if (!stats?.sessions_details || stats.sessions_details.length === 0) {
-                                    return <p className="text-theme-text-muted/40 text-center py-12">{t('stats.noData', 'No session data available.')}</p>;
+                                    return (
+                                        <div className="text-center py-20 bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-200">
+                                            <p className="text-cozy-text-light/40 font-bold uppercase tracking-widest text-xs">{t('stats.noData', 'No session data available.')}</p>
+                                        </div>
+                                    );
                                 }
 
                                 const ITEMS_PER_PAGE = 10;
-                                // unused: const totalPages = Math.ceil(stats.sessions_details.length / ITEMS_PER_PAGE);
                                 const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
                                 const endIndex = startIndex + ITEMS_PER_PAGE;
                                 const paginatedSessions = stats.sessions_details.slice(startIndex, endIndex);
@@ -90,30 +93,29 @@ export const SessionDetailsModal: React.FC<SessionDetailsModalProps> = ({
                                             return (
                                                 <motion.div
                                                     key={startIndex + index}
-                                                    className={`grid grid-cols-12 gap-4 items-center p-4 rounded-2xl ${index % 2 === 1 ? 'bg-theme-text/5' : 'bg-transparent'} hover:bg-theme-surface/80 transition-colors duration-200 border border-transparent`}
+                                                    className={`grid grid-cols-12 gap-4 items-center p-5 rounded-3xl ${index % 2 === 1 ? 'bg-slate-50/50' : 'bg-transparent'} hover:bg-white hover:shadow-xl hover:scale-[1.01] transition-all duration-300 border border-transparent hover:border-white/80 group`}
                                                     initial={{ opacity: 0, y: 10 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: index * 0.05 }}
                                                 >
                                                     {/* Theme */}
-                                                    <div className="col-span-5 flex items-center gap-3">
-                                                        <div className="w-2 h-8 rounded-full opacity-80" style={{ backgroundColor: color }}></div>
-                                                        <div className="font-bold text-theme-text truncate" title={session.theme_name}>
+                                                    <div className="col-span-5 flex items-center gap-4">
+                                                        <div className="w-1.5 h-10 rounded-full shrink-0" style={{ backgroundColor: color }}></div>
+                                                        <div className="font-black text-cozy-text truncate text-base" title={session.theme_name}>
                                                             {session.theme_name}
                                                         </div>
                                                     </div>
 
-                                                    {/* Duration - COLORIZED and BOLD */}
-                                                    <div className="col-span-3 text-right font-mono font-bold tabular-nums" style={{ color: color }}>
+                                                    <div className="col-span-3 text-right font-mono font-black tabular-nums text-lg" style={{ color: color }}>
                                                         {formatDuration(session.duration_minutes)}
                                                     </div>
 
                                                     {/* Time Range */}
-                                                    <div className="col-span-4 text-theme-text-muted text-sm">
-                                                        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
-                                                            <span className="font-medium">{new Date(session.start_time).toLocaleDateString()}</span>
-                                                            <span className="text-xs text-theme-text-muted/40 tabular-nums">
-                                                                {new Date(session.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(session.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    <div className="col-span-4 pl-4">
+                                                        <div className="flex flex-col">
+                                                            <span className="font-bold text-cozy-text text-sm">{new Date(session.start_time).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                                            <span className="text-[10px] font-bold text-cozy-text-light/50 tabular-nums uppercase tracking-tighter">
+                                                                {new Date(session.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} - {new Date(session.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -128,18 +130,18 @@ export const SessionDetailsModal: React.FC<SessionDetailsModalProps> = ({
 
                     {/* Modal Footer (Pagination) */}
                     {stats && stats.sessions_details && stats.sessions_details.length > 10 && (
-                        <div className="p-4 flex items-center justify-between border-t border-theme-border flex-shrink-0">
+                        <div className="p-6 bg-slate-50/80 backdrop-blur-md flex items-center justify-between border-t border-black/5 flex-shrink-0">
                             <motion.button
                                 onClick={() => onPageChange(Math.max(1, currentPage - 1))}
                                 disabled={currentPage === 1}
-                                className="py-2 px-4 rounded-xl text-sm font-bold bg-theme-surface text-theme-text-muted hover:text-theme-text transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm border border-theme-border"
-                                whileHover={{ scale: 1.05 }}
+                                className="py-2.5 px-6 rounded-2xl text-xs font-black uppercase tracking-widest bg-white text-cozy-text-light hover:text-cozy-orange disabled:opacity-30 disabled:grayscale transition-all shadow-sm border border-white/80"
+                                whileHover={{ scale: 1.05, y: -2 }}
                                 whileTap={{ scale: 0.95 }}
                             >
-                                {t('common.previous', 'Previous')}
+                                {t('common.previous', 'Prev')}
                             </motion.button>
-                            <span className="text-sm font-medium text-theme-text-muted/60 tabular-nums">
-                                {t('common.page', 'Page {{currentPage}} of {{totalPages}}', {
+                            <span className="text-[10px] font-black text-cozy-text-light/40 uppercase tracking-[0.2em] tabular-nums">
+                                {t('common.page', 'Page {{currentPage}} / {{totalPages}}', {
                                     currentPage,
                                     totalPages: Math.ceil((stats?.sessions_details?.length || 0) / 10)
                                 })}
@@ -147,8 +149,8 @@ export const SessionDetailsModal: React.FC<SessionDetailsModalProps> = ({
                             <motion.button
                                 onClick={() => onPageChange(Math.min(Math.ceil((stats?.sessions_details?.length || 0) / 10), currentPage + 1))}
                                 disabled={currentPage === Math.ceil((stats?.sessions_details?.length || 0) / 10)}
-                                className="py-2 px-4 rounded-xl text-sm font-bold bg-theme-surface text-theme-text-muted hover:text-theme-text transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm border border-theme-border"
-                                whileHover={{ scale: 1.05 }}
+                                className="py-2.5 px-6 rounded-2xl text-xs font-black uppercase tracking-widest bg-white text-cozy-text-light hover:text-cozy-orange disabled:opacity-30 disabled:grayscale transition-all shadow-sm border border-white/80"
+                                whileHover={{ scale: 1.05, y: -2 }}
                                 whileTap={{ scale: 0.95 }}
                             >
                                 {t('common.next', 'Next')}

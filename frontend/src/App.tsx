@@ -9,60 +9,57 @@ import SettingsPage from './pages/SettingsPage';
 import AchievementWall from './pages/AchievementWall';
 import FocusStatsPage from './pages/FocusStatsPage';
 import FloatingTimer from './components/FloatingTimer';
-import CozyPal from './components/cozypal/CozyPalPanel';
+import AchievementToast from './components/AchievementToast';
+import { getLatestUnlocks, type UserAchievementBackend } from './api/client';
 
-// 内部组件以便能够使用 useTimerContext
-const AppContent = () => {
-  const { state, isActive, timeLeft, activeTheme, todayStats } = useTimerContext();
-  const { i18n } = useTranslation();
-  const { phase, settings, documentContext } = state;
-  const location = useLocation();
-  const isHomePage = location.pathname === '/';
+const AppContent: React.FC = () => {
+  const [unlockedAchievement, setUnlockedAchievement] = useState<UserAchievementBackend | null>(null);
+
+  useEffect(() => {
+    const checkAchievements = async () => {
+      try {
+        const latest = await getLatestUnlocks(1);
+        if (latest && latest.length > 0) {
+          setUnlockedAchievement(latest[0]);
+          setTimeout(() => setUnlockedAchievement(null), 8000);
+        }
+      } catch (e) {
+      }
+    };
+
+    const interval = setInterval(checkAchievements, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <>
-      <FloatingTimer />
-
-      {/* 全局 AI 助手 - 常驻显示（主页、阅读器或计时中） */}
-      {(isActive || documentContext || isHomePage) && (
-        <CozyPal
-          themeName={activeTheme?.name || 'Focus'}
-          phase={phase}
-          timeLeft={timeLeft}
-          apiKey={settings.googleApiKey}
-          currentLanguage={i18n.language}
-          aiPersona={settings.aiPersona || 'gentle_encourager'}
-          aiProvider={settings.aiProvider || 'gemini'}
-          aiModel={settings.aiModel}
-          dailyCompletedPomodoros={todayStats?.total_sessions || 0}
-          totalFocusMinutes={todayStats?.total_focus_minutes || 0}
-          documentId={documentContext?.id}
-          documentTitle={documentContext?.title}
-          documentContent={documentContext?.content}
-        />
-      )}
-
+    <div className="min-h-screen bg-cozy-cream font-sans text-cozy-text selection:bg-cozy-orange/30">
       <Routes>
         <Route path="/" element={<FocusListPage />} />
-        <Route path="/timer/:themeId" element={<TimerPage />} />
+        <Route path="/timer/:id" element={<TimerPage />} />
         <Route path="/library" element={<LibraryPage />} />
         <Route path="/read/:id" element={<ReaderPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/achievements" element={<AchievementWall />} />
         <Route path="/stats" element={<FocusStatsPage />} />
       </Routes>
-    </>
+      <FloatingTimer />
+      <AchievementToast 
+        achievement={unlockedAchievement} 
+        onDismiss={() => setUnlockedAchievement(null)} 
+      />
+    </div>
   );
 };
 
 function App() {
   return (
-    <TimerProvider>
-      <Router>
+    <Router>
+      <TimerProvider>
         <AppContent />
-      </Router>
-    </TimerProvider>
+      </TimerProvider>
+    </Router>
   );
 }
+
 
 export default App;
