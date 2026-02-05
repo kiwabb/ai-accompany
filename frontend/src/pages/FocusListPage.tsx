@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useTimerContext } from '../contexts/TimerContext';
-import { Book as BookIcon, Settings as SettingsIcon, Rocket as RocketIcon, Brain as BrainIcon, Coffee as CoffeeIcon, Sparkles as SparklesIcon } from 'lucide-react';
+import { Book as BookIcon, Settings as SettingsIcon, Rocket as RocketIcon, Brain as BrainIcon, Coffee as CoffeeIcon, Sparkles as SparklesIcon, Trophy as TrophyIcon, BarChart3 as BarChartIcon } from 'lucide-react';
 
 import ConfirmModal from '../components/ConfirmModal';
 import AmbientBackground from '../components/AmbientBackground';
@@ -202,6 +202,34 @@ const FocusListPage: React.FC = () => {
                             <SettingsIcon size={20} strokeWidth={2.5} className="group-hover:rotate-3" />
                         </div>
                         <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest">{t('common.settings')}</span>
+                    </motion.button>
+
+                    <div className="hidden md:block w-px h-8 bg-[#E6E2DE] self-center mx-2" />
+
+                    <motion.button
+                        whileHover={{ scale: 1.05, backgroundColor: 'rgba(16, 185, 129, 0.05)' }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => navigate('/stats')}
+                        className="flex flex-col md:flex-row items-center gap-1 md:gap-2.5 px-6 md:px-8 py-3 md:py-4 rounded-2xl text-emerald-500 transition-all group"
+                    >
+                        <div className="p-2 md:p-0 bg-white/80 md:bg-transparent rounded-xl md:rounded-none shadow-sm md:shadow-none border border-white md:border-none">
+                            <BarChartIcon size={20} strokeWidth={2.5} className="group-hover:rotate-3" />
+                        </div>
+                        <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest">{t('common.stats', '专注分析')}</span>
+                    </motion.button>
+
+                    <div className="hidden md:block w-px h-8 bg-[#E6E2DE] self-center mx-2" />
+
+                    <motion.button
+                        whileHover={{ scale: 1.05, backgroundColor: 'rgba(234, 179, 8, 0.05)' }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => navigate('/achievements')}
+                        className="flex flex-col md:flex-row items-center gap-1 md:gap-2.5 px-6 md:px-8 py-3 md:py-4 rounded-2xl text-yellow-500 transition-all group"
+                    >
+                        <div className="p-2 md:p-0 bg-white/80 md:bg-transparent rounded-xl md:rounded-none shadow-sm md:shadow-none border border-white md:border-none">
+                            <TrophyIcon size={20} strokeWidth={2.5} className="group-hover:rotate-3" />
+                        </div>
+                        <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest">{t('common.achievements', '成就墙')}</span>
                     </motion.button>
                 </motion.div>
             </div>
