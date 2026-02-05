@@ -159,6 +159,8 @@
     "perDay": "daily avg",
     "totalSessions": "Total Sessions",
     "viewDetails": "View Details",
+    "focusInsights": "Focus Insights",
+    "subtitle": "Your learning journey over the last 7 days",
     "noData": "No activity data",
     "ranges": {
       "day": "Today",

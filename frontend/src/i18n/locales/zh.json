@@ -159,6 +159,8 @@
     "perDay": "每日平均",
     "totalSessions": "总专注次数",
     "viewDetails": "查看详情",
+    "focusInsights": "专注洞察",
+    "subtitle": "您最近 7 天的学习历程",
     "noData": "暂无数据记录",
     "ranges": {
       "day": "今日",
