@@ -6,8 +6,6 @@ import { motion } from 'framer-motion';
 import { ChevronLeft as ChevronLeftIcon } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 import { useTranslation } from 'react-i18next';
-import CountdownWidget from '../components/CountdownWidget'; // Added CountdownWidget import
-
 import AmbientBackground from '../components/AmbientBackground';
 
 const TimerPage: React.FC = () => {
@@ -18,19 +16,30 @@ const TimerPage: React.FC = () => {
 
     const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
     const [pendingThemeId, setPendingThemeId] = React.useState<string | null>(null);
+    const lastHandledThemeIdRef = React.useRef<string | null>(null);
+
+    const isOngoing = isActive || (timeLeft > 0 && timeLeft < totalTimeValue);
 
     useEffect(() => {
-        if (themeId && state.activeThemeId !== themeId) {
-            const isOngoing = isActive || (timeLeft > 0 && timeLeft < totalTimeValue);
+        if (!themeId) return;
+        if (state.activeThemeId === themeId) {
+            lastHandledThemeIdRef.current = themeId;
+            return;
+        }
 
-            if (isOngoing) {
+        if (isOngoing) {
+            if (pendingThemeId === themeId && isConfirmOpen) return;
+            queueMicrotask(() => {
                 setPendingThemeId(themeId);
                 setIsConfirmOpen(true);
-            } else {
-                handleThemeChange(themeId);
-            }
+            });
+            return;
         }
-    }, [themeId, state.activeThemeId, handleThemeChange, isActive, timeLeft, totalTimeValue]); // Re-added dependencies for correctness
+
+        if (lastHandledThemeIdRef.current === themeId) return;
+        lastHandledThemeIdRef.current = themeId;
+        handleThemeChange(themeId);
+    }, [themeId, state.activeThemeId, handleThemeChange, isOngoing, pendingThemeId, isConfirmOpen]);
 
     const handleConfirm = () => {
         if (pendingThemeId) {

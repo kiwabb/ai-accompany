@@ -20,7 +20,7 @@ export const useAudio = (options: UseAudioOptions = {}) => {
     // Initialize Audio Context
     const getAudioContext = useCallback(() => {
         if (!audioContextRef.current) {
-            audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+            audioContextRef.current = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
         }
         return audioContextRef.current;
     }, []);
@@ -104,7 +104,7 @@ export const useAudio = (options: UseAudioOptions = {}) => {
         whiteNoise.start();
 
         // Store reference to stop later
-        backgroundMusicRef.current = whiteNoise as any;
+        backgroundMusicRef.current = whiteNoise as unknown as HTMLAudioElement;
         isMusicPlayingRef.current = true;
 
         // Also add a subtle low-frequency oscillation for depth
@@ -122,9 +122,10 @@ export const useAudio = (options: UseAudioOptions = {}) => {
     const stopBackgroundMusic = useCallback(() => {
         if (backgroundMusicRef.current) {
             try {
-                (backgroundMusicRef.current as any).stop();
-            } catch (e) {
-                // Ignore errors if already stopped
+                // @ts-expect-error - Web Audio node type mismatch with HTMLAudioElement, known issue in this mock impl
+                (backgroundMusicRef.current).stop();
+            } catch (_e) {
+        // Ignore errors if already stopped
             }
             backgroundMusicRef.current = null;
             isMusicPlayingRef.current = false;

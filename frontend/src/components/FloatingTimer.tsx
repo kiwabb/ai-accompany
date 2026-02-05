@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
-import { Play, Pause, Maximize2, MoreHorizontal } from 'lucide-react';
+import { Play, Pause } from 'lucide-react';
 import { useTimerContext } from '../contexts/TimerContext';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';

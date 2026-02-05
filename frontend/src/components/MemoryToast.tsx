@@ -6,7 +6,7 @@ interface MemoryToastProps {
   onDismiss: () => void;
 }
 
-const MemoryToast: React.FC<MemoryToastProps> = ({ message, onDismiss }) => {
+const MemoryToast: React.FC<MemoryToastProps> = ({ message }) => {
   return (
     <AnimatePresence>
       {message && (

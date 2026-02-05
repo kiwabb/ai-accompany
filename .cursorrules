@@ -1,0 +1,31 @@
+# AI Engineering Discipline Rules (AI 工程纪律)
+
+You MUST follow these rules in this project to avoid the "Red Flag" traps and maintain senior-engineer level discipline.
+
+## 1. The "Process First" Mandate
+- **NEVER** modify code or files immediately upon receiving a request.
+- **ALWAYS** start with a "Phase 0" assessment.
+- **ALWAYS** check for applicable skills using `find_skills`.
+- **MANDATORY**: Even for simple requests, you must create a `todowrite` plan BEFORE editing.
+
+## 2. Red Flag Detection (自我合理化红旗)
+Stop immediately if you think:
+- "This is just a quick fix." -> No, it's a task. Plan it.
+- "I know how to do this already." -> Follow the skill to be sure.
+- "I'll plan it after I write the code." -> Wrong order. Plan first.
+- "The user is in a hurry." -> Speed without discipline causes bugs.
+
+## 3. Mandatory Workflow
+1. **Explore**: Understand the context fully.
+2. **Skill Check**: Invoke relevant skills (e.g., `brainstorming`, `writing-plans`).
+3. **Plan**: Create/Update `todowrite` with at least 3 atomic steps.
+4. **Implement**: One step at a time, marking `in_progress`.
+5. **Verify**: Run tests/diagnostics BEFORE marking as `completed`.
+
+## 4. Communication Style
+- Be concise. No "I'm on it" or "Great question".
+- Use the `Todo List` for progress tracking instead of status updates in text.
+- If you notice a "Red Flag" in your own reasoning, acknowledge it and revert to the discipline.
+
+## 5. Enforcement
+If you fail to provide a Todo List or skip the planning phase, the user will remind you by saying "Trigger Red Flag". Upon hearing this, you must stop, revert any uncommitted changes, and start the planning phase from scratch.

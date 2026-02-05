@@ -7,7 +7,7 @@ import LibraryPage from './pages/LibraryPage';
 import ReaderPage from './pages/ReaderPage';
 import SettingsPage from './pages/SettingsPage';
 import FloatingTimer from './components/FloatingTimer';
-import CozyPal from './components/CozyPal';
+import CozyPal from './components/cozypal/CozyPalPanel';
 
 // 内部组件以便能够使用 useTimerContext
 const AppContent = () => {

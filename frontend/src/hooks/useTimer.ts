@@ -58,7 +58,9 @@ export function useTimer({ initialSeconds, onComplete }: UseTimerProps) {
         }
         return false;
       }
-    } catch (e) { }
+    } catch (error) {
+      console.error(error);
+    }
     return false;
   });
 
@@ -77,15 +79,14 @@ export function useTimer({ initialSeconds, onComplete }: UseTimerProps) {
     initialSecondsRef.current = initialSeconds;
   }, [initialSeconds]);
 
-  // Handle initialSeconds change (e.g. Theme Change)
   useEffect(() => {
-    if (prevInitialSeconds.current !== initialSeconds) {
-      // Only reset if it's a GENUINE change from prop, not just mount
+    if (prevInitialSeconds.current === initialSeconds) return;
+    prevInitialSeconds.current = initialSeconds;
+    queueMicrotask(() => {
       setTimeLeft(initialSeconds);
       setIsActive(false);
       localStorage.removeItem(STORAGE_KEY);
-      prevInitialSeconds.current = initialSeconds;
-    }
+    });
   }, [initialSeconds]);
 
   // Persist state functionality

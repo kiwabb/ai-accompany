@@ -29,6 +29,27 @@ export interface DailyStats {
   sessions_by_theme: { [key: string]: number };
 }
 
+export interface SessionDetail {
+    theme_name: string;
+    duration_minutes: number;
+    start_time: string;
+    end_time: string;
+}
+
+export interface DailyStat {
+    date: string;
+    total_focus_minutes: number;
+    sessions_by_theme: { [key: string]: number };
+}
+
+export interface StatsRangeResponse {
+    total_focus_minutes: number;
+    total_sessions: number;
+    daily_stats: DailyStat[];
+    sessions_by_theme: { [key: string]: number };
+    sessions_details: SessionDetail[];
+}
+
 export interface UserSettingsBackend {
   id: number;
   user_id: string;
@@ -95,6 +116,15 @@ export const getDailyStats = async (date?: Date): Promise<DailyStats> => {
     headers: getAuthHeaders(),
   });
   return handleResponse<DailyStats>(response);
+};
+
+export const getStatsRange = async (startDate: Date, endDate: Date): Promise<StatsRangeResponse> => {
+    const startStr = getFormattedDate(startDate);
+    const endStr = getFormattedDate(endDate);
+    const response = await fetch(`${API_BASE_URL}/stats/range?start_date=${startStr}&end_date=${endStr}`, {
+        headers: getAuthHeaders(),
+    });
+    return handleResponse<StatsRangeResponse>(response);
 };
 
 export const getAuthHeaders = () => {
