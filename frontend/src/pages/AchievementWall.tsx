@@ -31,7 +31,7 @@ const AchievementWall: React.FC = () => {
         <div className="min-h-screen bg-cozy-cream relative overflow-hidden flex flex-col items-center">
             <AmbientBackground />
             
-            <div className="sticky top-0 z-[100] w-full bg-theme-surface/60 backdrop-blur-2xl border-b border-white/10 shadow-sm py-4 px-6 mb-12">
+            <div className="sticky top-0 z-[100] w-full bg-white/60 backdrop-blur-2xl border-b border-black/5 shadow-sm py-4 px-6 mb-12">
                 <div className="max-w-4xl mx-auto flex items-center justify-between">
                     <motion.button
                         whileHover={{ x: -2 }}
@@ -54,7 +54,7 @@ const AchievementWall: React.FC = () => {
             <main className="w-full max-w-4xl px-8 pb-32 relative z-10">
                 {loading ? (
                     <div className="flex justify-center items-center h-64">
-                        <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                        <div className="w-8 h-8 border-4 border-cozy-orange border-t-transparent rounded-full animate-spin" />
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -69,16 +69,16 @@ const AchievementWall: React.FC = () => {
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: idx * 0.05 }}
                                     className={`
-                                        relative group p-6 rounded-[var(--radius-theme)] border transition-all duration-500
+                                        relative group p-6 rounded-[2rem] border transition-all duration-500
                                         ${isUnlocked 
-                                            ? 'bg-theme-surface/80 border-amber-200 shadow-lg shadow-amber-500/10' 
-                                            : 'bg-theme-surface/40 border-white/10 shadow-sm grayscale opacity-70'}
+                                            ? 'bg-white/80 border-amber-200 shadow-lg shadow-amber-500/10' 
+                                            : 'bg-white/40 border-black/5 shadow-sm grayscale opacity-70'}
                                     `}
                                 >
                                     <div className="flex items-start gap-5">
                                         <div className={`
-                                            w-16 h-16 rounded-[var(--radius-theme)] flex items-center justify-center shrink-0
-                                            ${isUnlocked ? 'bg-amber-100 text-amber-500' : 'bg-slate-100/10 text-slate-400'}
+                                            w-16 h-16 rounded-2xl flex items-center justify-center shrink-0
+                                            ${isUnlocked ? 'bg-amber-100 text-amber-500' : 'bg-slate-100 text-slate-400'}
                                         `}>
                                             {isUnlocked ? <Trophy size={32} /> : (isHidden ? <Lock size={32} /> : <Trophy size={32} />)}
                                         </div>
@@ -101,7 +101,7 @@ const AchievementWall: React.FC = () => {
                                                         <span>{t('achievements.progress')}</span>
                                                         <span>{ua.current_progress} / {ua.achievement.target_value}</span>
                                                     </div>
-                                                    <div className="h-1.5 w-full bg-slate-100/10 rounded-full overflow-hidden">
+                                                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                                                         <motion.div 
                                                             initial={{ width: 0 }}
                                                             animate={{ width: `${Math.min(100, (ua.current_progress / ua.achievement.target_value) * 100)}%` }}
