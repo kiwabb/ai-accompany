@@ -261,6 +261,41 @@ export interface CountdownBackend {
   created_at: string;
 }
 
+export interface AchievementResponse {
+  id: number;
+  key: string;
+  name: string;
+  description: string;
+  category: string;
+  target_type: string;
+  target_value: number;
+  is_hidden: boolean;
+}
+
+export interface UserAchievementResponse {
+  id: number;
+  achievement_id: number;
+  current_progress: number;
+  status: 'in_progress' | 'unlocked';
+  unlocked_at?: string;
+  updated_at: string;
+  achievement: AchievementResponse;
+}
+
+export const getAchievements = async (): Promise<UserAchievementResponse[]> => {
+  const response = await fetch(`${API_BASE_URL}/achievements`, {
+    headers: getAuthHeaders(),
+  });
+  return handleResponse<UserAchievementResponse[]>(response);
+};
+
+export const getLatestUnlocks = async (minutes: number = 5): Promise<UserAchievementResponse[]> => {
+  const response = await fetch(`${API_BASE_URL}/achievements/latest-unlocks?minutes=${minutes}`, {
+    headers: getAuthHeaders(),
+  });
+  return handleResponse<UserAchievementResponse[]>(response);
+};
+
 export const getCountdowns = async (): Promise<import("../types/pomodoro").CountdownEvent[]> => {
   const response = await fetch(`${API_BASE_URL}/countdowns`, {
     headers: getAuthHeaders(),
