@@ -13,3 +13,4 @@ test.db
 backend.log
 frontend.log
 backend/uploads/
+.idea/
