@@ -37,6 +37,7 @@
     "minutes": "分钟"
   },
   "settings": {
+    "visualTheme": "视觉主题",
     "durations": "计时器时长",
     "shortBreak": "短休时长 (分钟)",
     "longBreak": "长休时长 (分钟)",

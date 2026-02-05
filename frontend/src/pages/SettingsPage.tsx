@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Save, Check } from 'lucide-react';
+import { ArrowLeft, Save, Check, Palette } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +8,7 @@ import GeneralSettings from '../components/settings/GeneralSettings';
 import TimerSettings from '../components/settings/TimerSettings';
 import AISettings from '../components/settings/AISettings';
 import ThemeManagement from '../components/settings/ThemeManagement';
+import VisualThemeSelector from '../components/VisualThemeSelector';
 import { useSettingsPageLogic } from '../hooks/useSettingsPageLogic';
 
 const SettingsPage: React.FC = () => {
@@ -56,6 +57,21 @@ const SettingsPage: React.FC = () => {
             </div>
 
             <main className="w-full max-w-4xl px-8 pb-32 relative z-10 space-y-16">
+                {/* Visual Theme Section */}
+                <section>
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-400 to-purple-400 flex items-center justify-center shadow-lg">
+                            <Palette size={20} className="text-white" />
+                        </div>
+                        <h2 className="text-lg font-bold text-slate-900 uppercase tracking-widest font-heading">
+                            {t('settings.visualTheme', 'Visual Theme')}
+                        </h2>
+                    </div>
+                    <div className="bg-white/60 backdrop-blur-xl rounded-[32px] p-8 border border-white shadow-xl">
+                        <VisualThemeSelector />
+                    </div>
+                </section>
+
                 <AISettings settings={settings} handleSettingChange={handleSettingChange} />
                 <TimerSettings settings={settings} handleSettingChange={handleSettingChange} />
                 <GeneralSettings settings={settings} handleSettingChange={handleSettingChange} i18n={i18n} />

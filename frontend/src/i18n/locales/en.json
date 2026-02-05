@@ -37,6 +37,7 @@
     "minutes": "min"
   },
   "settings": {
+    "visualTheme": "Visual Theme",
     "durations": "Timer Durations",
     "shortBreak": "Short Break (minutes)",
     "longBreak": "Long Break (minutes)",
