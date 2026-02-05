@@ -49,7 +49,7 @@ const FocusStatsPage: React.FC = () => {
     const maxDailyMinutes = stats?.daily_stats?.reduce((max: number, day: DailyStat) => Math.max(max, day.total_focus_minutes), 0) || 1;
 
     return (
-        <main className="min-h-screen w-full bg-cozy-cream flex flex-col items-center p-6 relative overflow-hidden">
+        <main className="min-h-screen w-full bg-[#FCFAF7] flex flex-col items-center p-6 selection:bg-cozy-orange/30 relative overflow-hidden">
             <AmbientBackground />
 
             {/* Back Button */}
@@ -59,7 +59,7 @@ const FocusStatsPage: React.FC = () => {
                 whileHover={{ x: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => navigate('/')}
-                className="fixed top-8 left-8 py-3 px-6 bg-white/60 backdrop-blur-2xl border border-black/5 shadow-xl rounded-2xl flex items-center gap-2 group z-50 text-cozy-text-light hover:text-cozy-text transition-colors font-bold uppercase tracking-widest text-[10px]"
+                className="fixed top-8 left-8 py-3 px-6 bg-white/70 backdrop-blur-2xl border border-white/80 shadow-xl rounded-2xl flex items-center gap-2 group z-50 text-cozy-text-light hover:text-cozy-text transition-colors font-bold uppercase tracking-widest text-[10px]"
             >
                 <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
                 <span>{t('common.back', 'Back')}</span>

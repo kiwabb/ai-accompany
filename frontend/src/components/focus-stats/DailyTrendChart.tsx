@@ -37,7 +37,7 @@ export const DailyTrendChart: React.FC<DailyTrendChartProps> = ({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-theme-surface/70 backdrop-blur-xl p-8 rounded-[var(--radius-theme)] border border-theme-border shadow-sm"
+            className="bg-white/70 backdrop-blur-2xl p-8 rounded-[40px] border border-white/80 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.05)]"
         >
             <div className="flex items-center justify-between mb-8">
                 <h3 className="text-xl font-bold text-theme-text flex items-center gap-2">
@@ -67,20 +67,21 @@ export const DailyTrendChart: React.FC<DailyTrendChartProps> = ({
 
             {/* Time Range Toggles */}
             <div className="flex justify-center mb-8">
-                <div className="bg-theme-surface/50 p-1 rounded-xl flex items-center border border-white/10">
+                <div className="bg-white/50 p-1 rounded-2xl flex items-center border border-white/80 shadow-inner">
                     {(['week', 'month'] as const).map((range) => (
                         <button
                             key={range}
                             onClick={() => onTimeRangeChange(range)}
-                            className={`px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${timeRange === range
-                                    ? 'bg-theme-surface text-theme-primary shadow-sm'
-                                    : 'text-theme-text-muted hover:text-theme-text'
+                            className={`px-4 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${timeRange === range
+                                    ? 'bg-white text-cozy-orange shadow-md'
+                                    : 'text-cozy-text-light hover:text-cozy-text'
                                 }`}
                         >
                             {t(`stats.ranges.${range}`, range)}
                         </button>
                     ))}
                 </div>
+
             </div>
 
             <div className="h-64 mt-4 relative">

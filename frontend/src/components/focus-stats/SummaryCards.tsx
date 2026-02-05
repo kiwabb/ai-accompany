@@ -65,7 +65,7 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="bg-theme-surface/80 backdrop-blur-xl p-6 rounded-[var(--radius-theme)] border border-theme-border shadow-sm hover:shadow-md transition-shadow"
+                    className="bg-white/70 backdrop-blur-2xl p-6 rounded-3xl border border-white/80 shadow-sm hover:shadow-md transition-shadow"
                 >
                     <div
                         className="w-10 h-10 rounded-2xl flex items-center justify-center mb-4"

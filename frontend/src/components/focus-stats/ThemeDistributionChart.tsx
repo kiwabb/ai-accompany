@@ -39,7 +39,7 @@ export const ThemeDistributionChart: React.FC<ThemeDistributionChartProps> = ({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="bg-theme-surface/80 backdrop-blur-xl p-8 rounded-[var(--radius-theme)] border border-white/10 shadow-sm flex flex-col"
+            className="bg-white/70 backdrop-blur-2xl p-8 rounded-[40px] border border-white/80 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.05)] flex flex-col"
         >
             <div className="flex items-center justify-between mb-8 flex-shrink-0">
                 <h3 className="text-xl font-bold text-theme-text flex items-center gap-2">
@@ -47,15 +47,15 @@ export const ThemeDistributionChart: React.FC<ThemeDistributionChartProps> = ({
                     {t('stats.themes', 'Themes')}
                 </h3>
                 
-                <div className="bg-theme-surface/50 p-1 rounded-xl flex items-center border border-theme-border">
+                <div className="bg-white/50 p-1 rounded-2xl flex items-center border border-white/80 shadow-inner">
                     {(['day', 'week', 'month'] as const).map((range) => (
                         <button
                             key={range}
                             onClick={() => onPieRangeChange(range)}
-                            className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+                            className={`px-3 py-1 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
                                 pieRange === range 
-                                ? 'bg-theme-surface text-theme-primary shadow-sm' 
-                                : 'text-theme-text-muted hover:text-theme-text'
+                                ? 'bg-white text-cozy-orange shadow-md' 
+                                : 'text-cozy-text-light hover:text-cozy-text'
                             }`}
                         >
                             {t(`stats.ranges.${range}`, range)}
