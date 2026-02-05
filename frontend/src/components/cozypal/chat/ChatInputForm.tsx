@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
 interface ChatInputFormProps {
-    inputRef: React.RefObject<HTMLInputElement>;
+    inputRef: React.RefObject<HTMLInputElement | null>;
     isLoading: boolean;
     onSendMessage: (text: string) => Promise<void>;
 }

@@ -1,20 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { TFunction } from 'i18next';
-import { getAuthHeaders } from '../../api/client';
 import type { Message } from '../../components/cozypal/types';
+import type { ChatContext } from './chatTypes';
+import {
+  buildChatRequestBody,
+  buildChatHeaders,
+  streamChatResponse,
+  updateLastAiMessage,
+  addPlaceholderAiMessage,
+  addUserMessage,
+} from './chatStreamingUtils';
 
 interface UseCozyPalChatOptions {
   t: TFunction;
   apiKey?: string;
-  themeName: string;
-  phase: string;
-  timeLeft: number;
-  currentLanguage: string;
-  aiPersona: string;
+  context: ChatContext;
   aiProvider?: string;
   aiModel?: string;
-  dailyCompletedPomodoros: number;
-  totalFocusMinutes: number;
   documentId?: number;
   documentTitle?: string;
   documentContent?: string;
@@ -39,15 +41,9 @@ interface CozyPalChatState {
 export const useCozyPalChat = ({
   t,
   apiKey,
-  themeName,
-  phase,
-  timeLeft,
-  currentLanguage,
-  aiPersona,
+  context,
   aiProvider,
   aiModel,
-  dailyCompletedPomodoros,
-  totalFocusMinutes,
   documentId,
   documentTitle,
   documentContent,
@@ -73,7 +69,7 @@ export const useCozyPalChat = ({
       if (response.ok) {
         const data = await response.json();
         if (data.messages && data.messages.length > 0) {
-          setMessages(data.messages.map((msg: any) => ({
+          setMessages(data.messages.map((msg: { role: string; content: string }) => ({
             sender: msg.role,
             text: msg.content,
           })));
@@ -91,12 +87,12 @@ export const useCozyPalChat = ({
   }, [fetchHistory]);
 
   useEffect(() => {
-    if (phase === 'focus' && timeLeft > 0 && !isOpen && !isLoading) {
+    if (context.phase === 'focus' && context.timeLeft > 0 && !isOpen && !isLoading) {
       setAvatarState('focused');
     } else if (!isLoading && avatarState !== 'thinking' && avatarState !== 'speaking') {
       setAvatarState('idle');
     }
-  }, [isOpen, isLoading, phase, timeLeft, avatarState, messages]);
+  }, [isOpen, isLoading, context.phase, context.timeLeft, avatarState]);
 
   const sendMessage = useCallback(async (
     e?: { preventDefault: () => void; key?: string },
@@ -109,108 +105,81 @@ export const useCozyPalChat = ({
     const textToSend = proactiveTrigger || inputValue.trim();
     if (!textToSend || isLoading) return;
 
+    // Clear any existing speech bubble timer
     if (proactiveTrigger && speechBubbleTimerRef.current) {
       clearTimeout(speechBubbleTimerRef.current);
       speechBubbleTimerRef.current = null;
     }
 
+    // Setup UI state before request
     if (!proactiveTrigger) {
-      const userMessage: Message = { sender: 'user', text: textToSend };
-      setMessages((prev) => [...prev, userMessage]);
+      addUserMessage(setMessages, textToSend);
       setInputValue('');
+      addPlaceholderAiMessage(setMessages);
     } else {
       setSpeechBubble('');
     }
 
     setIsLoading(true);
     setAvatarState('thinking');
-    if (!proactiveTrigger) {
-      setMessages((prev) => [...prev, { sender: 'ai', text: '' }]);
-    }
 
     try {
-      const headers: HeadersInit = {
-        ...getAuthHeaders(),
-      };
-      if (apiKey) {
-        headers['x-google-api-key'] = apiKey;
-      }
-
       const response = await fetch('/api/chat/completions', {
         method: 'POST',
-        headers,
-        body: JSON.stringify({
-          message: proactiveTrigger ? `[SYSTEM_TRIGGER:${proactiveTrigger}]` : textToSend,
-          topic_id: activeTopicId,
+        headers: buildChatHeaders(apiKey),
+        body: JSON.stringify(buildChatRequestBody({
+          message: textToSend,
+          topicId: activeTopicId,
+          apiKey,
           provider: aiProvider,
           model: aiModel,
-          context: {
-            theme_name: themeName,
-            phase,
-            time_left: durationOverride !== undefined ? durationOverride : timeLeft,
-            language: currentLanguage,
-            ai_persona: aiPersona,
-            daily_completed_pomodoros: dailyCompletedPomodoros,
-            total_focus_minutes: totalFocusMinutes,
-          },
-          document_id: documentId,
-          document_title: documentTitle,
-          document_content: documentContent,
-        }),
+          context,
+          documentId,
+          documentTitle,
+          documentContent,
+          proactiveTrigger,
+          durationOverride,
+        })),
       });
 
       if (!response.ok) throw new Error('Failed to fetch');
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let done = false;
-      let accumulatedResponse = '';
-
       setAvatarState('speaking');
 
-      while (!done && reader) {
-        const { value, done: doneReading } = await reader.read();
-        done = doneReading;
-        const chunkValue = decoder.decode(value);
-        accumulatedResponse += chunkValue;
-
-        if (proactiveTrigger) {
-          setSpeechBubble(accumulatedResponse);
-        } else {
-          setMessages((prev) => {
-            const newMessages = [...prev];
-            newMessages[newMessages.length - 1] = { sender: 'ai', text: accumulatedResponse };
-            return newMessages;
-          });
-        }
-      }
-
-      if (proactiveTrigger) {
-        speechBubbleTimerRef.current = setTimeout(() => {
-          setSpeechBubble(null);
-          speechBubbleTimerRef.current = null;
-        }, 10000);
-      } else if (!isOpen) {
-        setHasUnread(true);
-      }
-      setAvatarState('idle');
-      setTimeout(() => {
-        onMemoryUpdateCheck();
-      }, 3000);
+      await streamChatResponse(response, {
+        onChunk: (accumulated) => {
+          if (proactiveTrigger) {
+            setSpeechBubble(accumulated);
+          } else {
+            updateLastAiMessage(setMessages, accumulated);
+          }
+        },
+        onComplete: () => {
+          if (proactiveTrigger) {
+            speechBubbleTimerRef.current = setTimeout(() => {
+              setSpeechBubble(null);
+              speechBubbleTimerRef.current = null;
+            }, 10000);
+          } else if (!isOpen) {
+            setHasUnread(true);
+          }
+          setAvatarState('idle');
+          setTimeout(onMemoryUpdateCheck, 3000);
+        },
+        onError: () => {},
+      });
     } catch (error) {
       console.error('Chat error:', error);
+      const errorMessage = t('cozyPal.errorMessage');
+
       if (proactiveTrigger) {
-        setSpeechBubble(t('cozyPal.errorMessage'));
+        setSpeechBubble(errorMessage);
         speechBubbleTimerRef.current = setTimeout(() => {
           setSpeechBubble(null);
           speechBubbleTimerRef.current = null;
         }, 5000);
       } else {
-        setMessages((prev) => {
-          const newMessages = [...prev];
-          newMessages[newMessages.length - 1] = { sender: 'ai', text: t('cozyPal.errorMessage') };
-          return newMessages;
-        });
+        updateLastAiMessage(setMessages, errorMessage);
       }
       setAvatarState('idle');
     } finally {
@@ -218,25 +187,9 @@ export const useCozyPalChat = ({
       setAvatarState('idle');
     }
   }, [
-    activeTopicId,
-    aiModel,
-    aiPersona,
-    aiProvider,
-    apiKey,
-    currentLanguage,
-    dailyCompletedPomodoros,
-    documentContent,
-    documentId,
-    documentTitle,
-    inputValue,
-    isLoading,
-    isOpen,
-    onMemoryUpdateCheck,
-    phase,
-    t,
-    themeName,
-    timeLeft,
-    totalFocusMinutes,
+    activeTopicId, aiModel, aiProvider, apiKey, context,
+    documentContent, documentId, documentTitle, inputValue,
+    isLoading, isOpen, onMemoryUpdateCheck, t,
   ]);
 
   const ensureGreeting = useCallback(() => {

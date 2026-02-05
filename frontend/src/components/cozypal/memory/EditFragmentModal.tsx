@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import type { EditingFragment } from '../../types';
+import type { EditingFragment } from '../types';
 
 interface EditFragmentModalProps {
     editingFragment: EditingFragment | null;

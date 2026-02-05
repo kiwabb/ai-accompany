@@ -26,7 +26,7 @@ interface ChatPanelProps {
     setHasUnread: React.Dispatch<React.SetStateAction<boolean>>;
     setAvatarState: React.Dispatch<React.SetStateAction<'idle' | 'thinking' | 'speaking' | 'focused'>>;
     setSpeechBubble: React.Dispatch<React.SetStateAction<string | null>>;
-    speechBubbleTimerRef: React.MutableRefObject<any>;
+    speechBubbleTimerRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
     checkForMemoryUpdates: () => void;
     topics: Topic[];
     activeTopicId: number | null;
@@ -34,17 +34,40 @@ interface ChatPanelProps {
     showTopicSelector: boolean;
     setShowTopicSelector: React.Dispatch<React.SetStateAction<boolean>>;
     onHandleCreateTopic: (name: string, description?: string) => Promise<void>;
-    inputRef: React.RefObject<HTMLInputElement>;
+    inputRef: React.RefObject<HTMLInputElement | null>;
 }
 
 const ChatPanel: React.FC<ChatPanelProps> = (props) => {
     const { sendMessage } = useChatLogic({
-        ...props
+        context: {
+            themeName: props.themeName,
+            phase: props.phase,
+            timeLeft: props.timeLeft,
+            currentLanguage: props.currentLanguage,
+            aiPersona: props.aiPersona,
+            dailyCompletedPomodoros: props.dailyCompletedPomodoros,
+            totalFocusMinutes: props.totalFocusMinutes,
+        },
+        apiKey: props.apiKey,
+        aiProvider: props.aiProvider,
+        aiModel: props.aiModel,
+        documentId: props.documentId,
+        documentTitle: props.documentTitle,
+        documentContent: props.documentContent,
+        activeTopicId: props.activeTopicId,
+        checkForMemoryUpdates: props.checkForMemoryUpdates,
+        setMessages: props.setMessages,
+        setIsLoading: props.setIsLoading,
+        isLoading: props.isLoading,
+        setHasUnread: props.setHasUnread,
+        setAvatarState: props.setAvatarState,
+        setSpeechBubble: props.setSpeechBubble,
+        speechBubbleTimerRef: props.speechBubbleTimerRef,
     });
 
     return (
         <>
-            <ChatHeader 
+            <ChatHeader
                 topics={props.topics}
                 activeTopicId={props.activeTopicId}
                 showTopicSelector={props.showTopicSelector}
@@ -52,16 +75,16 @@ const ChatPanel: React.FC<ChatPanelProps> = (props) => {
                 setActiveTopicId={props.setActiveTopicId}
                 onHandleCreateTopic={props.onHandleCreateTopic}
             />
-            
-            <MessageList 
-                messages={props.messages} 
-                isLoading={props.isLoading} 
+
+            <MessageList
+                messages={props.messages}
+                isLoading={props.isLoading}
             />
-            
-            <ChatInputForm 
+
+            <ChatInputForm
                 inputRef={props.inputRef}
                 isLoading={props.isLoading}
-                onSendMessage={sendMessage} 
+                onSendMessage={sendMessage}
             />
         </>
     );

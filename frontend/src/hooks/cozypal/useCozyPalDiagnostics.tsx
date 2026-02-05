@@ -1,6 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { TFunction } from 'i18next';
 import type { DiagnosticData, EditingFragment, EditingProfileItem } from '../../components/cozypal/types';
+import {
+  fetchLatestMemoryUpdate,
+  seedKnownMemory,
+  detectNewMemoryItems,
+  showMemoryLearnedToast,
+} from './memoryCheckUtils';
+import {
+  updateFragment,
+  deleteFragment,
+  deleteProfileItem,
+  updateProfileItem,
+  resetMemory,
+  removeFromKnownRefs,
+  updateKnownRefs,
+} from './profileUtils';
 
 interface UseCozyPalDiagnosticsOptions {
   t: TFunction;
@@ -38,17 +53,19 @@ export const useCozyPalDiagnostics = ({ t }: UseCozyPalDiagnosticsOptions): Cozy
   const [editValue, setEditValue] = useState('');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
   const knownFactsRef = useRef<Set<string>>(new Set());
   const knownPrefsRef = useRef<Set<string>>(new Set());
   const isInitializedRef = useRef(false);
+
+  const refs = { knownFactsRef, knownPrefsRef, isInitializedRef };
 
   const fetchDiagnostics = useCallback(async () => {
     setIsDiagLoading(true);
     try {
       const response = await fetch('/api/diagnostics/last-exchange');
       if (response.ok) {
-        const data = await response.json();
-        setDiagnostics(data);
+        setDiagnostics(await response.json());
       }
     } catch (error) {
       console.error('Failed to fetch diagnostics', error);
@@ -61,8 +78,7 @@ export const useCozyPalDiagnostics = ({ t }: UseCozyPalDiagnosticsOptions): Cozy
     try {
       const response = await fetch('/api/diagnostics/memory/fragments');
       if (response.ok) {
-        const data = await response.json();
-        setMemoryFragments(data);
+        setMemoryFragments(await response.json());
       }
     } catch (error) {
       console.error('Failed to fetch memory fragments', error);
@@ -70,52 +86,24 @@ export const useCozyPalDiagnostics = ({ t }: UseCozyPalDiagnosticsOptions): Cozy
   }, []);
 
   const checkForMemoryUpdates = useCallback(async () => {
-    try {
-      const response = await fetch('/api/diagnostics/latest-memory-update');
-      if (response.ok) {
-        const data = await response.json();
-        if (data.has_update) {
-          const newFacts = (data.facts as string[]) || [];
-          const newPrefs = (data.preferences as string[]) || [];
+    const data = await fetchLatestMemoryUpdate();
+    if (!data) return;
 
-          let addedFact = null;
-          let addedPref = null;
+    if (data.has_update) {
+      const newFacts = data.facts || [];
+      const newPrefs = data.preferences || [];
 
-          if (!isInitializedRef.current) {
-            newFacts.forEach((fact) => knownFactsRef.current.add(fact));
-            newPrefs.forEach((pref) => knownPrefsRef.current.add(pref));
-            isInitializedRef.current = true;
-            return;
-          }
-
-          for (const fact of newFacts) {
-            if (!knownFactsRef.current.has(fact)) {
-              addedFact = fact;
-              knownFactsRef.current.add(fact);
-            }
-          }
-          for (const pref of newPrefs) {
-            if (!knownPrefsRef.current.has(pref)) {
-              addedPref = pref;
-              knownPrefsRef.current.add(pref);
-            }
-          }
-
-          if (addedFact) {
-            setToastMessage(`${t('cozyPal.memory.learned')}: ${addedFact}`);
-            fetchMemoryFragments();
-            setTimeout(() => setToastMessage(null), 4000);
-          } else if (addedPref) {
-            setToastMessage(`${t('cozyPal.memory.learned')}: ${addedPref}`);
-            fetchMemoryFragments();
-            setTimeout(() => setToastMessage(null), 4000);
-          }
-        } else {
-          isInitializedRef.current = true;
-        }
+      if (!isInitializedRef.current) {
+        seedKnownMemory(newFacts, newPrefs, refs);
+        return;
       }
-    } catch (error) {
-      console.error('Failed to check memory updates', error);
+
+      const result = detectNewMemoryItems(newFacts, newPrefs, refs);
+      if (showMemoryLearnedToast(result, t, setToastMessage)) {
+        fetchMemoryFragments();
+      }
+    } else {
+      isInitializedRef.current = true;
     }
   }, [fetchMemoryFragments, t]);
 
@@ -127,55 +115,27 @@ export const useCozyPalDiagnostics = ({ t }: UseCozyPalDiagnosticsOptions): Cozy
     if (!editingFragment) return;
     setIsSavingEdit(true);
     try {
-      const response = await fetch(`/api/diagnostics/memory/fragments/${editingFragment.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: editValue }),
-      });
-      if (response.ok) {
+      if (await updateFragment(editingFragment.id, editValue)) {
         setEditingFragment(null);
         fetchDiagnostics();
         fetchMemoryFragments();
       }
-    } catch (error) {
-      console.error('Failed to update fragment', error);
     } finally {
       setIsSavingEdit(false);
     }
   };
 
   const handleDeleteFragment = async (id: number) => {
-    try {
-      const response = await fetch(`/api/diagnostics/memory/fragments/${id}`, {
-        method: 'DELETE',
-      });
-      if (response.ok) {
-        fetchMemoryFragments();
-        fetchDiagnostics();
-      }
-    } catch (error) {
-      console.error('Failed to delete fragment', error);
+    if (await deleteFragment(id)) {
+      fetchMemoryFragments();
+      fetchDiagnostics();
     }
   };
 
   const handleDeleteProfileItem = async (category: 'facts' | 'preferences', value: string) => {
-    try {
-      const response = await fetch(`/api/diagnostics/profile/${category}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ value }),
-      });
-      if (response.ok) {
-        if (category === 'facts') {
-          knownFactsRef.current.delete(value);
-        } else {
-          knownPrefsRef.current.delete(value);
-        }
-
-        fetchDiagnostics();
-      }
-    } catch (error) {
-      console.error(`Failed to delete ${category} item`, error);
+    if (await deleteProfileItem(category, value)) {
+      removeFromKnownRefs(category, value, knownFactsRef, knownPrefsRef);
+      fetchDiagnostics();
     }
   };
 
@@ -183,28 +143,11 @@ export const useCozyPalDiagnostics = ({ t }: UseCozyPalDiagnosticsOptions): Cozy
     if (!editingProfileItem) return;
     setIsSavingEdit(true);
     try {
-      const response = await fetch(`/api/diagnostics/profile/${editingProfileItem.category}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          old_value: editingProfileItem.value,
-          new_value: editValue,
-        }),
-      });
-      if (response.ok) {
-        if (editingProfileItem.category === 'facts') {
-          knownFactsRef.current.delete(editingProfileItem.value);
-          knownFactsRef.current.add(editValue);
-        } else {
-          knownPrefsRef.current.delete(editingProfileItem.value);
-          knownPrefsRef.current.add(editValue);
-        }
-
+      if (await updateProfileItem(editingProfileItem.category, editingProfileItem.value, editValue)) {
+        updateKnownRefs(editingProfileItem.category, editingProfileItem.value, editValue, knownFactsRef, knownPrefsRef);
         setEditingProfileItem(null);
         fetchDiagnostics();
       }
-    } catch (error) {
-      console.error(`Failed to update ${editingProfileItem.category} item`, error);
     } finally {
       setIsSavingEdit(false);
     }
@@ -214,8 +157,7 @@ export const useCozyPalDiagnostics = ({ t }: UseCozyPalDiagnosticsOptions): Cozy
     if (!window.confirm(t('cozyPal.memory.resetConfirm'))) return;
     setIsSavingEdit(true);
     try {
-      const response = await fetch('/api/diagnostics/reset', { method: 'POST' });
-      if (response.ok) {
+      if (await resetMemory()) {
         knownFactsRef.current.clear();
         knownPrefsRef.current.clear();
         setDiagnostics(null);
@@ -225,8 +167,6 @@ export const useCozyPalDiagnostics = ({ t }: UseCozyPalDiagnosticsOptions): Cozy
         setToastMessage(t('common.reset'));
         setTimeout(() => setToastMessage(null), 3000);
       }
-    } catch (error) {
-      console.error('Failed to reset memory', error);
     } finally {
       setIsSavingEdit(false);
     }

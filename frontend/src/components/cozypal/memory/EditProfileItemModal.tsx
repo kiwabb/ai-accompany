@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { EditingProfileItem } from '../../types';
+import type { EditingProfileItem } from '../types';
 
 interface EditProfileItemModalProps {
     editingProfileItem: EditingProfileItem | null;

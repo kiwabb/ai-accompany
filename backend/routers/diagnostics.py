@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
 from .. import models, schemas
 from typing import Any, Dict
+from .profile_handlers import get_profile_data_for_modification, save_profile_modification
 
 router = APIRouter(prefix="/api/diagnostics", tags=["diagnostics"])
 
@@ -104,34 +105,16 @@ async def delete_profile_item(
     current_user_id: str = Depends(get_current_user_id),
 ):
     """从用户画像中删除指定的事实或偏好。"""
-    if category not in ["facts", "preferences"]:
-        raise HTTPException(status_code=400, detail="Invalid category")
+    profile, current_data, items = await get_profile_data_for_modification(
+        current_user_id, category, db
+    )
 
-    profile = await memory_service.get_user_profile(current_user_id, db)
-    if profile is None or profile.data is None:
-        raise HTTPException(status_code=404, detail="Profile not found")
+    if value not in items:
+        raise HTTPException(status_code=404, detail="Item not found in profile")
 
-    current_data = dict(profile.data) if isinstance(profile.data, dict) else {}
-    items = list(current_data.get(category, []))
-
-    if value in items:
-        items.remove(value)
-        current_data[category] = items
-        profile.data = current_data
-
-        from sqlalchemy.orm.attributes import flag_modified
-
-        flag_modified(profile, "data")
-        await db.commit()
-
-        last_diag = memory_service.get_diagnostics(current_user_id)
-        if last_diag:
-            last_diag["user_profile"] = current_data
-            memory_service.store_diagnostics(current_user_id, last_diag)
-
-        return {"status": "success"}
-
-    raise HTTPException(status_code=404, detail="Item not found in profile")
+    items.remove(value)
+    current_data[category] = items
+    return await save_profile_modification(profile, current_data, current_user_id, db)
 
 
 @router.patch("/profile/{category}")
@@ -143,35 +126,17 @@ async def update_profile_item(
     current_user_id: str = Depends(get_current_user_id),
 ):
     """修正用户画像中的某个事实或偏好。"""
-    if category not in ["facts", "preferences"]:
-        raise HTTPException(status_code=400, detail="Invalid category")
+    profile, current_data, items = await get_profile_data_for_modification(
+        current_user_id, category, db
+    )
 
-    profile = await memory_service.get_user_profile(current_user_id, db)
-    if profile is None or profile.data is None:
-        raise HTTPException(status_code=404, detail="Profile not found")
+    if old_value not in items:
+        raise HTTPException(status_code=404, detail="Original item not found")
 
-    current_data = dict(profile.data) if isinstance(profile.data, dict) else {}
-    items = list(current_data.get(category, []))
-
-    if old_value in items:
-        idx = items.index(old_value)
-        items[idx] = new_value
-        current_data[category] = items
-        profile.data = current_data
-
-        from sqlalchemy.orm.attributes import flag_modified
-
-        flag_modified(profile, "data")
-        await db.commit()
-
-        last_diag = memory_service.get_diagnostics(current_user_id)
-        if last_diag:
-            last_diag["user_profile"] = current_data
-            memory_service.store_diagnostics(current_user_id, last_diag)
-
-        return {"status": "success"}
-
-    raise HTTPException(status_code=404, detail="Original item not found")
+    idx = items.index(old_value)
+    items[idx] = new_value
+    current_data[category] = items
+    return await save_profile_modification(profile, current_data, current_user_id, db)
 
 
 @router.get("/latest-memory-update")

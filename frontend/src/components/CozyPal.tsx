@@ -14,6 +14,7 @@ import { useResizablePanel } from '../hooks/cozypal/useResizablePanel';
 import { useCozyPalDiagnostics, type CozyPalDiagnosticsState } from '../hooks/cozypal/useCozyPalDiagnostics';
 import { useCozyPalTopics } from '../hooks/cozypal/useCozyPalTopics';
 import { useCozyPalChat } from '../hooks/cozypal/useCozyPalChat';
+import { useCozyPalCallbacks } from '../hooks/cozypal/useCozyPalCallbacks';
 
 interface CozyPalProps {
   themeName: string;
@@ -33,34 +34,13 @@ interface CozyPalProps {
 }
 
 export interface CozyPalHandle {
-  triggerProactiveMessage: (
-    type:
-      | 'focus_start'
-      | 'focus_end'
-      | 'break_start'
-      | 'break_end'
-      | 'focus_near_end'
-      | 'break_near_end'
-      | 'focus_completed',
-    durationOverride?: number
-  ) => void;
+  triggerProactiveMessage: (type: string, durationOverride?: number) => void;
 }
 
 const CozyPal = React.forwardRef<CozyPalHandle, CozyPalProps>(({
-  themeName,
-  phase,
-  timeLeft,
-  apiKey,
-  currentLanguage,
-  aiPersona,
-  aiProvider,
-  aiModel,
-  dailyCompletedPomodoros,
-  totalFocusMinutes,
-  documentId,
-  documentTitle,
-  documentContent,
-  onDimensionsChange,
+  themeName, phase, timeLeft, apiKey, currentLanguage, aiPersona,
+  aiProvider, aiModel, dailyCompletedPomodoros, totalFocusMinutes,
+  documentId, documentTitle, documentContent, onDimensionsChange,
 }, ref) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = React.useState(false);
@@ -69,204 +49,82 @@ const CozyPal = React.forwardRef<CozyPalHandle, CozyPalProps>(({
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const { width, isResizing, startResizing } = useResizablePanel(450);
-
   const diagnosticsState = useCozyPalDiagnostics({ t }) as CozyPalDiagnosticsState;
-  const {
-    diagnostics,
-    memoryFragments,
-    isDiagLoading,
-    editingFragment,
-    setEditingFragment,
-    editingProfileItem,
-    setEditingProfileItem,
-    editValue,
-    setEditValue,
-    isSavingEdit,
-    toastMessage,
-    setToastMessage,
-    fetchDiagnostics,
-    fetchMemoryFragments,
-    checkForMemoryUpdates,
-    handleUpdateFragment,
-    handleDeleteFragment,
-    handleDeleteProfileItem,
-    handleUpdateProfileItem,
-    handleResetMemory,
-  } = diagnosticsState;
+  const topicsState = useCozyPalTopics();
 
-  const {
-    topics,
-    activeTopicId,
-    showTopicSelector,
-    setShowTopicSelector,
-    handleSelectTopic,
-    handleCreateTopic,
-  } = useCozyPalTopics();
+  const chatState = useCozyPalChat({
+    t, apiKey,
+    context: { themeName, phase, timeLeft, currentLanguage, aiPersona, dailyCompletedPomodoros, totalFocusMinutes },
+    aiProvider, aiModel, documentId, documentTitle, documentContent, isOpen,
+    activeTopicId: topicsState.activeTopicId,
+    onMemoryUpdateCheck: diagnosticsState.checkForMemoryUpdates,
+  });
 
-  const {
-    messages,
-    inputValue,
-    setInputValue,
-    isLoading,
-    hasUnread,
-    setHasUnread,
-    avatarState,
-    speechBubble,
-    sendMessage,
-    ensureGreeting,
-  } = useCozyPalChat({
-    t,
-    apiKey,
-    themeName,
-    phase,
-    timeLeft,
-    currentLanguage,
-    aiPersona,
-    aiProvider,
-    aiModel,
-    dailyCompletedPomodoros,
-    totalFocusMinutes,
-    documentId,
-    documentTitle,
-    documentContent,
-    isOpen,
-    activeTopicId,
-    onMemoryUpdateCheck: checkForMemoryUpdates,
+  const callbacks = useCozyPalCallbacks({
+    isOpen, ensureGreeting: chatState.ensureGreeting,
+    setEditingProfileItem: diagnosticsState.setEditingProfileItem,
+    setEditingFragment: diagnosticsState.setEditingFragment,
+    setEditValue: diagnosticsState.setEditValue,
+    setIsOpen, setHasUnread: chatState.setHasUnread,
+    sendMessage: chatState.sendMessage, inputRef,
   });
 
   React.useEffect(() => {
-    if (onDimensionsChange) {
-      onDimensionsChange(isOpen ? width : 0);
-    }
+    onDimensionsChange?.(isOpen ? width : 0);
   }, [isOpen, width, onDimensionsChange]);
 
   React.useEffect(() => {
-    if (activeTab === 'debug' || activeTab === 'memory') {
-      fetchDiagnostics();
-    }
-    if (activeTab === 'memory') {
-      fetchMemoryFragments();
-    }
-  }, [activeTab, fetchDiagnostics, fetchMemoryFragments]);
+    if (activeTab === 'debug' || activeTab === 'memory') diagnosticsState.fetchDiagnostics();
+    if (activeTab === 'memory') diagnosticsState.fetchMemoryFragments();
+  }, [activeTab, diagnosticsState.fetchDiagnostics, diagnosticsState.fetchMemoryFragments]);
 
   React.useEffect(() => {
-    if (!isOpen) return;
-    setHasUnread(false);
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 100);
-  }, [isOpen, setHasUnread]);
-
-  const toggleChat = React.useCallback(() => {
-    setIsOpen((prev) => !prev);
-    if (!isOpen) {
-      ensureGreeting();
-    }
-  }, [ensureGreeting, isOpen]);
-
-  const handleEditProfileItem = React.useCallback((category: 'facts' | 'preferences', value: string) => {
-    setEditingProfileItem({ category, value });
-    setEditValue(value);
-  }, [setEditValue, setEditingProfileItem]);
-
-  const handleEditFragment = React.useCallback((id: number, content: string) => {
-    setEditingFragment({ id, content });
-    setEditValue(content);
-  }, [setEditingFragment, setEditValue]);
+    if (isOpen) callbacks.handleOpenChange();
+  }, [isOpen, callbacks.handleOpenChange]);
 
   React.useImperativeHandle(ref, () => ({
-    triggerProactiveMessage: (type, durationOverride) => {
-      sendMessage(undefined, type, durationOverride);
-    },
+    triggerProactiveMessage: callbacks.triggerProactiveMessage,
   }));
 
   return (
     <div className="fixed bottom-6 right-6 z-50">
-      <MemoryToast message={toastMessage} onDismiss={() => setToastMessage(null)} />
-      <CozyPalAvatarButton
-        avatarState={avatarState}
-        hasUnread={hasUnread}
-        onToggle={toggleChat}
-        t={t}
-      />
-      {!isOpen && <CozyPalSpeechBubble speechBubble={speechBubble} />}
+      <MemoryToast message={diagnosticsState.toastMessage} onDismiss={() => diagnosticsState.setToastMessage(null)} />
+      <CozyPalAvatarButton avatarState={chatState.avatarState} hasUnread={chatState.hasUnread} onToggle={callbacks.toggleChat} t={t} />
+      {!isOpen && <CozyPalSpeechBubble speechBubble={chatState.speechBubble} />}
 
       <AnimatePresence>
         {isOpen && (
           <CozyPalDrawer
-            width={width}
-            isResizing={isResizing}
-            onStartResizing={startResizing}
-            onClose={toggleChat}
-            avatarState={avatarState}
-            mainTab={mainTab}
-            onMainTabChange={setMainTab}
-            activeTab={activeTab}
-            onActiveTabChange={setActiveTab}
-            topics={topics}
-            activeTopicId={activeTopicId}
-            showTopicSelector={showTopicSelector}
-            onToggleTopicSelector={() => setShowTopicSelector(!showTopicSelector)}
-            onSelectTopic={handleSelectTopic}
-            onCreateTopic={handleCreateTopic}
-            chatTab={(
-              <CozyPalChatTab
-                key="chat"
-                messages={messages}
-                isLoading={isLoading}
-              />
-            )}
-            memoryTab={(
-              <CozyPalMemoryTab
-                key="memory"
-                diagnostics={diagnostics}
-                memoryFragments={memoryFragments}
-                onEditProfileItem={handleEditProfileItem}
-                onDeleteProfileItem={handleDeleteProfileItem}
-                onEditFragment={handleEditFragment}
-                onDeleteFragment={handleDeleteFragment}
-                onResetMemory={handleResetMemory}
-                isSavingEdit={isSavingEdit}
-                t={t}
-              />
-            )}
-            debugTab={(
-              <CozyPalDebugTab
-                key="debug"
-                diagnostics={diagnostics}
-                isDiagLoading={isDiagLoading}
-                onRefresh={fetchDiagnostics}
-                onStartEditFragment={handleEditFragment}
-                editingFragment={editingFragment}
-                editValue={editValue}
-                onEditValueChange={setEditValue}
-                onCloseEdit={() => setEditingFragment(null)}
-                onSaveEdit={handleUpdateFragment}
-                isSavingEdit={isSavingEdit}
-                t={t}
-              />
-            )}
-            inputArea={(
-              <CozyPalInputArea
-                inputRef={inputRef}
-                inputValue={inputValue}
-                onInputChange={setInputValue}
-                isLoading={isLoading}
-                onSend={(event) => sendMessage(event)}
-                t={t}
-              />
-            )}
-            profileEditOverlay={(
-              <CozyPalProfileEditOverlay
-                editingProfileItem={editingProfileItem}
-                editValue={editValue}
-                onEditValueChange={setEditValue}
-                onCancel={() => setEditingProfileItem(null)}
-                onSave={handleUpdateProfileItem}
-                isSavingEdit={isSavingEdit}
-                t={t}
-              />
-            )}
+            width={width} isResizing={isResizing} onStartResizing={startResizing} onClose={callbacks.toggleChat}
+            avatarState={chatState.avatarState} mainTab={mainTab} onMainTabChange={setMainTab}
+            activeTab={activeTab} onActiveTabChange={setActiveTab}
+            topics={topicsState.topics} activeTopicId={topicsState.activeTopicId}
+            showTopicSelector={topicsState.showTopicSelector}
+            onToggleTopicSelector={() => topicsState.setShowTopicSelector(!topicsState.showTopicSelector)}
+            onSelectTopic={topicsState.handleSelectTopic} onCreateTopic={topicsState.handleCreateTopic}
+            chatTab={<CozyPalChatTab key="chat" messages={chatState.messages} isLoading={chatState.isLoading} />}
+            memoryTab={
+              <CozyPalMemoryTab key="memory" diagnostics={diagnosticsState.diagnostics} memoryFragments={diagnosticsState.memoryFragments}
+                onEditProfileItem={callbacks.handleEditProfileItem} onDeleteProfileItem={diagnosticsState.handleDeleteProfileItem}
+                onEditFragment={callbacks.handleEditFragment} onDeleteFragment={diagnosticsState.handleDeleteFragment}
+                onResetMemory={diagnosticsState.handleResetMemory} isSavingEdit={diagnosticsState.isSavingEdit} t={t} />
+            }
+            debugTab={
+              <CozyPalDebugTab key="debug" diagnostics={diagnosticsState.diagnostics} isDiagLoading={diagnosticsState.isDiagLoading}
+                onRefresh={diagnosticsState.fetchDiagnostics} onStartEditFragment={callbacks.handleEditFragment}
+                editingFragment={diagnosticsState.editingFragment} editValue={diagnosticsState.editValue}
+                onEditValueChange={diagnosticsState.setEditValue} onCloseEdit={() => diagnosticsState.setEditingFragment(null)}
+                onSaveEdit={diagnosticsState.handleUpdateFragment} isSavingEdit={diagnosticsState.isSavingEdit} t={t} />
+            }
+            inputArea={
+              <CozyPalInputArea inputRef={inputRef} inputValue={chatState.inputValue} onInputChange={chatState.setInputValue}
+                isLoading={chatState.isLoading} onSend={(e) => chatState.sendMessage(e)} t={t} />
+            }
+            profileEditOverlay={
+              <CozyPalProfileEditOverlay editingProfileItem={diagnosticsState.editingProfileItem} editValue={diagnosticsState.editValue}
+                onEditValueChange={diagnosticsState.setEditValue} onCancel={() => diagnosticsState.setEditingProfileItem(null)}
+                onSave={diagnosticsState.handleUpdateProfileItem} isSavingEdit={diagnosticsState.isSavingEdit} t={t} />
+            }
             t={t}
           />
         )}

@@ -1,5 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import {
+  fetchLatestMemoryUpdate,
+  seedKnownMemory,
+  detectNewMemoryItems,
+  showMemoryLearnedToast,
+} from './cozypal/memoryCheckUtils';
 
 export interface CozyPalState {
     isOpen: boolean;
@@ -11,7 +17,7 @@ export interface CozyPalState {
     avatarState: 'idle' | 'thinking' | 'speaking' | 'focused';
     speechBubble: string | null;
     toastMessage: string | null;
-    speechBubbleTimerRef: React.MutableRefObject<any>;
+    speechBubbleTimerRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
     knownFactsRef: React.MutableRefObject<Set<string>>;
     knownPrefsRef: React.MutableRefObject<Set<string>>;
     isInitializedRef: React.MutableRefObject<boolean>;
@@ -44,10 +50,12 @@ export const useCozyPalState = (onDimensionsChange?: (width: number) => void): [
     const [speechBubble, setSpeechBubble] = useState<string | null>(null);
     const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-    const speechBubbleTimerRef = useRef<any>(null);
+    const speechBubbleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const knownFactsRef = useRef<Set<string>>(new Set());
     const knownPrefsRef = useRef<Set<string>>(new Set());
     const isInitializedRef = useRef(false);
+
+    const refs = { knownFactsRef, knownPrefsRef, isInitializedRef };
 
     useEffect(() => {
         if (onDimensionsChange) {
@@ -61,141 +69,62 @@ export const useCozyPalState = (onDimensionsChange?: (width: number) => void): [
     }, []);
 
     useEffect(() => {
+        if (!isResizing) return;
+
         const handleMouseMove = (e: MouseEvent) => {
-            if (isResizing) {
-                const newWidth = window.innerWidth - e.clientX;
-                if (newWidth > 300 && newWidth < 800) {
-                    setWidth(newWidth);
-                }
+            const newWidth = window.innerWidth - e.clientX;
+            if (newWidth > 300 && newWidth < 800) {
+                setWidth(newWidth);
             }
         };
+        const handleMouseUp = () => setIsResizing(false);
 
-        const handleMouseUp = () => {
-            setIsResizing(false);
-        };
-
-        if (isResizing) {
-            window.addEventListener('mousemove', handleMouseMove);
-            window.addEventListener('mouseup', handleMouseUp);
-        }
-
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
         return () => {
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
         };
     }, [isResizing]);
 
-    const seedKnownMemory = useCallback((facts: string[], prefs: string[]) => {
-        facts.forEach((fact) => knownFactsRef.current.add(fact));
-        prefs.forEach((pref) => knownPrefsRef.current.add(pref));
-        isInitializedRef.current = true;
-    }, []);
-
-    const fetchLatestMemoryUpdate = useCallback(async () => {
-        const response = await fetch('/api/diagnostics/latest-memory-update');
-        if (!response.ok) return null;
-        return response.json();
-    }, []);
-
-    const seedMemoryCache = useCallback(async () => {
-        try {
-            const data = await fetchLatestMemoryUpdate();
-            if (!data) return;
-            if (data.has_update) {
-                const newFacts = (data.facts as string[]) || [];
-                const newPrefs = (data.preferences as string[]) || [];
-                seedKnownMemory(newFacts, newPrefs);
-            } else {
-                isInitializedRef.current = true;
-            }
-        } catch (error) {
-            console.error('Failed to check memory updates', error);
-        }
-    }, [fetchLatestMemoryUpdate, seedKnownMemory]);
-
     const checkForMemoryUpdates = useCallback(async () => {
-        try {
-            const data = await fetchLatestMemoryUpdate();
-            if (!data) return;
-            if (data.has_update) {
-                const newFacts = (data.facts as string[]) || [];
-                const newPrefs = (data.preferences as string[]) || [];
+        const data = await fetchLatestMemoryUpdate();
+        if (!data) return;
 
-                if (!isInitializedRef.current) {
-                    seedKnownMemory(newFacts, newPrefs);
-                    return;
-                }
+        if (data.has_update) {
+            const newFacts = data.facts || [];
+            const newPrefs = data.preferences || [];
 
-                let addedFact = null;
-                let addedPref = null;
-
-                for (const fact of newFacts) {
-                    if (!knownFactsRef.current.has(fact)) {
-                        addedFact = fact;
-                        knownFactsRef.current.add(fact);
-                    }
-                }
-                for (const pref of newPrefs) {
-                    if (!knownPrefsRef.current.has(pref)) {
-                        addedPref = pref;
-                        knownPrefsRef.current.add(pref);
-                    }
-                }
-
-                if (addedFact) {
-                    setToastMessage(`${t('cozyPal.memory.learned')}: ${addedFact}`);
-                    setTimeout(() => setToastMessage(null), 4000);
-                } else if (addedPref) {
-                    setToastMessage(`${t('cozyPal.memory.learned')}: ${addedPref}`);
-                    setTimeout(() => setToastMessage(null), 4000);
-                }
-            } else {
-                isInitializedRef.current = true;
+            if (!isInitializedRef.current) {
+                seedKnownMemory(newFacts, newPrefs, refs);
+                return;
             }
-        } catch (error) {
-            console.error('Failed to check memory updates', error);
-        }
-    }, [fetchLatestMemoryUpdate, seedKnownMemory, t]);
 
-    // Initial populate of known facts
+            const result = detectNewMemoryItems(newFacts, newPrefs, refs);
+            showMemoryLearnedToast(result, t, setToastMessage);
+        } else {
+            isInitializedRef.current = true;
+        }
+    }, [t]);
+
     useEffect(() => {
-        // Fetch once to seed the cache so we don't alert on existing memories
-        void seedMemoryCache();
-    }, [seedMemoryCache]);
+        void checkForMemoryUpdates();
+    }, [checkForMemoryUpdates]);
 
     const toggleChat = useCallback(() => {
         setIsOpen(prev => !prev);
     }, []);
 
     const state: CozyPalState = {
-        isOpen,
-        width,
-        isResizing,
-        mainTab,
-        activeTab,
-        hasUnread,
-        avatarState,
-        speechBubble,
-        toastMessage,
-        speechBubbleTimerRef,
-        knownFactsRef,
-        knownPrefsRef,
-        isInitializedRef,
+        isOpen, width, isResizing, mainTab, activeTab, hasUnread,
+        avatarState, speechBubble, toastMessage, speechBubbleTimerRef,
+        knownFactsRef, knownPrefsRef, isInitializedRef,
     };
 
     const actions: CozyPalActions = {
-        setIsOpen,
-        setWidth,
-        setIsResizing,
-        setMainTab,
-        setActiveTab,
-        setHasUnread,
-        setAvatarState,
-        setSpeechBubble,
-        setToastMessage,
-        startResizing,
-        toggleChat,
-        checkForMemoryUpdates,
+        setIsOpen, setWidth, setIsResizing, setMainTab, setActiveTab,
+        setHasUnread, setAvatarState, setSpeechBubble, setToastMessage,
+        startResizing, toggleChat, checkForMemoryUpdates,
     };
 
     return [state, actions];
