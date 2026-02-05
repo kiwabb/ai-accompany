@@ -6,6 +6,8 @@ import TimerPage from './pages/TimerPage';
 import LibraryPage from './pages/LibraryPage';
 import ReaderPage from './pages/ReaderPage';
 import SettingsPage from './pages/SettingsPage';
+import AchievementWall from './pages/AchievementWall';
+import FocusStatsPage from './pages/FocusStatsPage';
 import FloatingTimer from './components/FloatingTimer';
 import CozyPal from './components/cozypal/CozyPalPanel';
 
@@ -46,6 +48,8 @@ const AppContent = () => {
         <Route path="/library" element={<LibraryPage />} />
         <Route path="/read/:id" element={<ReaderPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/achievements" element={<AchievementWall />} />
+        <Route path="/stats" element={<FocusStatsPage />} />
       </Routes>
     </>
   );

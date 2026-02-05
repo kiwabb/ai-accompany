@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .database import Base, engine
 from . import models  # 确保导入模型，以便Base.metadata知道它们
-from .routers import sessions, users, topics, diagnostics, countdowns, documents
+from .routers import sessions, users, topics, diagnostics, countdowns, documents, achievements
 
 
 @asynccontextmanager
@@ -33,6 +33,7 @@ app.include_router(topics.router, prefix="/api/topics", tags=["topics"])
 app.include_router(countdowns.router)
 app.include_router(diagnostics.router)
 app.include_router(documents.router)
+app.include_router(achievements.router, prefix="/api/achievements", tags=["achievements"])
 
 
 @app.get("/")
