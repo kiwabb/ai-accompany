@@ -30,6 +30,7 @@ interface CozyPalDrawerProps {
   inputArea: ReactNode;
   profileEditOverlay: ReactNode;
   t: TFunction;
+  isChiikawaTheme?: boolean;
 }
 
 const CozyPalDrawer = ({
@@ -54,6 +55,7 @@ const CozyPalDrawer = ({
   inputArea,
   profileEditOverlay,
   t,
+  isChiikawaTheme,
 }: CozyPalDrawerProps) => (
   <motion.div
     aria-label={t('cozyPal.chatDescription')}
@@ -68,7 +70,7 @@ const CozyPalDrawer = ({
     <CozyPalResizeHandle isResizing={isResizing} onStartResizing={onStartResizing} />
 
     <div className="flex-none p-5 pb-3 border-b border-indigo-50 bg-white/40 backdrop-blur-md">
-      <CozyPalHeader avatarState={avatarState} onClose={onClose} t={t} />
+      <CozyPalHeader avatarState={avatarState} onClose={onClose} t={t} isChiikawaTheme={isChiikawaTheme} />
       <CozyPalMainTabs mainTab={mainTab} onChange={onMainTabChange} t={t} />
     </div>
 

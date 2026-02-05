@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -7,12 +7,14 @@ import { Book as BookIcon, Settings as SettingsIcon, Rocket as RocketIcon, Brain
 
 import ConfirmModal from '../components/ConfirmModal';
 import AmbientBackground from '../components/AmbientBackground';
+import CozyPal, { type CozyPalHandle } from '../components/CozyPal';
 
 const FocusListPage: React.FC = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
-    const { state, isActive, timeLeft, totalTimeValue, reset } = useTimerContext();
+    const { state, isActive, timeLeft, totalTimeValue, reset, todayStats } = useTimerContext();
     const { themes } = state;
+    const cozyPalRef = useRef<CozyPalHandle>(null);
 
     const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
     const [pendingThemeId, setPendingThemeId] = React.useState<string | null>(null);
@@ -243,6 +245,22 @@ const FocusListPage: React.FC = () => {
                 onConfirm={confirmSwitch}
                 onCancel={cancelSwitch}
                 type="warning"
+            />
+
+            {/* AI Chat Companion */}
+            <CozyPal
+                ref={cozyPalRef}
+                themeName={state.activeThemeId || 'default'}
+                phase={state.phase}
+                timeLeft={timeLeft}
+                apiKey={state.settings?.openaiApiKey}
+                currentLanguage={i18n.language}
+                aiPersona={state.settings?.aiPersona || 'friendly'}
+                aiProvider={state.settings?.aiProvider}
+                aiModel={state.settings?.aiModel}
+                dailyCompletedPomodoros={todayStats?.total_sessions || 0}
+                totalFocusMinutes={todayStats?.total_focus_minutes || 0}
+                isChiikawaTheme={state.activeVisualThemeId === 'chiikawa'}
             />
         </main>
     );

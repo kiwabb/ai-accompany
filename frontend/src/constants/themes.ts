@@ -42,8 +42,8 @@ export const VISUAL_THEMES: VisualTheme[] = [
       elevated: '0 16px 48px rgba(255, 182, 193, 0.3), 0 8px 24px rgba(255, 182, 193, 0.2)',
     },
     borderRadius: '2.5rem',
-    fontHeading: '"M PLUS Rounded 1c", "Nunito"',
-    fontSans: '"M PLUS Rounded 1c", "Nunito"',
+    fontHeading: '"Zen Maru Gothic", "Kiwi Maru", "M PLUS Rounded 1c", "Nunito"',
+    fontSans: '"Zen Maru Gothic", "Kiwi Maru", "M PLUS Rounded 1c", "Nunito"',
     decorations: {
       enabled: true,
       pattern: 'chiikawa-dots',

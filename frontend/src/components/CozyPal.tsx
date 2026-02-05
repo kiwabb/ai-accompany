@@ -31,6 +31,7 @@ interface CozyPalProps {
   documentTitle?: string;
   documentContent?: string;
   onDimensionsChange?: (width: number) => void;
+  isChiikawaTheme?: boolean;
 }
 
 export interface CozyPalHandle {
@@ -40,7 +41,7 @@ export interface CozyPalHandle {
 const CozyPal = React.forwardRef<CozyPalHandle, CozyPalProps>(({
   themeName, phase, timeLeft, apiKey, currentLanguage, aiPersona,
   aiProvider, aiModel, dailyCompletedPomodoros, totalFocusMinutes,
-  documentId, documentTitle, documentContent, onDimensionsChange,
+  documentId, documentTitle, documentContent, onDimensionsChange, isChiikawaTheme,
 }, ref) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = React.useState(false);
@@ -89,7 +90,7 @@ const CozyPal = React.forwardRef<CozyPalHandle, CozyPalProps>(({
   return (
     <div className="fixed bottom-6 right-6 z-50">
       <MemoryToast message={diagnosticsState.toastMessage} onDismiss={() => diagnosticsState.setToastMessage(null)} />
-      <CozyPalAvatarButton avatarState={chatState.avatarState} hasUnread={chatState.hasUnread} onToggle={callbacks.toggleChat} t={t} />
+      <CozyPalAvatarButton avatarState={chatState.avatarState} hasUnread={chatState.hasUnread} onToggle={callbacks.toggleChat} t={t} isChiikawaTheme={isChiikawaTheme} />
       {!isOpen && <CozyPalSpeechBubble speechBubble={chatState.speechBubble} />}
 
       <AnimatePresence>
@@ -126,6 +127,7 @@ const CozyPal = React.forwardRef<CozyPalHandle, CozyPalProps>(({
                 onSave={diagnosticsState.handleUpdateProfileItem} isSavingEdit={diagnosticsState.isSavingEdit} t={t} />
             }
             t={t}
+            isChiikawaTheme={isChiikawaTheme}
           />
         )}
       </AnimatePresence>

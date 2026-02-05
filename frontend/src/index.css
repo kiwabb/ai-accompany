@@ -426,10 +426,34 @@ body.theme-chiikawa {
   --color-cozy-cream: #FFF5F8;
   --shadow-cozy: 0 8px 32px rgba(255, 182, 193, 0.25);
   --shadow-elevated: 0 16px 48px rgba(255, 182, 193, 0.3);
+  --font-heading: "Zen Maru Gothic", "Kiwi Maru", "M PLUS Rounded 1c", "Nunito", sans-serif;
+  --font-sans: "Zen Maru Gothic", "Kiwi Maru", "M PLUS Rounded 1c", "Nunito", sans-serif;
+  font-family: "Zen Maru Gothic", "Kiwi Maru", "M PLUS Rounded 1c", "Nunito", sans-serif;
+  letter-spacing: 0.02em;
 }
 
 body.theme-chiikawa * {
   border-radius: inherit;
+}
+
+/* Chiikawa cute typography */
+body.theme-chiikawa h1,
+body.theme-chiikawa h2,
+body.theme-chiikawa h3,
+body.theme-chiikawa h4,
+body.theme-chiikawa h5,
+body.theme-chiikawa h6 {
+  font-family: "Zen Maru Gothic", "Kiwi Maru", "M PLUS Rounded 1c", "Nunito", sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+
+body.theme-chiikawa p,
+body.theme-chiikawa span,
+body.theme-chiikawa div,
+body.theme-chiikawa button,
+body.theme-chiikawa input {
+  font-family: "Zen Maru Gothic", "Kiwi Maru", "M PLUS Rounded 1c", "Nunito", sans-serif;
 }
 
 /* Chiikawa pink glow effect */
@@ -437,18 +461,49 @@ body.theme-chiikawa .glow-hover:hover {
   box-shadow: 0 0 20px rgba(255, 181, 197, 0.5), 0 0 40px rgba(255, 181, 197, 0.3);
 }
 
-/* Chiikawa card styles */
+/* Chiikawa card styles - extra rounded and cute */
 body.theme-chiikawa .glass-surface,
 body.theme-chiikawa .glass-effect {
-  background: rgba(255, 255, 255, 0.85);
-  border: 2px solid rgba(255, 181, 197, 0.4);
-  box-shadow: 0 8px 32px rgba(255, 182, 193, 0.15);
+  background: rgba(255, 255, 255, 0.9);
+  border: 3px solid rgba(255, 181, 197, 0.5);
+  box-shadow: 0 8px 32px rgba(255, 182, 193, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+  border-radius: 2.5rem !important;
 }
 
 body.theme-chiikawa .glass-surface:hover,
 body.theme-chiikawa .glass-effect:hover {
-  border-color: rgba(255, 181, 197, 0.6);
-  box-shadow: 0 12px 40px rgba(255, 182, 193, 0.25);
+  border-color: rgba(255, 181, 197, 0.7);
+  box-shadow: 0 12px 40px rgba(255, 182, 193, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.9) inset;
+}
+
+/* Make all Chiikawa cards super rounded */
+body.theme-chiikawa [class*="rounded-"],
+body.theme-chiikawa [class*="card"],
+body.theme-chiikawa [class*="Card"],
+body.theme-chiikawa [class*="panel"],
+body.theme-chiikawa [class*="Panel"],
+body.theme-chiikawa [class*="modal"],
+body.theme-chiikawa [class*="Modal"],
+body.theme-chiikawa [class*="dialog"],
+body.theme-chiikawa [class*="drawer"],
+body.theme-chiikawa [class*="Drawer"] {
+  border-radius: 2rem !important;
+}
+
+body.theme-chiikawa [class*="rounded-full"] {
+  border-radius: 9999px !important;
+}
+
+/* Extra rounded corners for main containers */
+body.theme-chiikawa main > div,
+body.theme-chiikawa .bg-white,
+body.theme-chiikawa [class*="bg-white/"] {
+  border-radius: 2.5rem;
+}
+
+/* Chiikawa buttons - pill shaped and cute */
+body.theme-chiikawa button:not([class*="rounded-full"]) {
+  border-radius: 1.5rem !important;
 }
 
 /* Chiikawa button styles */

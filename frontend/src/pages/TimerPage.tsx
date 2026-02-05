@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTimerContext } from '../contexts/TimerContext';
 import PomodoroTimer from '../components/PomodoroTimer';
+import CozyPal, { type CozyPalHandle } from '../components/CozyPal';
 import { motion } from 'framer-motion';
 import { ChevronLeft as ChevronLeftIcon } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
@@ -11,8 +12,9 @@ import AmbientBackground from '../components/AmbientBackground';
 const TimerPage: React.FC = () => {
     const { themeId } = useParams<{ themeId: string }>();
     const navigate = useNavigate();
-    const { t } = useTranslation();
-    const { handleThemeChange, state, isActive, timeLeft, totalTimeValue, reset } = useTimerContext(); // Corrected destructuring
+    const { t, i18n } = useTranslation();
+    const { handleThemeChange, state, isActive, timeLeft, totalTimeValue, reset, todayStats } = useTimerContext();
+    const cozyPalRef = useRef<CozyPalHandle>(null);
 
     const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
     const [pendingThemeId, setPendingThemeId] = React.useState<string | null>(null);
@@ -86,6 +88,22 @@ const TimerPage: React.FC = () => {
                 onConfirm={handleConfirm}
                 onCancel={handleCancel}
                 type="warning"
+            />
+
+            {/* AI Chat Companion */}
+            <CozyPal
+                ref={cozyPalRef}
+                themeName={state.activeThemeId || 'default'}
+                phase={state.phase}
+                timeLeft={timeLeft}
+                apiKey={state.settings?.openaiApiKey}
+                currentLanguage={i18n.language}
+                aiPersona={state.settings?.aiPersona || 'friendly'}
+                aiProvider={state.settings?.aiProvider}
+                aiModel={state.settings?.aiModel}
+                dailyCompletedPomodoros={todayStats?.total_sessions || 0}
+                totalFocusMinutes={todayStats?.total_focus_minutes || 0}
+                isChiikawaTheme={state.activeVisualThemeId === 'chiikawa'}
             />
         </main>
     );
