@@ -1,7 +1,11 @@
 import { useTimerContext } from '../contexts/TimerContext';
+import { VISUAL_THEMES, DEFAULT_VISUAL_THEME_ID } from '../constants/themes';
 
 export const useChartTheme = () => {
-    const { activeVisualTheme } = useTimerContext();
+    const { state } = useTimerContext();
+    const activeVisualThemeId = state.activeVisualThemeId || DEFAULT_VISUAL_THEME_ID;
+    
+    const activeVisualTheme = VISUAL_THEMES.find(t => t.id === activeVisualThemeId) || VISUAL_THEMES[0];
 
     const chartColors = [
         activeVisualTheme.colors.primary,
