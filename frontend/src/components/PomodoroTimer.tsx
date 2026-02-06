@@ -23,6 +23,9 @@ const PomodoroTimer: React.FC = () => {
     initialLoaded
   } = useTimerContext();
 
+  const isChiikawaTheme = state.activeVisualThemeId === 'chiikawa';
+  const isShinchanTheme = state.activeVisualThemeId === 'shinchan';
+
   const { phase, completedSessions } = state;
 
   return (
@@ -112,7 +115,10 @@ const PomodoroTimer: React.FC = () => {
             whileHover={{ x: 8 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => navigate('/library')}
-            className="w-20 h-20 bg-white/80 backdrop-blur-2xl rounded-3xl shadow-xl flex items-center justify-center text-indigo-500 group border border-white"
+            className={`w-20 h-20 bg-white/80 backdrop-blur-2xl rounded-3xl shadow-xl flex items-center justify-center group border ${isShinchanTheme
+                ? 'border-[#40C4FF]/30 text-[#0277BD] hover:bg-[#40C4FF]/10'
+                : 'border-white text-indigo-500'
+              }`}
           >
             <BookIcon size={24} strokeWidth={2.5} className="group-hover:rotate-6 transition-transform" />
           </motion.button>
@@ -120,7 +126,10 @@ const PomodoroTimer: React.FC = () => {
             whileHover={{ x: 8 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => navigate('/settings')}
-            className="w-20 h-20 bg-white/80 backdrop-blur-2xl rounded-3xl shadow-xl flex items-center justify-center text-orange-500 group border border-white"
+            className={`w-20 h-20 bg-white/80 backdrop-blur-2xl rounded-3xl shadow-xl flex items-center justify-center group border ${isShinchanTheme
+                ? 'border-[#FF6B6B]/30 text-[#C62828] hover:bg-[#FF6B6B]/10'
+                : 'border-white text-orange-500'
+              }`}
           >
             <SettingsIcon size={24} strokeWidth={2.5} className="group-hover:rotate-6 transition-transform" />
           </motion.button>

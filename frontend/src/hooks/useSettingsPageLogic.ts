@@ -17,6 +17,13 @@ export const useSettingsPageLogic = () => {
     setDraftSettings((prev) => ({ ...(prev ?? initialSettings), [key]: value }));
   }, [initialSettings]);
 
+  const updateThemes = useCallback((action: React.SetStateAction<FocusTheme[]>) => {
+    setDraftThemes((prev) => {
+        const current = prev ?? initialThemes;
+        return typeof action === 'function' ? action(current) : action;
+    });
+  }, [initialThemes]);
+
   const handleSave = useCallback(async () => {
     await handleSaveSettings(settings);
     setShowSavedToast(true);
@@ -31,7 +38,7 @@ export const useSettingsPageLogic = () => {
     showSavedToast,
     handleSettingChange,
     handleSave,
-    setThemes: setDraftThemes,
+    setThemes: updateThemes,
     handleThemesChange,
   };
 };

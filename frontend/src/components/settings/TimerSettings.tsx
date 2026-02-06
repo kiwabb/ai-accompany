@@ -1,14 +1,13 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import type { TimerSettings } from '../../types/pomodoro';
+import type { TimerSettings as TimerSettingsType } from '../../types/pomodoro';
 
 interface TimerSettingsProps {
-  settings: TimerSettings;
-  handleSettingChange: (key: keyof TimerSettings, value: number) => void;
+  settings: TimerSettingsType;
+  handleSettingChange: (key: keyof TimerSettingsType, value: number) => void;
 }
 
-const TimerSettings: React.FC<TimerSettingsProps> = ({
+const TimerSettingsComponent: React.FC<TimerSettingsProps> = ({
   settings,
   handleSettingChange,
 }) => {
@@ -37,8 +36,8 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({
               <input
                 type="number"
                 min={1}
-                value={settings[key as keyof TimerSettings] as number}
-                onChange={(e) => handleSettingChange(key as keyof TimerSettings, parseInt(e.target.value))}
+                value={settings[key as keyof TimerSettingsType] as number}
+                onChange={(e) => handleSettingChange(key as keyof TimerSettingsType, parseInt(e.target.value))}
                 className={`w-24 text-4xl font-bold bg-transparent text-center focus:outline-none focus:scale-110 transition-transform ${color.split(' ')[1]}`}
               />
             </div>
@@ -50,4 +49,4 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({
   );
 };
 
-export default TimerSettings;
+export default TimerSettingsComponent;

@@ -52,6 +52,34 @@ export const VISUAL_THEMES: VisualTheme[] = [
     },
   },
   {
+    id: 'shinchan',
+    name: 'Shin-chan ★',
+    colors: {
+      bg: '#FFFDE7',           // 更加柔和的淡黄色背景
+      surface: 'rgba(255, 255, 255, 0.9)',
+      glass: 'rgba(255, 253, 231, 0.75)',
+      primary: '#FF6B6B',      // 清新的珊瑚红
+      secondary: '#FFF176',    // 柔和的柠檬黄
+      accent: '#4FC3F7',       // 清爽的天蓝色
+      text: '#5D4037',         // 温暖的深棕色
+      textMuted: '#8D6E63',
+      border: 'rgba(255, 107, 107, 0.3)',
+    },
+    shadows: {
+      cozy: '0 10px 30px rgba(255, 77, 77, 0.15), 0 4px 15px rgba(255, 235, 59, 0.15)',
+      elevated: '0 20px 45px rgba(255, 77, 77, 0.2), 0 8px 25px rgba(33, 150, 243, 0.15)',
+    },
+    borderRadius: '1.8rem',
+    fontHeading: '"Zen Maru Gothic", "Kiwi Maru", "M PLUS Rounded 1c", "Nunito"',
+    fontSans: '"Zen Maru Gothic", "Kiwi Maru", "M PLUS Rounded 1c", "Nunito"',
+    decorations: {
+      enabled: true,
+      pattern: 'shinchan-stars',
+      floatingElements: true,
+      cursorStyle: 'shinchan',
+    },
+  },
+  {
     id: 'dark',
     name: 'Deep Night',
     colors: {
@@ -85,4 +113,19 @@ export const CHIIKAWA_ELEMENTS = {
     '(◕ᴗ◕✿)', '(✿◠‿◠)', '٩(◕‿◕)۶', '(◕દ◕)', '♪(´ε｀ )'
   ],
   sparkles: ['✦', '✧', '★', '☆', '✩', '✪', '✫', '✬', '✭', '✮'],
+};
+
+// Shin-chan decorative elements
+export const SHINCHAN_ELEMENTS = {
+  // 动感超人风格的动作符号
+  actionSymbols: ['★', '⚡', '💥', '🔥', '✦', '⭐', '✧', '🌟', '💫', '✨'],
+  // 巧克力饼干和零食
+  chocobiSnacks: ['🍫', '🍪', '🍩', '🍬', '🍭', '🧁', '🍡', '🥤'],
+  // 可爱表情
+  expressions: [
+    '(°∀°)', '(≧∇≦)', '(｀・ω・´)', 'ヽ(>∀<☆)☆',
+    '(ﾉ´ヮ`)ﾉ*: ・゚✧', '(๑•̀ㅂ•́)و✧', '٩(๑❛ᴗ❛๑)۶', '(≧◡≦)'
+  ],
+  // 小新的特色台词符号
+  catchphrases: ['🐘', '💃', '🎭', '🎪', '🎬', '🏃'],
 };

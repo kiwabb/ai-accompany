@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 
 interface CozyAvatarProps {
   state: 'idle' | 'thinking' | 'speaking' | 'focused';
@@ -13,7 +13,7 @@ const CozyAvatar: React.FC<CozyAvatarProps> = ({ state, size = 64 }) => {
   const eyeColor = "#4A5568";
 
   // Animation variants
-  const containerVariants = {
+  const containerVariants: Variants = {
     idle: { 
       y: [0, -8, 0], 
       rotate: [0, -1, 1, 0],
@@ -36,7 +36,7 @@ const CozyAvatar: React.FC<CozyAvatarProps> = ({ state, size = 64 }) => {
     }
   };
 
-  const eyeVariants = {
+  const eyeVariants: Variants = {
     idle: { 
       scaleY: [1, 1, 0.1, 1], 
       transition: { duration: 5, repeat: Infinity, times: [0, 0.85, 0.9, 1] } 
@@ -49,7 +49,7 @@ const CozyAvatar: React.FC<CozyAvatarProps> = ({ state, size = 64 }) => {
     focused: { scaleY: 0.7, y: 1 } 
   };
 
-  const mouthVariants = {
+  const mouthVariants: Variants = {
     idle: { d: "M 20 45 Q 32 50 44 45", transition: { duration: 1 } }, // Smile
     speaking: { d: ["M 20 45 Q 32 55 44 45", "M 20 45 Q 32 35 44 45"], transition: { duration: 0.3, repeat: Infinity } }, // Talking
     thinking: { d: "M 25 45 Q 32 45 39 45", transition: { duration: 0.5 } }, // Flat/Thinking line

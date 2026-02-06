@@ -3,6 +3,7 @@ export interface FocusTheme {
   name: string;
   focusDuration: number; // in minutes
   isDefault: boolean;
+  iconType?: string;
 }
 
 export interface TimerSettings {
@@ -23,6 +24,8 @@ export interface TimerSettings {
   enableSounds?: boolean;
   enableBackgroundMusic?: boolean;
   soundVolume?: number;
+  focusTrack?: string;
+  breakTrack?: string;
 }
 
 export type Phase = 'focus' | 'shortBreak' | 'longBreak';

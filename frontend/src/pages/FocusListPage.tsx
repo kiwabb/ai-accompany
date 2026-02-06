@@ -20,16 +20,133 @@ const FocusListPage: React.FC = () => {
     const [pendingThemeId, setPendingThemeId] = React.useState<string | null>(null);
     const [confirmMessage, setConfirmMessage] = React.useState('');
 
-    const getIcon = (id: string) => {
-        switch (id) {
+    const isChiikawaTheme = state.activeVisualThemeId === 'chiikawa';
+    const isShinchanTheme = state.activeVisualThemeId === 'shinchan';
+
+    const getIcon = (theme: any) => {
+        const id = theme.id;
+        const iconType = theme.iconType;
+
+        if (isChiikawaTheme) {
+            const effectiveIcon = iconType || id;
+            switch (effectiveIcon) {
+                case 'english':
+                case 'hachiware': return <img src="/assets/chiikawa/sticker-1.png" alt="Hachiware" className="w-10 h-10 object-contain" />;
+                case '408':
+                case 'chiikawa': return <img src="/assets/chiikawa/sticker-0.png" alt="Chiikawa" className="w-10 h-10 object-contain" />;
+                case 'math':
+                case 'usagi': return <img src="/assets/chiikawa/sticker-2.png" alt="Usagi" className="w-10 h-10 object-contain" />;
+                case 'momonga': return <img src="/assets/chiikawa/sticker-5.png" alt="Momonga" className="w-10 h-10 object-contain" />;
+                case 'kurimanju': return <img src="/assets/chiikawa/sticker-10.png" alt="Kurimanju" className="w-10 h-10 object-contain" />;
+                case 'shisa': return <img src="/assets/chiikawa/sticker-6.png" alt="Shisa" className="w-10 h-10 object-contain" />;
+                case 'rakko': return <img src="/assets/chiikawa/sticker-11.png" alt="Rakko" className="w-10 h-10 object-contain" />;
+                default: return <img src="/assets/chiikawa/sticker-3.png" alt="Chiikawa" className="w-10 h-10 object-contain" />;
+            }
+        }
+
+        if (isShinchanTheme) {
+            const effectiveIcon = iconType || id;
+            switch (effectiveIcon) {
+                case 'english':
+                case 'kazama': return <img src="/assets/shinchan/kazama.png" alt="Kazama" className="w-10 h-10 object-contain" />;
+                case '408':
+                case 'shinchan': return <img src="/assets/shinchan/shinchan.png" alt="Shinchan" className="w-10 h-10 object-contain" />;
+                case 'math':
+                case 'bo-chan': return <img src="/assets/shinchan/bo-chan.png" alt="Bo-chan" className="w-10 h-10 object-contain" />;
+                case 'masao': return <img src="/assets/shinchan/masao.png" alt="Masao" className="w-10 h-10 object-contain" />;
+                case 'nene': return <img src="/assets/shinchan/nene.png" alt="Nene" className="w-10 h-10 object-contain" />;
+                case 'shiro': return <img src="/assets/shinchan/shiro-animated.gif" alt="Shiro" className="w-10 h-10 object-contain" />;
+                case 'action-mask': return <img src="/assets/shinchan/action-mask.png" alt="Action Mask" className="w-10 h-10 object-contain" />;
+                default: return <img src="/assets/shinchan/shinchan.png" alt="Shinchan" className="w-10 h-10 object-contain" />;
+            }
+        }
+
+        const effectiveIcon = iconType || id;
+        switch (effectiveIcon) {
             case 'english': return <BrainIcon size={28} />;
             case '408': return <RocketIcon size={28} />;
             case 'math': return <BookIcon size={28} />;
+            case 'study': return <BookIcon size={28} />;
+            case 'work': return <RocketIcon size={28} />;
+            case 'rest': return <CoffeeIcon size={28} />;
             default: return <CoffeeIcon size={28} />;
         }
     };
 
     const getCardTheme = (id: string) => {
+        if (isChiikawaTheme) {
+            switch (id) {
+                case 'english': return {
+                    bg: 'bg-[#B8E6F0]/10 chiikawa-card-bg-blue',
+                    border: 'border-[#B8E6F0]/30',
+                    glow: 'group-hover:shadow-[0_0_40px_rgba(184,230,240,0.3)]',
+                    icon: 'text-[#5D4037] bg-[#B8E6F0]/30',
+                    grad: 'from-[#B8E6F0]/30 via-[#B8E6F0]/10 to-transparent',
+                    pattern: 'chiikawa-card-bg-blue'
+                };
+                case '408': return {
+                    bg: 'bg-[#FFB5C5]/10 chiikawa-card-bg',
+                    border: 'border-[#FFB5C5]/30',
+                    glow: 'group-hover:shadow-[0_0_40px_rgba(255,181,197,0.3)]',
+                    icon: 'text-[#5D4037] bg-[#FFB5C5]/30',
+                    grad: 'from-[#FFB5C5]/30 via-[#FFB5C5]/10 to-transparent',
+                    pattern: 'chiikawa-card-bg'
+                };
+                case 'math': return {
+                    bg: 'bg-[#FFFACD]/10 chiikawa-card-bg-yellow',
+                    border: 'border-[#FFFACD]/30',
+                    glow: 'group-hover:shadow-[0_0_40px_rgba(255,250,205,0.3)]',
+                    icon: 'text-[#5D4037] bg-[#FFFACD]/30',
+                    grad: 'from-[#FFFACD]/30 via-[#FFFACD]/10 to-transparent',
+                    pattern: 'chiikawa-card-bg-yellow'
+                };
+                default: return {
+                    bg: 'bg-[#FFB5C5]/10 chiikawa-card-bg',
+                    border: 'border-[#FFB5C5]/30',
+                    glow: 'group-hover:shadow-[0_0_40px_rgba(255,181,197,0.3)]',
+                    icon: 'text-[#5D4037] bg-[#FFB5C5]/30',
+                    grad: 'from-[#FFB5C5]/30 via-[#FFB5C5]/10 to-transparent',
+                    pattern: 'chiikawa-card-bg'
+                };
+            }
+        }
+
+        if (isShinchanTheme) {
+            switch (id) {
+                case 'english': return {
+                    bg: `bg-[#40C4FF]/10`,
+                    border: 'border-transparent',
+                    glow: 'group-hover:shadow-[0_8px_30px_rgba(64,196,255,0.2),_0_4px_12px_rgba(64,196,255,0.1)] group-hover:border-[#40C4FF]/20',
+                    icon: 'text-[#0277BD] bg-[#40C4FF]/20',
+                    grad: 'from-[#40C4FF]/20 via-[#40C4FF]/5 to-transparent',
+                    pattern: ''
+                };
+                case '408': return {
+                    bg: `bg-[#FF6B6B]/10`,
+                    border: 'border-transparent',
+                    glow: 'group-hover:shadow-[0_8px_30px_rgba(255,107,107,0.2),_0_4px_12px_rgba(255,107,107,0.1)] group-hover:border-[#FF6B6B]/20',
+                    icon: 'text-[#C62828] bg-[#FF6B6B]/20',
+                    grad: 'from-[#FF6B6B]/20 via-[#FF6B6B]/5 to-transparent',
+                    pattern: ''
+                };
+                case 'math': return {
+                    bg: `bg-[#FDD835]/10`,
+                    border: 'border-transparent',
+                    glow: 'group-hover:shadow-[0_8px_30px_rgba(253,216,53,0.2),_0_4px_12px_rgba(253,216,53,0.1)] group-hover:border-[#FDD835]/20',
+                    icon: 'text-[#F57F17] bg-[#FDD835]/20',
+                    grad: 'from-[#FDD835]/20 via-[#FDD835]/5 to-transparent',
+                    pattern: ''
+                };
+                default: return {
+                    bg: `bg-[#AED581]/10`,
+                    border: 'border-transparent',
+                    glow: 'group-hover:shadow-[0_8px_30px_rgba(174,213,129,0.2),_0_4px_12px_rgba(174,213,129,0.1)] group-hover:border-[#AED581]/20',
+                    icon: 'text-[#558B2F] bg-[#AED581]/20',
+                    grad: 'from-[#AED581]/20 via-[#AED581]/5 to-transparent',
+                    pattern: ''
+                };
+            }
+        }
         switch (id) {
             case 'english': return {
                 bg: 'bg-indigo-500/10',
@@ -148,15 +265,39 @@ const FocusListPage: React.FC = () => {
                                     hover:bg-white/90 ${style.glow}
                                 `}
                             >
+                                {isChiikawaTheme && (
+                                    <div className={`absolute inset-0 pointer-events-none opacity-40 ${style.bg.split(' ').pop()}`} />
+                                )}
+
+                                {isShinchanTheme && style.pattern && (
+                                    <div className={`absolute inset-0 pointer-events-none ${style.pattern}`} />
+                                )}
+
                                 {/* Inner Gradient Glow - Desktop Only */}
                                 <div className={`hidden md:block absolute inset-0 bg-gradient-to-br ${style.grad} translate-y-full group-hover:translate-y-0 transition-transform duration-700 ease-out opacity-40`} />
+
+                                {isChiikawaTheme && (
+                                    <div className="absolute bottom-[-20px] right-[-20px] opacity-[0.08] pointer-events-none group-hover:opacity-15 group-hover:scale-110 transition-all duration-700">
+                                        <div className="scale-[4] rotate-[-15deg]">
+                                            {getIcon(theme)}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {isShinchanTheme && (
+                                    <div className="absolute bottom-[-10px] right-[-10px] opacity-[0.08] pointer-events-none group-hover:opacity-20 group-hover:scale-110 transition-all duration-500">
+                                        <div className="scale-[4]">
+                                            {getIcon(theme)}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Icon Wrapper - Animation on hover only */}
                                 <motion.div
                                     whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
                                     className={`relative z-10 p-5 md:p-8 rounded-[24px] md:rounded-[40px] ${style.icon} flex-shrink-0 mr-5 md:mr-0 md:mb-10 shadow-inner border border-white/60 transition-all duration-300`}
                                 >
-                                    {getIcon(theme.id)}
+                                    {getIcon(theme)}
                                 </motion.div>
 
                                 <div className="relative z-10 text-left md:text-center flex-grow">
@@ -260,7 +401,8 @@ const FocusListPage: React.FC = () => {
                 aiModel={state.settings?.aiModel}
                 dailyCompletedPomodoros={todayStats?.total_sessions || 0}
                 totalFocusMinutes={todayStats?.total_focus_minutes || 0}
-                isChiikawaTheme={state.activeVisualThemeId === 'chiikawa'}
+                isChiikawaTheme={isChiikawaTheme}
+                isShinchanTheme={isShinchanTheme}
             />
         </main>
     );

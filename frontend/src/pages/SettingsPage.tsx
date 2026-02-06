@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import AmbientBackground from '../components/AmbientBackground';
 import GeneralSettings from '../components/settings/GeneralSettings';
-import TimerSettings from '../components/settings/TimerSettings';
+import TimerSettingsSection from '../components/settings/TimerSettings';
 import AISettings from '../components/settings/AISettings';
 import ThemeManagement from '../components/settings/ThemeManagement';
 import VisualThemeSelector from '../components/VisualThemeSelector';
@@ -73,7 +73,7 @@ const SettingsPage: React.FC = () => {
                 </section>
 
                 <AISettings settings={settings} handleSettingChange={handleSettingChange} />
-                <TimerSettings settings={settings} handleSettingChange={handleSettingChange} />
+                <TimerSettingsSection settings={settings} handleSettingChange={handleSettingChange} />
                 <GeneralSettings settings={settings} handleSettingChange={handleSettingChange} i18n={i18n} />
                 <ThemeManagement
                     themes={themes}

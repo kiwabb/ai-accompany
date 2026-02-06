@@ -12,6 +12,7 @@ import FocusStatsPage from './pages/FocusStatsPage';
 import FloatingTimer from './components/FloatingTimer';
 import AchievementToast from './components/AchievementToast';
 import ChiikawaDecorations from './components/ChiikawaDecorations';
+import ShinchanDecorations from './components/ShinchanDecorations';
 import { getLatestUnlocks, type UserAchievementBackend } from './api/client';
 
 const AppContent: React.FC = () => {
@@ -19,7 +20,7 @@ const AppContent: React.FC = () => {
   const [unlockedAchievement, setUnlockedAchievement] = useState<UserAchievementBackend | null>(null);
 
   // Apply visual theme
-  const { isChiikawaTheme, showFloatingElements, themeColors } = useVisualTheme({
+  const { isChiikawaTheme, isShinchanTheme, showFloatingElements, themeColors } = useVisualTheme({
     activeVisualThemeId: state.activeVisualThemeId,
   });
 
@@ -48,8 +49,8 @@ const AppContent: React.FC = () => {
         color: themeColors.text,
       }}
     >
-      {/* Chiikawa theme decorations */}
       <ChiikawaDecorations enabled={isChiikawaTheme && showFloatingElements} />
+      <ShinchanDecorations enabled={isShinchanTheme && showFloatingElements} />
 
       <Routes>
         <Route path="/" element={<FocusListPage />} />

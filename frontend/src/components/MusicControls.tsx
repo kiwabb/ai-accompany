@@ -14,7 +14,7 @@ const MusicControls: React.FC = () => {
 
     const tracks = phase === 'focus' ? FOCUS_TRACKS : BREAK_TRACKS;
     const currentTrackId = phase === 'focus' ? settings.focusTrack : settings.breakTrack;
-    const currentTrackName = tracks.find(t => t.id === currentTrackId)?.name || tracks[0].name;
+    const currentTrackName = tracks.find(track => track.id === currentTrackId)?.name || tracks[0].name;
 
     const handleTrackChange = (val: string) => {
         if (phase === 'focus') {
@@ -84,12 +84,13 @@ const MusicControls: React.FC = () => {
                                  <label className="text-[10px] font-bold text-theme-text-muted uppercase tracking-widest pl-1">
                                      {t('settings.focusTrack', 'Select Track')}
                                  </label>
-                                 <CustomSelect
-                                     value={currentTrackId || tracks[0].id}
-                                     onChange={handleTrackChange}
-                                     options={tracks.map(t => ({ value: t.id, label: t.name }))}
-                                 />
-                             </div>
+                                    <CustomSelect
+                                        value={currentTrackId || tracks[0].id}
+                                        onChange={handleTrackChange}
+                                        options={tracks.map(track => ({ value: track.id, label: track.name }))}
+                                    />
+                                </div>
+
 
                              {/* Volume Slider */}
                              <div className="space-y-4 pt-2">

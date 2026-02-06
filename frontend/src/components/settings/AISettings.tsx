@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Save, Check } from 'lucide-react';
 import CustomSelect from '../ui/CustomSelect';

@@ -35,7 +35,7 @@ export const useVisualTheme = ({ activeVisualThemeId }: UseVisualThemeProps) => 
     root.style.setProperty('--font-sans', fontSans);
 
     // Apply theme-specific body class
-    document.body.classList.remove('theme-cozy', 'theme-chiikawa', 'theme-dark');
+    document.body.classList.remove('theme-cozy', 'theme-chiikawa', 'theme-shinchan', 'theme-dark');
     document.body.classList.add(`theme-${activeTheme.id}`);
 
     // Update background color immediately
@@ -45,12 +45,14 @@ export const useVisualTheme = ({ activeVisualThemeId }: UseVisualThemeProps) => 
   }, [activeTheme]);
 
   const isChiikawaTheme = activeTheme.id === 'chiikawa';
+  const isShinchanTheme = activeTheme.id === 'shinchan';
   const showDecorations = activeTheme.decorations?.enabled ?? false;
   const showFloatingElements = activeTheme.decorations?.floatingElements ?? false;
 
   return {
     activeTheme,
     isChiikawaTheme,
+    isShinchanTheme,
     showDecorations,
     showFloatingElements,
     themeColors: activeTheme.colors,

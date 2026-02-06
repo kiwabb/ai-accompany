@@ -32,6 +32,7 @@ interface CozyPalProps {
   documentContent?: string;
   onDimensionsChange?: (width: number) => void;
   isChiikawaTheme?: boolean;
+  isShinchanTheme?: boolean;
 }
 
 export interface CozyPalHandle {
@@ -41,7 +42,7 @@ export interface CozyPalHandle {
 const CozyPal = React.forwardRef<CozyPalHandle, CozyPalProps>(({
   themeName, phase, timeLeft, apiKey, currentLanguage, aiPersona,
   aiProvider, aiModel, dailyCompletedPomodoros, totalFocusMinutes,
-  documentId, documentTitle, documentContent, onDimensionsChange, isChiikawaTheme,
+  documentId, documentTitle, documentContent, onDimensionsChange, isChiikawaTheme, isShinchanTheme,
 }, ref) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = React.useState(false);
@@ -90,7 +91,14 @@ const CozyPal = React.forwardRef<CozyPalHandle, CozyPalProps>(({
   return (
     <div className="fixed bottom-6 right-6 z-50">
       <MemoryToast message={diagnosticsState.toastMessage} onDismiss={() => diagnosticsState.setToastMessage(null)} />
-      <CozyPalAvatarButton avatarState={chatState.avatarState} hasUnread={chatState.hasUnread} onToggle={callbacks.toggleChat} t={t} isChiikawaTheme={isChiikawaTheme} />
+      <CozyPalAvatarButton 
+        avatarState={chatState.avatarState} 
+        hasUnread={chatState.hasUnread} 
+        onToggle={callbacks.toggleChat} 
+        t={t} 
+        isChiikawaTheme={isChiikawaTheme} 
+        isShinchanTheme={isShinchanTheme} 
+      />
       {!isOpen && <CozyPalSpeechBubble speechBubble={chatState.speechBubble} />}
 
       <AnimatePresence>
@@ -128,6 +136,7 @@ const CozyPal = React.forwardRef<CozyPalHandle, CozyPalProps>(({
             }
             t={t}
             isChiikawaTheme={isChiikawaTheme}
+            isShinchanTheme={isShinchanTheme}
           />
         )}
       </AnimatePresence>

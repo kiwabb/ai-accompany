@@ -8,7 +8,7 @@ import CountdownWidget from './CountdownWidget';
 
 const FloatingTimer: React.FC = () => {
     const { state, timeLeft, isActive, handleToggle, activeTheme } = useTimerContext();
-    const { phase } = state;
+    const { phase, activeVisualThemeId } = state;
     const { t } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
@@ -25,27 +25,42 @@ const FloatingTimer: React.FC = () => {
     const timeObj = formatTime(timeLeft);
 
     const getTheme = () => {
+        const isShinchan = activeVisualThemeId === 'shinchan';
+        const isChiikawa = activeVisualThemeId === 'chiikawa';
+
         switch (phase) {
             case 'focus': return {
-                text: 'text-orange-500',
-                bg: 'bg-orange-500',
+                text: isShinchan ? 'text-[#5D4037]' : isChiikawa ? 'text-[#5D4037]' : 'text-orange-500',
+                bg: isShinchan ? 'bg-[#FF6B6B]' : isChiikawa ? 'bg-[#FFB5C5]' : 'bg-orange-500',
                 border: 'border-white/40',
-                lightBg: 'bg-orange-500/10',
-                shadow: 'shadow-[0_20px_50px_-10px_rgba(249,115,22,0.15)]'
+                lightBg: isShinchan ? 'bg-[#FF6B6B]/10' : isChiikawa ? 'bg-[#FFB5C5]/10' : 'bg-orange-500/10',
+                shadow: isShinchan
+                    ? 'shadow-[0_20px_50px_-10px_rgba(255,107,107,0.25)]'
+                    : isChiikawa
+                        ? 'shadow-[0_20px_50px_-10px_rgba(255,181,197,0.25)]'
+                        : 'shadow-[0_20px_50px_-10px_rgba(249,115,22,0.15)]'
             };
             case 'shortBreak': return {
-                text: 'text-emerald-500',
-                bg: 'bg-emerald-500',
+                text: isShinchan ? 'text-[#5D4037]' : isChiikawa ? 'text-[#5D4037]' : 'text-emerald-500',
+                bg: isShinchan ? 'bg-[#FFF176]' : isChiikawa ? 'bg-[#B8E6F0]' : 'bg-emerald-500',
                 border: 'border-white/40',
-                lightBg: 'bg-emerald-500/10',
-                shadow: 'shadow-[0_20px_50px_-10px_rgba(16,185,129,0.15)]'
+                lightBg: isShinchan ? 'bg-[#FFF176]/20' : isChiikawa ? 'bg-[#B8E6F0]/20' : 'bg-emerald-500/10',
+                shadow: isShinchan
+                    ? 'shadow-[0_20px_50px_-10px_rgba(255,241,118,0.25)]'
+                    : isChiikawa
+                        ? 'shadow-[0_20px_50px_-10px_rgba(184,230,240,0.25)]'
+                        : 'shadow-[0_20px_50px_-10px_rgba(16,185,129,0.15)]'
             };
             case 'longBreak': return {
-                text: 'text-indigo-500',
-                bg: 'bg-indigo-500',
+                text: isShinchan ? 'text-[#5D4037]' : isChiikawa ? 'text-[#5D4037]' : 'text-indigo-500',
+                bg: isShinchan ? 'bg-[#4FC3F7]' : isChiikawa ? 'bg-[#FFFACD]' : 'bg-indigo-500',
                 border: 'border-white/40',
-                lightBg: 'bg-indigo-500/10',
-                shadow: 'shadow-[0_20px_50px_-10px_rgba(99,102,241,0.15)]'
+                lightBg: isShinchan ? 'bg-[#4FC3F7]/10' : isChiikawa ? 'bg-[#FFFACD]/20' : 'bg-indigo-500/10',
+                shadow: isShinchan
+                    ? 'shadow-[0_20px_50px_-10px_rgba(79,195,247,0.25)]'
+                    : isChiikawa
+                        ? 'shadow-[0_20px_50px_-10px_rgba(255,250,205,0.25)]'
+                        : 'shadow-[0_20px_50px_-10px_rgba(99,102,241,0.15)]'
             };
             default: return {
                 text: 'text-slate-600',

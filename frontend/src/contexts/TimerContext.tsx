@@ -24,6 +24,7 @@ export interface TimerContextType {
     handleThemeChange: (themeId: string) => void;
     handleVisualThemeChange: (themeId: string) => void;
     handleSaveSettings: (s: TimerSettings) => void;
+    handleUpdateSetting: (s: Partial<TimerSettings>) => void;
     handleThemesChange: (newThemes: FocusTheme[]) => void;
     setDocumentContext: (context?: PomodoroState['documentContext']) => void;
     activeTheme: FocusTheme | undefined;
@@ -98,6 +99,10 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         dispatch({ type: 'SET_VISUAL_THEME', themeId });
     }, [dispatch]);
 
+    const handleUpdateSetting = useCallback((newSettings: Partial<TimerSettings>) => {
+        sessionHandlers.handleSaveSettings({ ...state.settings, ...newSettings });
+    }, [state.settings, sessionHandlers]);
+
     const value: TimerContextType = {
         state,
         dispatch,
@@ -114,6 +119,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         handleThemeChange: sessionHandlers.handleThemeChange,
         handleVisualThemeChange,
         handleSaveSettings: sessionHandlers.handleSaveSettings,
+        handleUpdateSetting,
         handleThemesChange: sessionHandlers.handleThemesChange,
         setDocumentContext: sessionHandlers.setDocumentContext,
         activeTheme,

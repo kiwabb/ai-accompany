@@ -8,6 +8,7 @@ import { ChevronLeft as ChevronLeftIcon } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 import { useTranslation } from 'react-i18next';
 import AmbientBackground from '../components/AmbientBackground';
+import { useVisualTheme } from '../hooks/useVisualTheme';
 
 const TimerPage: React.FC = () => {
     const { themeId } = useParams<{ themeId: string }>();
@@ -15,6 +16,10 @@ const TimerPage: React.FC = () => {
     const { t, i18n } = useTranslation();
     const { handleThemeChange, state, isActive, timeLeft, totalTimeValue, reset, todayStats } = useTimerContext();
     const cozyPalRef = useRef<CozyPalHandle>(null);
+
+    const { isChiikawaTheme, isShinchanTheme } = useVisualTheme({
+        activeVisualThemeId: state.activeVisualThemeId,
+    });
 
     const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
     const [pendingThemeId, setPendingThemeId] = React.useState<string | null>(null);
@@ -69,7 +74,10 @@ const TimerPage: React.FC = () => {
                 whileHover={{ x: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => navigate('/')}
-                className="fixed top-8 left-8 py-3 px-6 bg-white/60 backdrop-blur-2xl border border-white shadow-xl rounded-2xl flex items-center gap-2 group z-50 text-slate-400 hover:text-slate-900 transition-colors font-bold uppercase tracking-widest text-[10px]"
+                className={`fixed top-8 left-8 py-3 px-6 bg-white/60 backdrop-blur-2xl shadow-xl rounded-2xl flex items-center gap-2 group z-50 transition-colors font-bold uppercase tracking-widest text-[10px] ${isShinchanTheme
+                        ? 'border border-[#FF6B6B]/20 text-[#8D6E63] hover:text-[#5D4037] hover:bg-[#FF6B6B]/10'
+                        : 'border border-white text-slate-400 hover:text-slate-900'
+                    }`}
             >
                 <ChevronLeftIcon size={16} className="group-hover:-translate-x-1 transition-transform" />
                 <span>返回列表</span>
@@ -103,9 +111,11 @@ const TimerPage: React.FC = () => {
                 aiModel={state.settings?.aiModel}
                 dailyCompletedPomodoros={todayStats?.total_sessions || 0}
                 totalFocusMinutes={todayStats?.total_focus_minutes || 0}
-                isChiikawaTheme={state.activeVisualThemeId === 'chiikawa'}
+                isChiikawaTheme={isChiikawaTheme}
+                isShinchanTheme={isShinchanTheme}
             />
         </main>
+
     );
 };
 

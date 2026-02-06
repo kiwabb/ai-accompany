@@ -1,6 +1,5 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
 import type { TimerSettings } from '../../types/pomodoro';
 
 interface GeneralSettingsProps {

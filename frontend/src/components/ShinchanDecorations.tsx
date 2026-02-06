@@ -1,21 +1,16 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CHIIKAWA_ELEMENTS } from '../constants/themes';
+import { SHINCHAN_ELEMENTS } from '../constants/themes';
 
-// Real Chiikawa sticker images
-const CHIIKAWA_STICKERS = [
-  '/assets/chiikawa/sticker-0.png',
-  '/assets/chiikawa/sticker-1.png',
-  '/assets/chiikawa/sticker-2.png',
-  '/assets/chiikawa/sticker-3.png',
-  '/assets/chiikawa/sticker-4.png',
-  '/assets/chiikawa/sticker-5.png',
-  '/assets/chiikawa/sticker-6.png',
-  '/assets/chiikawa/sticker-7.png',
-  '/assets/chiikawa/sticker-8.png',
-  '/assets/chiikawa/sticker-9.png',
-  '/assets/chiikawa/sticker-10.png',
-  '/assets/chiikawa/sticker-11.png',
+// Character sticker images
+const SHINCHAN_STICKERS = [
+  '/assets/shinchan/shinchan.png',
+  '/assets/shinchan/shinchan-shiro.png',  // 小新和小白合照
+  '/assets/shinchan/nene.png',
+  '/assets/shinchan/masao.png',
+  '/assets/shinchan/kazama.png',
+  '/assets/shinchan/bo-chan.png',
+  '/assets/shinchan/action-mask.png',
 ];
 
 interface FloatingElement {
@@ -26,23 +21,23 @@ interface FloatingElement {
   size: number;
   duration: number;
   delay: number;
-  type: 'sticker' | 'sparkle' | 'heart';
+  type: 'sticker' | 'action' | 'chocobi' | 'star';
   isImage?: boolean;
 }
 
-interface ChiikawaDecorationsProps {
+interface ShinchanDecorationsProps {
   enabled: boolean;
 }
 
-const ChiikawaDecorations: React.FC<ChiikawaDecorationsProps> = ({ enabled }) => {
+const ShinchanDecorations: React.FC<ShinchanDecorationsProps> = ({ enabled }) => {
   const [elements, setElements] = useState<FloatingElement[]>([]);
-  const [mouseSparkles, setMouseSparkles] = useState<{ id: number; x: number; y: number }[]>([]);
+  const [mouseTrail, setMouseTrail] = useState<{ id: number; x: number; y: number; emoji: string }[]>([]);
   const [cornerStickers, setCornerStickers] = useState<string[]>([]);
 
   // Generate random corner stickers
   useEffect(() => {
     if (enabled) {
-      const shuffled = [...CHIIKAWA_STICKERS].sort(() => Math.random() - 0.5);
+      const shuffled = [...SHINCHAN_STICKERS].sort(() => Math.random() - 0.5);
       setCornerStickers(shuffled.slice(0, 4));
     }
   }, [enabled]);
@@ -57,14 +52,14 @@ const ChiikawaDecorations: React.FC<ChiikawaDecorationsProps> = ({ enabled }) =>
     const generateElements = (): FloatingElement[] => {
       const items: FloatingElement[] = [];
 
-      // Add floating sticker images
-      for (let i = 0; i < 8; i++) {
+      // Floating character sticker images
+      for (let i = 0; i < 6; i++) {
         items.push({
           id: i,
-          content: CHIIKAWA_STICKERS[i % CHIIKAWA_STICKERS.length],
+          content: SHINCHAN_STICKERS[i % SHINCHAN_STICKERS.length],
           x: Math.random() * 100,
           y: Math.random() * 100,
-          size: 48 + Math.random() * 32,
+          size: 44 + Math.random() * 28,
           duration: 18 + Math.random() * 12,
           delay: Math.random() * 6,
           type: 'sticker',
@@ -72,31 +67,45 @@ const ChiikawaDecorations: React.FC<ChiikawaDecorationsProps> = ({ enabled }) =>
         });
       }
 
-      // Add sparkles
-      for (let i = 8; i < 20; i++) {
+      // Action stars and symbols
+      for (let i = 6; i < 16; i++) {
         items.push({
           id: i,
-          content: CHIIKAWA_ELEMENTS.sparkles[i % CHIIKAWA_ELEMENTS.sparkles.length],
+          content: SHINCHAN_ELEMENTS.actionSymbols[i % SHINCHAN_ELEMENTS.actionSymbols.length],
           x: Math.random() * 100,
           y: Math.random() * 100,
           size: 14 + Math.random() * 12,
           duration: 8 + Math.random() * 6,
           delay: Math.random() * 3,
-          type: 'sparkle',
+          type: 'action',
         });
       }
 
-      // Add floating hearts
-      for (let i = 20; i < 28; i++) {
+      // Chocobi snack emojis
+      for (let i = 16; i < 24; i++) {
         items.push({
           id: i,
-          content: ['♡', '♥', '❤', '💕', '💖', '💗', '🩷', '🩵'][i % 8],
+          content: SHINCHAN_ELEMENTS.chocobiSnacks[i % SHINCHAN_ELEMENTS.chocobiSnacks.length],
           x: Math.random() * 100,
           y: Math.random() * 100,
           size: 16 + Math.random() * 14,
           duration: 12 + Math.random() * 8,
           delay: Math.random() * 4,
-          type: 'heart',
+          type: 'chocobi',
+        });
+      }
+
+      // Floating stars
+      for (let i = 24; i < 30; i++) {
+        items.push({
+          id: i,
+          content: ['⭐', '🌟', '💫', '✨', '⚡', '🔥'][i % 6],
+          x: Math.random() * 100,
+          y: Math.random() * 100,
+          size: 14 + Math.random() * 10,
+          duration: 10 + Math.random() * 6,
+          delay: Math.random() * 3,
+          type: 'star',
         });
       }
 
@@ -106,44 +115,48 @@ const ChiikawaDecorations: React.FC<ChiikawaDecorationsProps> = ({ enabled }) =>
     setElements(generateElements());
   }, [enabled]);
 
-  // Mouse sparkle trail effect
+  // Mouse trail effect
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!enabled || Math.random() > 0.12) return;
 
-    const sparkle = {
+    const trailEmojis = ['★', '⚡', '🌟', '💥', '🍫', '🐾'];
+    const trail = {
       id: Date.now() + Math.random(),
       x: e.clientX,
       y: e.clientY,
+      emoji: trailEmojis[Math.floor(Math.random() * trailEmojis.length)],
     };
 
-    setMouseSparkles(prev => [...prev.slice(-10), sparkle]);
+    setMouseTrail(prev => [...prev.slice(-10), trail]);
 
     setTimeout(() => {
-      setMouseSparkles(prev => prev.filter(s => s.id !== sparkle.id));
+      setMouseTrail(prev => prev.filter(s => s.id !== trail.id));
     }, 1200);
   }, [enabled]);
 
+  // Click burst effect
   const handleClick = useCallback((e: MouseEvent) => {
     if (!enabled) return;
-    
+
     const burstCount = 6;
     const newElements: FloatingElement[] = [];
-    
+    const burstEmojis = ['⭐', '💥', '⚡', '🌟', '🔥', '🍫'];
+
     for (let i = 0; i < burstCount; i++) {
       newElements.push({
         id: Date.now() + i,
-        content: ['♡', '✨', '🌸', '🍓', '🎀', '🍬'][i % 6],
+        content: burstEmojis[i % burstEmojis.length],
         x: (e.clientX / window.innerWidth) * 100,
         y: (e.clientY / window.innerHeight) * 100,
         size: 20 + Math.random() * 20,
         duration: 1 + Math.random(),
         delay: 0,
-        type: Math.random() > 0.5 ? 'heart' : 'sparkle',
+        type: Math.random() > 0.5 ? 'action' : 'star',
       });
     }
-    
+
     setElements(prev => [...prev, ...newElements]);
-    
+
     setTimeout(() => {
       setElements(prev => prev.filter(el => !newElements.find(ne => ne.id === el.id)));
     }, 2000);
@@ -164,30 +177,30 @@ const ChiikawaDecorations: React.FC<ChiikawaDecorationsProps> = ({ enabled }) =>
 
   return (
     <>
-      {/* Background pattern overlay */}
+      {/* Background gradient overlay - energetic warm colors */}
       <div
         className="fixed inset-0 pointer-events-none z-0 opacity-40"
         style={{
           backgroundImage: `
-            radial-gradient(circle at 15% 25%, rgba(255, 181, 197, 0.35) 0%, transparent 28%),
-            radial-gradient(circle at 85% 75%, rgba(184, 230, 240, 0.35) 0%, transparent 28%),
-            radial-gradient(circle at 50% 50%, rgba(255, 250, 205, 0.25) 0%, transparent 35%),
-            radial-gradient(circle at 25% 80%, rgba(255, 182, 193, 0.2) 0%, transparent 20%),
-            radial-gradient(circle at 75% 20%, rgba(173, 216, 230, 0.2) 0%, transparent 20%)
+            radial-gradient(circle at 15% 25%, rgba(255, 77, 77, 0.25) 0%, transparent 28%),
+            radial-gradient(circle at 85% 75%, rgba(64, 196, 255, 0.25) 0%, transparent 28%),
+            radial-gradient(circle at 50% 50%, rgba(255, 235, 59, 0.2) 0%, transparent 35%),
+            radial-gradient(circle at 25% 80%, rgba(178, 255, 89, 0.15) 0%, transparent 20%),
+            radial-gradient(circle at 75% 20%, rgba(255, 235, 59, 0.15) 0%, transparent 20%)
           `,
         }}
       />
 
-      {/* Cute dot pattern */}
+      {/* Comic halftone dot pattern */}
       <div
-        className="fixed inset-0 pointer-events-none z-0 opacity-25"
+        className="fixed inset-0 pointer-events-none z-0 opacity-20"
         style={{
           backgroundImage: `
-            radial-gradient(circle, rgba(255, 181, 197, 0.6) 2px, transparent 2px),
-            radial-gradient(circle, rgba(184, 230, 240, 0.4) 1.5px, transparent 1.5px)
+            radial-gradient(circle, rgba(255, 77, 77, 0.5) 1.5px, transparent 1.5px),
+            radial-gradient(circle, rgba(255, 235, 59, 0.4) 1px, transparent 1px)
           `,
-          backgroundSize: '48px 48px, 32px 32px',
-          backgroundPosition: '0 0, 16px 16px',
+          backgroundSize: '40px 40px, 28px 28px',
+          backgroundPosition: '0 0, 14px 14px',
         }}
       />
 
@@ -203,19 +216,21 @@ const ChiikawaDecorations: React.FC<ChiikawaDecorationsProps> = ({ enabled }) =>
               fontSize: el.isImage ? undefined : `${el.size}px`,
               width: el.isImage ? `${el.size}px` : undefined,
               height: el.isImage ? `${el.size}px` : undefined,
-              filter: el.type === 'sparkle'
-                ? 'drop-shadow(0 0 6px rgba(255, 215, 0, 0.7))'
-                : el.type === 'heart'
-                ? 'drop-shadow(0 0 4px rgba(255, 182, 193, 0.6))'
-                : 'drop-shadow(0 2px 8px rgba(255, 182, 193, 0.4))',
+              filter: el.type === 'action'
+                ? 'drop-shadow(0 0 6px rgba(255, 235, 59, 0.7))'
+                : el.type === 'star'
+                  ? 'drop-shadow(0 0 4px rgba(255, 77, 77, 0.5))'
+                  : el.type === 'chocobi'
+                    ? 'drop-shadow(0 0 4px rgba(141, 110, 99, 0.4))'
+                    : 'drop-shadow(0 2px 8px rgba(55, 71, 79, 0.3))',
             }}
             initial={{ opacity: 0, scale: 0 }}
             animate={{
               opacity: [0.5, 0.9, 0.5],
               scale: [0.85, 1.1, 0.85],
               y: [0, -35, 0],
-              x: [0, el.type === 'sparkle' ? 12 : 6, 0],
-              rotate: el.type === 'heart' ? [0, 12, -12, 0] : [0, 6, -6, 0],
+              x: [0, el.type === 'action' ? 15 : 8, 0],
+              rotate: el.type === 'action' ? [0, 15, -15, 0] : [0, 8, -8, 0],
             }}
             transition={{
               duration: el.duration,
@@ -227,7 +242,7 @@ const ChiikawaDecorations: React.FC<ChiikawaDecorationsProps> = ({ enabled }) =>
             {el.isImage ? (
               <img
                 src={el.content}
-                alt="chiikawa"
+                alt="shinchan"
                 className="w-full h-full object-contain"
                 draggable={false}
               />
@@ -238,15 +253,15 @@ const ChiikawaDecorations: React.FC<ChiikawaDecorationsProps> = ({ enabled }) =>
         ))}
       </div>
 
-      {/* Mouse sparkle trail */}
+      {/* Mouse trail */}
       <AnimatePresence>
-        {mouseSparkles.map(sparkle => (
+        {mouseTrail.map(trail => (
           <motion.div
-            key={sparkle.id}
+            key={trail.id}
             className="fixed pointer-events-none z-50"
             style={{
-              left: sparkle.x,
-              top: sparkle.y,
+              left: trail.x,
+              top: trail.y,
               transform: 'translate(-50%, -50%)',
             }}
             initial={{ opacity: 1, scale: 0.3 }}
@@ -255,25 +270,25 @@ const ChiikawaDecorations: React.FC<ChiikawaDecorationsProps> = ({ enabled }) =>
             transition={{ duration: 1.2, ease: 'easeOut' }}
           >
             <span className="text-xl" style={{
-              filter: 'drop-shadow(0 0 4px rgba(255, 215, 0, 0.8))',
+              filter: 'drop-shadow(0 0 4px rgba(255, 235, 59, 0.8))',
             }}>
-              {['✦', '✧', '★', '☆', '💖', '🩷'][Math.floor(Math.random() * 6)]}
+              {trail.emoji}
             </span>
           </motion.div>
         ))}
       </AnimatePresence>
 
-      {/* Corner sticker decorations with real images */}
+      {/* Corner sticker decorations */}
       {cornerStickers.length >= 4 && (
         <>
           <div className="fixed top-3 left-3 pointer-events-none z-10">
             <motion.img
               src={cornerStickers[0]}
-              alt="chiikawa"
+              alt="shinchan"
               className="w-16 h-16 object-contain"
               animate={{ rotate: [0, 8, -8, 0], scale: [1, 1.08, 1] }}
               transition={{ duration: 4, repeat: Infinity }}
-              style={{ filter: 'drop-shadow(0 2px 8px rgba(255, 182, 193, 0.5))' }}
+              style={{ filter: 'drop-shadow(2px 2px 0px rgba(55, 71, 79, 0.3))' }}
               draggable={false}
             />
           </div>
@@ -281,11 +296,11 @@ const ChiikawaDecorations: React.FC<ChiikawaDecorationsProps> = ({ enabled }) =>
           <div className="fixed top-3 right-3 pointer-events-none z-10">
             <motion.img
               src={cornerStickers[1]}
-              alt="chiikawa"
+              alt="shinchan"
               className="w-16 h-16 object-contain"
               animate={{ rotate: [0, -8, 8, 0], scale: [1, 1.08, 1] }}
               transition={{ duration: 5, repeat: Infinity, delay: 1 }}
-              style={{ filter: 'drop-shadow(0 2px 8px rgba(255, 182, 193, 0.5))' }}
+              style={{ filter: 'drop-shadow(2px 2px 0px rgba(55, 71, 79, 0.3))' }}
               draggable={false}
             />
           </div>
@@ -293,11 +308,11 @@ const ChiikawaDecorations: React.FC<ChiikawaDecorationsProps> = ({ enabled }) =>
           <div className="fixed bottom-3 left-3 pointer-events-none z-10">
             <motion.img
               src={cornerStickers[2]}
-              alt="chiikawa"
+              alt="shinchan"
               className="w-14 h-14 object-contain"
               animate={{ y: [0, -6, 0], rotate: [0, 6, -6, 0] }}
               transition={{ duration: 3, repeat: Infinity }}
-              style={{ filter: 'drop-shadow(0 2px 8px rgba(255, 182, 193, 0.5))' }}
+              style={{ filter: 'drop-shadow(2px 2px 0px rgba(55, 71, 79, 0.3))' }}
               draggable={false}
             />
           </div>
@@ -305,39 +320,52 @@ const ChiikawaDecorations: React.FC<ChiikawaDecorationsProps> = ({ enabled }) =>
           <div className="fixed bottom-3 right-3 pointer-events-none z-10">
             <motion.img
               src={cornerStickers[3]}
-              alt="chiikawa"
+              alt="shinchan"
               className="w-14 h-14 object-contain"
               animate={{ y: [0, -6, 0], rotate: [0, -6, 6, 0] }}
               transition={{ duration: 3.5, repeat: Infinity, delay: 0.5 }}
-              style={{ filter: 'drop-shadow(0 2px 8px rgba(255, 182, 193, 0.5))' }}
+              style={{ filter: 'drop-shadow(2px 2px 0px rgba(55, 71, 79, 0.3))' }}
               draggable={false}
             />
           </div>
         </>
       )}
 
-      {/* Animated center Chiikawa GIF */}
-      <div className="fixed bottom-20 right-6 pointer-events-none z-10">
+      {/* Animated Shiro GIF (bottom-left) */}
+      <div className="fixed bottom-20 left-6 pointer-events-none z-10">
         <motion.img
-          src="/assets/chiikawa/chiikawa-animated.gif"
-          alt="chiikawa"
+          src="/assets/shinchan/shiro-animated.gif"
+          alt="shiro"
           className="w-20 h-20 object-contain"
-          animate={{ y: [0, -8, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-          style={{ filter: 'drop-shadow(0 4px 12px rgba(255, 182, 193, 0.6))' }}
+          animate={{ y: [0, -4, 0] }}
+          transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+          style={{ filter: 'drop-shadow(2px 2px 0px rgba(55, 71, 79, 0.2))' }}
           draggable={false}
         />
       </div>
 
-      {/* Subtle gradient border glow */}
+      {/* Dancing Shin-chan GIF (top area, subtle) */}
+      <div className="fixed top-24 left-1/2 -translate-x-1/2 pointer-events-none z-10 opacity-70">
+        <motion.img
+          src="/assets/shinchan/shinchan-dance.gif"
+          alt="shinchan dancing"
+          className="w-16 h-16 object-contain"
+          animate={{ scale: [1, 1.05, 1] }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+          style={{ filter: 'drop-shadow(2px 2px 0px rgba(55, 71, 79, 0.15))' }}
+          draggable={false}
+        />
+      </div>
+
+      {/* Comic-style border glow */}
       <div
         className="fixed inset-0 pointer-events-none z-0"
         style={{
-          boxShadow: 'inset 0 0 120px rgba(255, 181, 197, 0.18), inset 0 0 60px rgba(184, 230, 240, 0.1)',
+          boxShadow: 'inset 0 0 120px rgba(255, 235, 59, 0.12), inset 0 0 60px rgba(255, 77, 77, 0.08)',
         }}
       />
     </>
   );
 };
 
-export default ChiikawaDecorations;
+export default ShinchanDecorations;

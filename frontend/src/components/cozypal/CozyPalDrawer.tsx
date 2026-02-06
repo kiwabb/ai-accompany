@@ -31,6 +31,7 @@ interface CozyPalDrawerProps {
   profileEditOverlay: ReactNode;
   t: TFunction;
   isChiikawaTheme?: boolean;
+  isShinchanTheme?: boolean;
 }
 
 const CozyPalDrawer = ({
@@ -56,6 +57,7 @@ const CozyPalDrawer = ({
   profileEditOverlay,
   t,
   isChiikawaTheme,
+  isShinchanTheme,
 }: CozyPalDrawerProps) => (
   <motion.div
     aria-label={t('cozyPal.chatDescription')}
@@ -65,12 +67,12 @@ const CozyPalDrawer = ({
     exit={{ x: '100%' }}
     transition={{ type: 'spring', damping: 25, stiffness: 200 }}
     style={{ width }}
-    className="fixed top-0 right-0 h-full bg-white/80 backdrop-blur-3xl shadow-2xl z-40 border-l border-white/40 flex flex-col"
+    className={`fixed top-0 right-0 h-full backdrop-blur-3xl shadow-2xl z-40 border-l flex flex-col ${isShinchanTheme ? 'bg-[#FFFDE7]/95 border-l-4 border-white shadow-[0_0_0_8px_rgba(255,241,118,0.2)_inset]' : 'bg-white/80 border-white/40'}`}
   >
     <CozyPalResizeHandle isResizing={isResizing} onStartResizing={onStartResizing} />
 
-    <div className="flex-none p-5 pb-3 border-b border-indigo-50 bg-white/40 backdrop-blur-md">
-      <CozyPalHeader avatarState={avatarState} onClose={onClose} t={t} isChiikawaTheme={isChiikawaTheme} />
+    <div className={`flex-none p-5 pb-3 border-b backdrop-blur-md ${isShinchanTheme ? 'border-[#FFF176]/50 bg-white/40' : 'border-indigo-50 bg-white/40'}`}>
+      <CozyPalHeader avatarState={avatarState} onClose={onClose} t={t} isChiikawaTheme={isChiikawaTheme} isShinchanTheme={isShinchanTheme} />
       <CozyPalMainTabs mainTab={mainTab} onChange={onMainTabChange} t={t} />
     </div>
 
