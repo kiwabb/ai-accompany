@@ -6,9 +6,9 @@ from .. import crud, schemas
 from ..database import get_db
 from ..services import auth_service
 
-router = APIRouter(prefix="/api/auth", tags=["auth"])
+router = APIRouter(prefix="/api", tags=["auth"])
 
-@router.post("/signup", response_model=schemas.UserResponse)
+@router.post("/auth/signup", response_model=schemas.UserResponse)
 async def signup(user_in: schemas.UserCreate, db: AsyncSession = Depends(get_db)):
     db_user = await crud.get_user_by_username(db, username=user_in.username)
     if db_user:
@@ -24,7 +24,7 @@ async def signup(user_in: schemas.UserCreate, db: AsyncSession = Depends(get_db)
         )
     return await crud.create_user(db=db, user_in=user_in)
 
-@router.post("/login", response_model=schemas.Token)
+@router.post("/auth/login", response_model=schemas.Token)
 async def login(
     db: AsyncSession = Depends(get_db), 
     form_data: OAuth2PasswordRequestForm = Depends()
