@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useTimerContext } from '../contexts/TimerContext';
-import { Book as BookIcon, Settings as SettingsIcon, Rocket as RocketIcon, Brain as BrainIcon, Coffee as CoffeeIcon, Sparkles as SparklesIcon, Trophy as TrophyIcon, BarChart3 as BarChartIcon, User as UserIcon, LogIn as LogInIcon, UserPlus as UserPlusIcon } from 'lucide-react';
+import { Book as BookIcon, Settings as SettingsIcon, Rocket as RocketIcon, Brain as BrainIcon, Coffee as CoffeeIcon, Sparkles as SparklesIcon, Trophy as TrophyIcon, BarChart3 as BarChartIcon, LogIn as LogInIcon, UserPlus as UserPlusIcon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 import ConfirmModal from '../components/ConfirmModal';

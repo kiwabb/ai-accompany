@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { login as apiLogin } from '../api/client';
 import { motion } from 'framer-motion';
-import { User, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { User, Lock, Loader2 } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
   const { t } = useTranslation();

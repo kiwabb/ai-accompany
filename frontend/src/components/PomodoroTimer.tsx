@@ -23,7 +23,6 @@ const PomodoroTimer: React.FC = () => {
     initialLoaded
   } = useTimerContext();
 
-  const isChiikawaTheme = state.activeVisualThemeId === 'chiikawa';
   const isShinchanTheme = state.activeVisualThemeId === 'shinchan';
 
   const { phase, completedSessions } = state;

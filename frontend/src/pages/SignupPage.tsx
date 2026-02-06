@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { signup as apiSignup } from '../api/client';
 import { motion } from 'framer-motion';
-import { User, Lock, Mail, ArrowRight, Loader2 } from 'lucide-react';
+import { User, Lock, Mail, Loader2 } from 'lucide-react';
 
 const SignupPage: React.FC = () => {
   const { t } = useTranslation();
