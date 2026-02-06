@@ -3,7 +3,8 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useTimerContext } from '../contexts/TimerContext';
-import { Book as BookIcon, Settings as SettingsIcon, Rocket as RocketIcon, Brain as BrainIcon, Coffee as CoffeeIcon, Sparkles as SparklesIcon, Trophy as TrophyIcon, BarChart3 as BarChartIcon } from 'lucide-react';
+import { Book as BookIcon, Settings as SettingsIcon, Rocket as RocketIcon, Brain as BrainIcon, Coffee as CoffeeIcon, Sparkles as SparklesIcon, Trophy as TrophyIcon, BarChart3 as BarChartIcon, User as UserIcon, LogIn as LogInIcon, UserPlus as UserPlusIcon } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 import ConfirmModal from '../components/ConfirmModal';
 import AmbientBackground from '../components/AmbientBackground';
@@ -15,6 +16,7 @@ const FocusListPage: React.FC = () => {
     const { state, isActive, timeLeft, totalTimeValue, reset, todayStats } = useTimerContext();
     const { themes } = state;
     const cozyPalRef = useRef<CozyPalHandle>(null);
+    const { isAuthenticated, username } = useAuth();
 
     const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
     const [pendingThemeId, setPendingThemeId] = React.useState<string | null>(null);
@@ -374,6 +376,45 @@ const FocusListPage: React.FC = () => {
                         </div>
                         <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest">{t('common.achievements', '成就墙')}</span>
                     </motion.button>
+
+                    <div className="hidden md:block w-px h-8 bg-[#E6E2DE] self-center mx-2" />
+
+                    <motion.button
+                        whileHover={{ scale: 1.05, backgroundColor: 'rgba(255, 183, 102, 0.05)' }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => navigate(isAuthenticated ? '/settings' : '/login')}
+                        className="flex flex-col md:flex-row items-center gap-1 md:gap-2.5 px-6 md:px-8 py-3 md:py-4 rounded-2xl text-cozy-warmOrange transition-all group"
+                    >
+                        <div className="p-2 md:p-0 bg-white/80 md:bg-transparent rounded-xl md:rounded-none shadow-sm md:shadow-none border border-white md:border-none">
+                            {isAuthenticated ? (
+                                <div className="w-5 h-5 rounded-full bg-cozy-pastelGreen flex items-center justify-center text-cozy-text font-bold text-[10px]">
+                                    {username?.charAt(0).toUpperCase()}
+                                </div>
+                            ) : (
+                                <LogInIcon size={20} strokeWidth={2.5} className="group-hover:rotate-3" />
+                            )}
+                        </div>
+                        <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest">
+                            {isAuthenticated ? username : t('common.login', '登录')}
+                        </span>
+                    </motion.button>
+
+                    {!isAuthenticated && (
+                        <>
+                            <div className="hidden md:block w-px h-8 bg-[#E6E2DE] self-center mx-2" />
+                            <motion.button
+                                whileHover={{ scale: 1.05, backgroundColor: 'rgba(212, 237, 218, 0.1)' }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => navigate('/signup')}
+                                className="flex flex-col md:flex-row items-center gap-1 md:gap-2.5 px-6 md:px-8 py-3 md:py-4 rounded-2xl text-emerald-500 transition-all group"
+                            >
+                                <div className="p-2 md:p-0 bg-white/80 md:bg-transparent rounded-xl md:rounded-none shadow-sm md:shadow-none border border-white md:border-none">
+                                    <UserPlusIcon size={20} strokeWidth={2.5} className="group-hover:rotate-3" />
+                                </div>
+                                <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest">{t('common.signup', '注册')}</span>
+                            </motion.button>
+                        </>
+                    )}
                 </motion.div>
             </div>
 

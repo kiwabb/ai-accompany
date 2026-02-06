@@ -41,11 +41,18 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
 };
 
 export const getAuthHeaders = () => {
-  const userId = "user-123";
-  return {
+  const token = localStorage.getItem('token');
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${userId}`,
   };
+  
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  } else {
+    headers['Authorization'] = `Bearer user-123`;
+  }
+  
+  return headers;
 };
 
 // Session API
@@ -178,6 +185,26 @@ export const deleteCountdown = async (id: number): Promise<void> => {
     const errorData = await response.json();
     throw new Error(errorData.detail || 'Failed to delete countdown');
   }
+};
+
+// Auth API
+export const login = async (formData: FormData): Promise<{ access_token: string; token_type: string }> => {
+  const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: 'POST',
+    body: formData,
+  });
+  return handleResponse<{ access_token: string; token_type: string }>(response);
+};
+
+export const signup = async (userData: any): Promise<any> => {
+  const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(userData),
+  });
+  return handleResponse<any>(response);
 };
 
 // Achievement API

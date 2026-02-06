@@ -1,28 +1,38 @@
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException, Header, status
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from ..database import get_db
 from .. import crud, schemas
+from ..services import auth_service
 
 router = APIRouter(prefix="/api", tags=["users"])
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 
 
 # Placeholder for actual user authentication dependency
 # In a real app, this would decode a JWT or similar to get the current user's ID
-async def get_current_user_id(authorization: Optional[str] = Header(None)) -> str:
-    # For now, we'll just return a dummy user ID or extract from a simple header
-    # In a real application, you'd integrate with your authentication system
-    # and retrieve the actual user ID from the token.
-    if authorization and authorization.startswith("Bearer "):
-        # This is a placeholder. Replace with actual token validation and user ID extraction.
-        token = authorization.split(" ")[1]
-        # Example: if token is "user-123", return "user-123"
-        print(f"--- DEBUG: Extracting user_id: {token} from header ---")
-        return token
-    print(f"--- DEBUG: No valid Bearer token found, falling back to default_user (Header: {authorization}) ---")
-    # Default user for development/testing if no header is provided
-    return "default_user"
+async def get_current_user_id(
+    token: str = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_db)
+) -> str:
+    payload = auth_service.decode_access_token(token)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    username: str = payload.get("sub")
+    if username is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return username
 
 
 @router.get("/settings", response_model=schemas.UserSettingsResponse)

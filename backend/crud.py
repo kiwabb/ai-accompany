@@ -5,3 +5,4 @@ from .crud_themes import *
 from .crud_topics import *
 from .crud_stats import *
 from .crud_achievements import *
+from .crud_users import *

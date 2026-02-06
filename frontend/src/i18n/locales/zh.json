@@ -13,6 +13,8 @@
     "back": "返回",
     "backToTimer": "返回计时器",
     "library": "书架",
+    "login": "登录",
+    "signup": "注册",
     "menu": "菜单",
     "uploading": "正在上传...",
     "uploadNew": "上传新文档",
@@ -168,5 +170,27 @@
       "week": "本周",
       "month": "本月"
     }
+  },
+  "auth": {
+    "loginTitle": "欢迎回来！",
+    "loginSubtitle": "准备好开始专注并达成目标了吗？",
+    "signupTitle": "加入我们！",
+    "signupSubtitle": "今天就开始你的专注之旅吧。",
+    "username": "用户名",
+    "usernamePlaceholder": "输入您的用户名",
+    "email": "电子邮箱",
+    "emailPlaceholder": "输入您的邮箱地址",
+    "password": "密码",
+    "passwordPlaceholder": "输入您的密码",
+    "loginButton": "登录",
+    "signupButton": "注册",
+    "noAccount": "还没有账号？",
+    "hasAccount": "已有账号？",
+    "goToSignup": "去注册",
+    "goToLogin": "去登录",
+    "loggingIn": "登录中...",
+    "signingUp": "注册中...",
+    "loginFailed": "登录失败",
+    "signupFailed": "注册失败"
   }
 }

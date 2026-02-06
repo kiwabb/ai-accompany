@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
 import { TimerProvider, useTimerContext } from './contexts/TimerContext';
 import { useVisualTheme } from './hooks/useVisualTheme';
 import FocusListPage from './pages/FocusListPage';
@@ -9,6 +10,8 @@ import ReaderPage from './pages/ReaderPage';
 import SettingsPage from './pages/SettingsPage';
 import AchievementWall from './pages/AchievementWall';
 import FocusStatsPage from './pages/FocusStatsPage';
+import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
 import FloatingTimer from './components/FloatingTimer';
 import AchievementToast from './components/AchievementToast';
 import ChiikawaDecorations from './components/ChiikawaDecorations';
@@ -53,6 +56,8 @@ const AppContent: React.FC = () => {
       <ShinchanDecorations enabled={isShinchanTheme && showFloatingElements} />
 
       <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
         <Route path="/" element={<FocusListPage />} />
         <Route path="/timer/:id" element={<TimerPage />} />
         <Route path="/library" element={<LibraryPage />} />
@@ -73,9 +78,11 @@ const AppContent: React.FC = () => {
 function App() {
   return (
     <Router>
-      <TimerProvider>
-        <AppContent />
-      </TimerProvider>
+      <AuthProvider>
+        <TimerProvider>
+          <AppContent />
+        </TimerProvider>
+      </AuthProvider>
     </Router>
   );
 }

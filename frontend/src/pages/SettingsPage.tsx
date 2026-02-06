@@ -1,8 +1,9 @@
 import React from 'react';
-import { ArrowLeft, Save, Check, Palette } from 'lucide-react';
+import { ArrowLeft, Save, Check, Palette, LogOut, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import AmbientBackground from '../components/AmbientBackground';
 import GeneralSettings from '../components/settings/GeneralSettings';
 import TimerSettingsSection from '../components/settings/TimerSettings';
@@ -14,6 +15,7 @@ import { useSettingsPageLogic } from '../hooks/useSettingsPageLogic';
 const SettingsPage: React.FC = () => {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
+    const { isAuthenticated, username, logout } = useAuth();
     const {
         settings,
         themes,
@@ -57,7 +59,42 @@ const SettingsPage: React.FC = () => {
             </div>
 
             <main className="w-full max-w-4xl px-8 pb-32 relative z-10 space-y-16">
-                {/* Visual Theme Section */}
+                {isAuthenticated && (
+                    <section>
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-400 flex items-center justify-center shadow-lg">
+                                <User size={20} className="text-white" />
+                            </div>
+                            <h2 className="text-lg font-bold text-slate-900 uppercase tracking-widest font-heading">
+                                {t('settings.account', 'Account Management')}
+                            </h2>
+                        </div>
+                        <div className="bg-white/60 backdrop-blur-xl rounded-[32px] p-8 border border-white shadow-xl flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-cozy-pastelBlue flex items-center justify-center text-cozy-text font-bold text-lg">
+                                    {username?.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                    <p className="text-slate-900 font-bold font-heading">{username}</p>
+                                    <p className="text-slate-400 text-[10px] uppercase tracking-widest font-bold">Logged In</p>
+                                </div>
+                            </div>
+                            <motion.button
+                                whileHover={{ scale: 1.05, backgroundColor: 'rgba(239, 68, 68, 0.1)' }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => {
+                                    logout();
+                                    navigate('/login');
+                                }}
+                                className="flex items-center gap-2 px-6 py-3 rounded-2xl text-red-500 font-bold uppercase tracking-widest text-[10px] border border-red-100 transition-colors"
+                            >
+                                <LogOut size={16} />
+                                <span>Logout</span>
+                            </motion.button>
+                        </div>
+                    </section>
+                )}
+
                 <section>
                     <div className="flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-400 to-purple-400 flex items-center justify-center shadow-lg">

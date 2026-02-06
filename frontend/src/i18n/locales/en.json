@@ -13,6 +13,8 @@
     "back": "Back",
     "backToTimer": "Back to Timer",
     "library": "Library",
+    "login": "Login",
+    "signup": "Sign Up",
     "menu": "Menu",
     "uploading": "Uploading...",
     "uploadNew": "Upload New",
@@ -168,5 +170,27 @@
       "week": "This Week",
       "month": "This Month"
     }
+  },
+  "auth": {
+    "loginTitle": "Welcome Back!",
+    "loginSubtitle": "Ready to focus and achieve your goals?",
+    "signupTitle": "Join Us!",
+    "signupSubtitle": "Start your focused journey today.",
+    "username": "Username",
+    "usernamePlaceholder": "Enter your username",
+    "email": "Email",
+    "emailPlaceholder": "Enter your email address",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "loginButton": "Login",
+    "signupButton": "Sign Up",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "goToSignup": "Sign up here",
+    "goToLogin": "Login here",
+    "loggingIn": "Logging in...",
+    "signingUp": "Signing up...",
+    "loginFailed": "Login failed",
+    "signupFailed": "Signup failed"
   }
 }
