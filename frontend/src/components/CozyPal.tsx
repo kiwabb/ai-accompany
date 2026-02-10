@@ -89,7 +89,7 @@ const CozyPal = React.forwardRef<CozyPalHandle, CozyPalProps>(({
   }));
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-6 right-6 z-[100]">
       <MemoryToast message={diagnosticsState.toastMessage} onDismiss={() => diagnosticsState.setToastMessage(null)} />
       <CozyPalAvatarButton 
         avatarState={chatState.avatarState} 

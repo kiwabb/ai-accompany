@@ -253,6 +253,8 @@ class DocumentBase(BaseModel):
     title: str
     filename: str
     file_type: str
+    topic_id: Optional[str] = None
+    status: Optional[str] = "ready"
 
 
 class DocumentCreate(DocumentBase):
@@ -260,20 +262,78 @@ class DocumentCreate(DocumentBase):
     user_id: str
 
 
+class DocumentUploadRequest(BaseModel):
+    filename: str
+    content_type: str
+    title: str
+    topic_id: Optional[str] = None
+
+
+class DocumentUpdate(BaseModel):
+    title: Optional[str] = None
+    topic_id: Optional[str] = None
+
+
+class DocumentUploadResponse(BaseModel):
+    document_id: int
+    presigned_url: str
+    storage_key: str
+
+
 class DocumentResponse(DocumentBase):
     id: int
     user_id: str
+    storage_key: Optional[str] = None
     created_at: datetime
-    # Content is excluded from list view by default in many designs,
-    # but strictly following schema inheritance here.
-    # Depending on select query, this might be partial or full.
-    # For now, let's include it but use a separate schema for list if needed.
 
     model_config = ConfigDict(from_attributes=True)
 
 
+
 class DocumentDetailResponse(DocumentResponse):
     content: str
+
+
+class ReaderBookmark(BaseModel):
+    id: str
+    page: int
+    createdAt: str
+    note: Optional[str] = None
+    fullText: Optional[str] = None
+    linkedHighlightId: Optional[str] = None
+
+
+class ReaderHighlightRect(BaseModel):
+    left: float
+    top: float
+    width: float
+    height: float
+
+
+class ReaderHighlight(BaseModel):
+    id: str
+    page: int
+    rects: List[ReaderHighlightRect]
+    createdAt: str
+    text: Optional[str] = None
+    linkedBookmarkId: Optional[str] = None
+
+
+class DocumentReaderStateUpdate(BaseModel):
+    bookmarks: List[ReaderBookmark] = []
+    highlights: List[ReaderHighlight] = []
+
+
+class DocumentReaderStateResponse(DocumentReaderStateUpdate):
+    document_id: int
+
+
+class DocumentNotebookUpdate(BaseModel):
+    markdown: str = ""
+
+
+class DocumentNotebookResponse(DocumentNotebookUpdate):
+    document_id: int
 
 
 class AchievementBase(BaseModel):

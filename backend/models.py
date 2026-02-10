@@ -8,6 +8,7 @@ from sqlalchemy import (
     ForeignKey,
     Text,
     JSON,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
@@ -136,12 +137,38 @@ class Document(Base):
     __tablename__ = "documents"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(String, index=True, nullable=False)
+    topic_id = Column(String, nullable=True)
     title = Column(String, nullable=False)
     filename = Column(String, nullable=False)
     content = Column(Text, nullable=False)
     file_type = Column(String, nullable=False)
     file_path = Column(String, nullable=True)
+    storage_key = Column(String, nullable=True)
+    status = Column(String, default="ready")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class DocumentReaderState(Base):
+    __tablename__ = "document_reader_states"
+    __table_args__ = (UniqueConstraint("user_id", "document_id", name="uq_user_document_reader_state"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, index=True, nullable=False)
+    document_id = Column(Integer, ForeignKey("documents.id"), nullable=False)
+    bookmarks = Column(JSONB().with_variant(JSON, "sqlite"), default=[])
+    highlights = Column(JSONB().with_variant(JSON, "sqlite"), default=[])
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class DocumentNotebook(Base):
+    __tablename__ = "document_notebooks"
+    __table_args__ = (UniqueConstraint("user_id", "document_id", name="uq_user_document_notebook"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, index=True, nullable=False)
+    document_id = Column(Integer, ForeignKey("documents.id"), nullable=False)
+    markdown = Column(Text, default="")
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
 class Achievement(Base):

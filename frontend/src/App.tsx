@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AuthProvider } from './contexts/AuthContext';
 import { TimerProvider, useTimerContext } from './contexts/TimerContext';
 import { useVisualTheme } from './hooks/useVisualTheme';
@@ -13,19 +14,33 @@ import FocusStatsPage from './pages/FocusStatsPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import FloatingTimer from './components/FloatingTimer';
+import CozyPal from './components/CozyPal';
 import AchievementToast from './components/AchievementToast';
 import ChiikawaDecorations from './components/ChiikawaDecorations';
 import ShinchanDecorations from './components/ShinchanDecorations';
 import { getLatestUnlocks, type UserAchievementBackend } from './api/client';
 
 const AppContent: React.FC = () => {
-  const { state } = useTimerContext();
+  const { state, timeLeft, todayStats } = useTimerContext();
+  const { i18n } = useTranslation();
+  const location = useLocation();
   const [unlockedAchievement, setUnlockedAchievement] = useState<UserAchievementBackend | null>(null);
 
   // Apply visual theme
   const { isChiikawaTheme, isShinchanTheme, showFloatingElements, themeColors } = useVisualTheme({
     activeVisualThemeId: state.activeVisualThemeId,
   });
+
+  const hideCozyPal = ['/login', '/signup'].includes(location.pathname);
+  const [cozyPalWidth, setCozyPalWidth] = useState(0);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--cozypal-offset', `${Math.max(0, cozyPalWidth)}px`);
+    return () => {
+      root.style.setProperty('--cozypal-offset', '0px');
+    };
+  }, [cozyPalWidth]);
 
   useEffect(() => {
     const checkAchievements = async () => {
@@ -66,6 +81,28 @@ const AppContent: React.FC = () => {
         <Route path="/achievements" element={<AchievementWall />} />
         <Route path="/stats" element={<FocusStatsPage />} />
       </Routes>
+
+      {!hideCozyPal && (
+        <CozyPal
+          themeName={state.activeThemeId || 'default'}
+          phase={state.phase}
+          timeLeft={timeLeft}
+          apiKey={state.settings?.openaiApiKey}
+          currentLanguage={i18n.language}
+          aiPersona={state.settings?.aiPersona || 'friendly'}
+          aiProvider={state.settings?.aiProvider}
+          aiModel={state.settings?.aiModel}
+          dailyCompletedPomodoros={todayStats?.total_sessions || 0}
+          totalFocusMinutes={todayStats?.total_focus_minutes || 0}
+          documentId={state.documentContext?.id}
+          documentTitle={state.documentContext?.title}
+          documentContent={state.documentContext?.content}
+          isChiikawaTheme={isChiikawaTheme}
+          isShinchanTheme={isShinchanTheme}
+          onDimensionsChange={setCozyPalWidth}
+        />
+      )}
+
       <FloatingTimer />
       <AchievementToast
         achievement={unlockedAchievement}
