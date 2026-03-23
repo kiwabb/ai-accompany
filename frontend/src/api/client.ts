@@ -32,10 +32,37 @@ export type {
 
 const API_BASE_URL = '/api';
 
+const parseErrorMessage = async (response: Response): Promise<string> => {
+  const contentType = response.headers.get('content-type') || '';
+
+  if (contentType.includes('application/json')) {
+    const errorData = await response
+      .json()
+      .then((payload) => payload as { detail?: string; message?: string })
+      .catch(() => null);
+
+    if (errorData) {
+      if (errorData.detail) {
+        return errorData.detail;
+      }
+      if (errorData.message) {
+        return errorData.message;
+      }
+    }
+  }
+
+  const text = await response.text().catch(() => '');
+  if (text.trim()) {
+    return text;
+  }
+
+  return response.statusText || `Request failed with status ${response.status}`;
+};
+
 const handleResponse = async <T>(response: Response): Promise<T> => {
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.detail || 'Something went wrong');
+    const errorMessage = await parseErrorMessage(response);
+    throw new Error(errorMessage || 'Something went wrong');
   }
   return response.json();
 };
@@ -135,8 +162,8 @@ export const deleteUserTheme = async (themeId: string): Promise<void> => {
     headers: getAuthHeaders(),
   });
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.detail || 'Failed to delete theme');
+    const errorMessage = await parseErrorMessage(response);
+    throw new Error(errorMessage || 'Failed to delete theme');
   }
 };
 
@@ -182,8 +209,8 @@ export const deleteCountdown = async (id: number): Promise<void> => {
     headers: getAuthHeaders(),
   });
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.detail || 'Failed to delete countdown');
+    const errorMessage = await parseErrorMessage(response);
+    throw new Error(errorMessage || 'Failed to delete countdown');
   }
 };
 

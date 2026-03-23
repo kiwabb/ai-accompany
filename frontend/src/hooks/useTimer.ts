@@ -117,7 +117,9 @@ export function useTimer({ initialSeconds, onComplete }: UseTimerProps) {
       setTimeLeft(t => {
         const newVal = t - 1;
         if (newVal <= 0) {
-          isCompleted = true;
+          setIsActive(false);
+          localStorage.removeItem(STORAGE_KEY);
+          onCompleteRef.current();
           return 0;
         }
         // Save state during tick
@@ -130,13 +132,9 @@ export function useTimer({ initialSeconds, onComplete }: UseTimerProps) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         return newVal;
       });
-
-      if (isCompleted) {
-        setIsActive(false);
-        localStorage.removeItem(STORAGE_KEY);
-        onCompleteRef.current();
-      }
     }, 1000);
+
+
     return () => clearInterval(id);
   }, [isActive]);
 
