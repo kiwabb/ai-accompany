@@ -10,6 +10,7 @@ import {
   addPlaceholderAiMessage,
   addUserMessage,
 } from './chatStreamingUtils';
+import { getAuthHeaders } from '../../api/client';
 
 interface UseCozyPalChatOptions {
   t: TFunction;
@@ -65,7 +66,7 @@ export const useCozyPalChat = ({
       const url = activeTopicId
         ? `/api/chat/history?topic_id=${activeTopicId}&limit=10`
         : '/api/chat/history?limit=10';
-      const response = await fetch(url);
+      const response = await fetch(url, { headers: getAuthHeaders() });
       if (response.ok) {
         const data = await response.json();
         if (data.messages && data.messages.length > 0) {

@@ -1,3 +1,4 @@
+import { getAuthHeaders } from '../../api/client';
 import type { Topic } from '../../components/cozypal/types';
 
 type TopicsListener = () => void;
@@ -31,10 +32,15 @@ const fetchTopics = async () => {
   if (isFetching) return;
   isFetching = true;
   try {
-    const response = await fetch('/api/topics');
+    const response = await fetch('/api/topics', {
+      headers: getAuthHeaders(),
+    });
+    console.log('Fetch topics response:', response.status);
     if (response.ok) {
       const data = await response.json();
       setTopics(data);
+    } else {
+      console.error('Failed to fetch topics:', response.status, await response.text());
     }
   } catch (error) {
     console.error('Failed to fetch topics', error);

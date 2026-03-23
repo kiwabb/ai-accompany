@@ -1,4 +1,5 @@
 import type { TFunction } from 'i18next';
+import { getAuthHeaders } from '../../api/client';
 
 interface KnownMemoryRefs {
   knownFactsRef: React.MutableRefObject<Set<string>>;
@@ -21,7 +22,7 @@ export async function fetchLatestMemoryUpdate(): Promise<{
   timestamp?: string;
 } | null> {
   try {
-    const response = await fetch('/api/diagnostics/latest-memory-update');
+    const response = await fetch('/api/diagnostics/latest-memory-update', { headers: getAuthHeaders() });
     if (!response.ok) return null;
     return response.json();
   } catch (error) {

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { TFunction } from 'i18next';
 import type { DiagnosticData, EditingFragment, EditingProfileItem } from '../types';
+import { getAuthHeaders } from '../../../api/client';
 
 interface MemoryFragment {
   id: number;
@@ -29,7 +30,7 @@ const useCozyPalMemory = ({ activeTab, t }: UseCozyPalMemoryOptions) => {
   const fetchDiagnostics = useCallback(async () => {
     setIsDiagLoading(true);
     try {
-      const response = await fetch('/api/diagnostics/last-exchange');
+      const response = await fetch('/api/diagnostics/last-exchange', { headers: getAuthHeaders() });
       if (response.ok) {
         const data = await response.json();
         setDiagnostics(data);
@@ -43,7 +44,7 @@ const useCozyPalMemory = ({ activeTab, t }: UseCozyPalMemoryOptions) => {
 
   const fetchMemoryFragments = useCallback(async () => {
     try {
-      const response = await fetch('/api/diagnostics/memory/fragments');
+      const response = await fetch('/api/diagnostics/memory/fragments', { headers: getAuthHeaders() });
       if (response.ok) {
         const data = await response.json();
         setMemoryFragments(data);
@@ -55,7 +56,7 @@ const useCozyPalMemory = ({ activeTab, t }: UseCozyPalMemoryOptions) => {
 
   const checkForMemoryUpdates = useCallback(async () => {
     try {
-      const response = await fetch('/api/diagnostics/latest-memory-update');
+      const response = await fetch('/api/diagnostics/latest-memory-update', { headers: getAuthHeaders() });
       if (response.ok) {
         const data = await response.json();
         if (data.has_update) {
@@ -113,7 +114,7 @@ const useCozyPalMemory = ({ activeTab, t }: UseCozyPalMemoryOptions) => {
     try {
       const response = await fetch(`/api/diagnostics/memory/fragments/${editingFragment.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: editValue }),
       });
       if (response.ok) {
@@ -132,6 +133,7 @@ const useCozyPalMemory = ({ activeTab, t }: UseCozyPalMemoryOptions) => {
     try {
       const response = await fetch(`/api/diagnostics/memory/fragments/${id}`, {
         method: 'DELETE',
+        headers: getAuthHeaders(),
       });
       if (response.ok) {
         fetchMemoryFragments();
@@ -146,7 +148,7 @@ const useCozyPalMemory = ({ activeTab, t }: UseCozyPalMemoryOptions) => {
     try {
       const response = await fetch(`/api/diagnostics/profile/${category}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ value }),
       });
       if (response.ok) {
@@ -165,7 +167,7 @@ const useCozyPalMemory = ({ activeTab, t }: UseCozyPalMemoryOptions) => {
     try {
       const response = await fetch(`/api/diagnostics/profile/${editingProfileItem.category}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({
           old_value: editingProfileItem.value,
           new_value: editValue,
@@ -193,7 +195,7 @@ const useCozyPalMemory = ({ activeTab, t }: UseCozyPalMemoryOptions) => {
     if (!window.confirm(t('cozyPal.memory.resetConfirm'))) return;
     setIsSavingEdit(true);
     try {
-      const response = await fetch('/api/diagnostics/reset', { method: 'POST' });
+      const response = await fetch('/api/diagnostics/reset', { method: 'POST', headers: getAuthHeaders() });
       if (response.ok) {
         knownFactsRef.current.clear();
         knownPrefsRef.current.clear();
