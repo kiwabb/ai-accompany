@@ -24,5 +24,7 @@ python-dotenv
 pypdf
 python-docx
 python-multipart
-passlib[bcrypt]
+passlib==1.7.4
 python-jose[cryptography]
+bcrypt==3.2.0
+minio
