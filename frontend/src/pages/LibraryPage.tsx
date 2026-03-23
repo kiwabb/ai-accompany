@@ -1,9 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { Upload, Trash2, FileText, BookOpen, Loader2, ArrowLeft, LayoutGrid, List } from 'lucide-react';
+import { Upload, Trash2, Edit2, FileText, BookOpen, Loader2, ArrowLeft, LayoutGrid, List, Tag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getAuthHeaders } from '../api/client';
+import { getAuthHeaders, getUserThemes } from '../api/client';
+import type { FocusTheme } from '../types/pomodoro';
+
+import DocumentUploadModal from '../components/documents/DocumentUploadModal';
+import DocumentEditModal from '../components/documents/DocumentEditModal';
 
 interface Document {
     id: number;
@@ -11,6 +15,8 @@ interface Document {
     filename: string;
     file_type: string;
     created_at: string;
+    topic_id?: string;
+    status: string;
 }
 
 import AmbientBackground from '../components/AmbientBackground';
@@ -20,21 +26,57 @@ const LibraryPage: React.FC = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const [documents, setDocuments] = useState<Document[]>([]);
+    const [themes, setThemes] = useState<FocusTheme[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [isUploading, setIsUploading] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [docToDelete, setDocToDelete] = useState<Document | null>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [docToEdit, setDocToEdit] = useState<Document | null>(null);
+    const [progressMap, setProgressMap] = useState<Record<number, number>>({});
 
     useEffect(() => {
         fetchDocuments();
+        fetchThemes();
     }, []);
+
+    // Load progress for all documents
+    useEffect(() => {
+        if (documents.length > 0) {
+            const newProgressMap: Record<number, number> = {};
+            documents.forEach(doc => {
+                if (doc.file_type === 'pdf') {
+                    const saved = localStorage.getItem(`pdf_progress_${doc.id}`);
+                    if (saved) {
+                        try {
+                            const parsed = JSON.parse(saved);
+                            if (parsed.page && parsed.total && parsed.total > 0) {
+                                newProgressMap[doc.id] = Math.round((parsed.page / parsed.total) * 100);
+                            }
+                        } catch {
+                            // Ignore legacy format or errors
+                        }
+                    }
+                }
+            });
+            setProgressMap(newProgressMap);
+        }
+    }, [documents]);
+
+    const fetchThemes = async () => {
+        try {
+            const fetchedThemes = await getUserThemes();
+            setThemes(fetchedThemes);
+        } catch (error) {
+            console.error('Failed to fetch themes', error);
+        }
+    };
 
     const fetchDocuments = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch('/api/documents/', {
+            const response = await fetch('/api/documents', {
                 headers: getAuthHeaders(),
             });
             if (response.ok) {
@@ -48,45 +90,16 @@ const LibraryPage: React.FC = () => {
         }
     };
 
-    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        setIsUploading(true);
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('title', file.name.replace(/\.[^/.]+$/, ""));
-
-        try {
-            const { 'Content-Type': contentType, ...authHeaders } = getAuthHeaders();
-            const response = await fetch('/api/documents/upload', {
-                method: 'POST',
-                headers: {
-                    ...authHeaders,
-                },
-                body: formData,
-            });
-
-            if (response.ok) {
-                await fetchDocuments();
-            } else {
-                const errorText = await response.text();
-                console.error('Upload failed:', response.status, errorText);
-            }
-        } catch (error) {
-            console.error('Error uploading file:', error);
-        } finally {
-            setIsUploading(false);
-            if (fileInputRef.current) {
-                fileInputRef.current.value = '';
-            }
-        }
-    };
-
     const handleDeleteClick = (e: React.MouseEvent, doc: Document) => {
         e.stopPropagation();
         setDocToDelete(doc);
         setIsDeleteModalOpen(true);
+    };
+
+    const handleEditClick = (e: React.MouseEvent, doc: Document) => {
+        e.stopPropagation();
+        setDocToEdit(doc);
+        setIsEditModalOpen(true);
     };
 
     const confirmDelete = async () => {
@@ -143,30 +156,21 @@ const LibraryPage: React.FC = () => {
                             </button>
                         </div>
                         <button
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={isUploading}
+                            onClick={() => setIsUploadModalOpen(true)}
                             className="
                                 flex items-center gap-3 px-8 py-4 bg-slate-900 text-white 
                                 rounded-3xl font-bold uppercase tracking-widest text-xs 
                                 shadow-xl hover:shadow-indigo-200/50 hover:bg-slate-800 
-                                transition-all disabled:opacity-50 active:scale-95
+                                transition-all active:scale-95
                             "
                         >
-                            {isUploading ? <Loader2 className="animate-spin w-4 h-4" /> : <Upload className="w-4 h-4" />}
-                            {isUploading ? t('common.uploading') : t('common.uploadNew')}
+                            <Upload className="w-4 h-4" />
+                            {t('common.uploadNew')}
                         </button>
                     </div>
                 </div>
 
                 <div className="bg-white/40 backdrop-blur-3xl rounded-[40px] md:rounded-[56px] p-8 md:p-12 border border-white shadow-[0_30px_100px_-30px_rgba(0,0,0,0.1)]">
-                    <input
-                        type="file"
-                        ref={fileInputRef}
-                        className="hidden"
-                        accept=".pdf,.docx,.txt,.md"
-                        onChange={handleFileUpload}
-                    />
-
                     {isLoading ? (
                         <div className="flex justify-center items-center h-64">
                             <Loader2 className="animate-spin text-indigo-500 w-10 h-10" />
@@ -198,12 +202,40 @@ const LibraryPage: React.FC = () => {
                                         <div className={`p-5 bg-indigo-50 text-indigo-500 rounded-3xl shadow-inner border border-white transition-transform group-hover:scale-110 duration-500`}>
                                             <FileText size={viewMode === 'grid' ? 32 : 24} />
                                         </div>
-                                        <div className="min-w-0 flex-1">
-                                            <h3 className="text-xl font-bold text-slate-800 truncate mb-1" title={doc.title}>
-                                                {doc.title}
-                                            </h3>
-                                            <div className={`flex items-center gap-3 ${viewMode === 'grid' ? 'justify-center' : ''}`}>
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{doc.file_type}</span>
+                                            <div className="min-w-0 flex-1">
+                                                <h3 className="text-xl font-bold text-slate-800 truncate mb-1" title={doc.title}>
+                                                    {doc.title}
+                                                </h3>
+                                                {/* Progress Bar (Only for PDFs with progress) */}
+                                                 {doc.file_type === 'pdf' && progressMap[doc.id] !== undefined && (
+                                                     <div className="w-full max-w-[120px] h-1.5 bg-slate-100 rounded-full mb-2 overflow-hidden">
+                                                         <div 
+                                                             className="h-full bg-indigo-500 rounded-full transition-all duration-500"
+                                                             style={{ width: `${progressMap[doc.id]}%` }}
+                                                         />
+                                                     </div>
+                                                 )}
+                                                 <div className={`flex items-center gap-3 ${viewMode === 'grid' ? 'justify-center' : ''}`}>
+                                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{doc.file_type}</span>
+                                                     {progressMap[doc.id] !== undefined && (
+                                                         <>
+                                                             <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+                                                             <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">
+                                                                 {progressMap[doc.id]}%
+                                                             </span>
+                                                         </>
+                                                     )}
+                                                     {doc.topic_id && (
+                                                    <>
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+                                                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-50 text-indigo-500 rounded-lg">
+                                                            <Tag size={10} />
+                                                            <span className="text-[10px] font-bold uppercase tracking-widest">
+                                                                {themes.find(t => t.id === doc.topic_id)?.name || t('common.unknownTopic', '未知主题')}
+                                                            </span>
+                                                        </div>
+                                                    </>
+                                                )}
                                                 <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
                                                 <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
                                                     {new Date(doc.created_at).toLocaleDateString()}
@@ -212,16 +244,28 @@ const LibraryPage: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    <button
-                                        onClick={(e) => handleDeleteClick(e, doc)}
-                                        className="
-                                            p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 
-                                            rounded-2xl transition-all opacity-0 group-hover:opacity-100
-                                            active:scale-90
-                                        "
-                                    >
-                                        <Trash2 size={20} />
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={(e) => handleEditClick(e, doc)}
+                                            className="
+                                                p-3 text-slate-300 hover:text-indigo-500 hover:bg-indigo-50 
+                                                rounded-2xl transition-all opacity-0 group-hover:opacity-100
+                                                active:scale-90
+                                            "
+                                        >
+                                            <Edit2 size={20} />
+                                        </button>
+                                        <button
+                                            onClick={(e) => handleDeleteClick(e, doc)}
+                                            className="
+                                                p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 
+                                                rounded-2xl transition-all opacity-0 group-hover:opacity-100
+                                                active:scale-90
+                                            "
+                                        >
+                                            <Trash2 size={20} />
+                                        </button>
+                                    </div>
                                 </motion.div>
                             ))}
                         </div>
@@ -238,6 +282,22 @@ const LibraryPage: React.FC = () => {
                 onConfirm={confirmDelete}
                 onCancel={() => setIsDeleteModalOpen(false)}
                 type="danger"
+            />
+
+            <DocumentUploadModal
+                isOpen={isUploadModalOpen}
+                onClose={() => setIsUploadModalOpen(false)}
+                onUploadComplete={fetchDocuments}
+            />
+
+            <DocumentEditModal
+                isOpen={isEditModalOpen}
+                document={docToEdit}
+                onClose={() => {
+                    setIsEditModalOpen(false);
+                    setDocToEdit(null);
+                }}
+                onUpdateComplete={fetchDocuments}
             />
         </div>
     );
