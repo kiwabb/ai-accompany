@@ -30,6 +30,29 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
 
     const selectedOption = options.find((opt) => opt.value === value);
 
+    useEffect(() => {
+        const updatePosition = () => {
+            if (isOpen && triggerRef.current) {
+                const rect = triggerRef.current.getBoundingClientRect();
+                setMenuPosition({
+                    top: rect.bottom + 8,
+                    left: rect.left,
+                    width: rect.width,
+                });
+            }
+        };
+
+        if (isOpen) {
+            window.addEventListener('scroll', updatePosition, true);
+            window.addEventListener('resize', updatePosition);
+        }
+
+        return () => {
+            window.removeEventListener('scroll', updatePosition, true);
+            window.removeEventListener('resize', updatePosition);
+        };
+    }, [isOpen]);
+
     // Close when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -43,18 +66,14 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
             }
         };
 
-        const handleClose = () => setIsOpen(false);
+
 
         if (isOpen) {
             document.addEventListener('mousedown', handleClickOutside);
-            window.addEventListener('resize', handleClose);
-            window.addEventListener('scroll', handleClose, true); // Close on scroll to avoid drift
         }
 
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
-            window.removeEventListener('resize', handleClose);
-            window.removeEventListener('scroll', handleClose, true);
         };
     }, [isOpen]);
 
@@ -63,8 +82,8 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         if (triggerRef.current) {
             const rect = triggerRef.current.getBoundingClientRect();
             setMenuPosition({
-                top: rect.bottom + window.scrollY + 8, // Add gap
-                left: rect.left + window.scrollX,
+                top: rect.bottom + 8,
+                left: rect.left,
                 width: rect.width,
             });
         }
@@ -78,13 +97,13 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
 
     const dropdownMenu = (
         <div
-            className="fixed inset-0 z-[9999] pointer-events-none" // Overlay container
+            className="fixed inset-0 z-[9999] pointer-events-none"
         >
             <div
                 ref={menuRef}
                 className="pointer-events-auto"
                 style={{
-                    position: 'absolute',
+                    position: 'fixed',
                     top: menuPosition.top,
                     left: menuPosition.left,
                     width: menuPosition.width,
@@ -95,26 +114,28 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                     animate={{ opacity: 1, y: 0, scaleY: 1 }}
                     exit={{ opacity: 0, y: -10, scaleY: 0.95 }}
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    className="flex flex-col bg-white/95 backdrop-blur-xl border border-white/80 rounded-2xl shadow-elevated py-2 max-h-[280px] overflow-y-auto custom-scrollbar pointer-events-auto"
+                    className="flex flex-col bg-white/95 backdrop-blur-xl border border-white/80 rounded-2xl shadow-elevated py-2 max-h-[280px] overflow-y-auto overflow-x-hidden pointer-events-auto custom-scrollbar no-scrollbar"
+                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
                     {options.map((option) => (
                         <button
                             key={option.value}
                             onClick={() => handleSelect(option.value)}
                             className={`
-                group flex items-center justify-between px-4 py-3 text-sm font-bold text-left transition-colors
+                group flex items-center justify-between px-4 py-3 text-sm font-bold text-left transition-colors w-full
                 ${option.value === value
-                                    ? 'bg-cozy-orange text-white'
-                                    : 'text-cozy-text-light hover:bg-cozy-orange/10 hover:text-cozy-text'}
+                                     ? 'bg-cozy-orange text-white'
+                                     : 'text-cozy-text-light hover:bg-cozy-orange/10 hover:text-cozy-text'}
               `}
                         >
-                            <span>{option.label}</span>
+                            <span className="truncate flex-1 pr-2">{option.label}</span>
                             {option.value === value && (
-                                <Check size={16} strokeWidth={3} className="text-white" />
+                                <Check size={16} strokeWidth={3} className="text-white shrink-0" />
                             )}
                         </button>
                     ))}
                 </motion.div>
+
             </div>
         </div>
     );

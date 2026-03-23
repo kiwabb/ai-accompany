@@ -82,6 +82,23 @@ const CozyAvatar: React.FC<CozyAvatarProps> = ({ state, size = 64 }) => {
 
         {/* Mouth */}
         <motion.path 
+
+          stroke={eyeColor} 
+
+          strokeWidth="3" 
+
+          strokeLinecap="round" 
+
+          fill="none"
+
+          variants={mouthVariants}
+
+          initial={state}
+
+          animate={state}
+
+        />
+        <motion.path 
           stroke={eyeColor} 
           strokeWidth="3" 
           strokeLinecap="round" 

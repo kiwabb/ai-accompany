@@ -40,6 +40,7 @@ const CozyPalAvatarButton = ({ avatarState, hasUnread, onToggle, t, isChiikawaTh
 
   return (
     <motion.button
+      data-testid="cozypal-avatar-button"
       aria-label={t('cozyPal.avatarDescription')}
       className={`w-20 h-20 rounded-full shadow-2xl flex items-center justify-center cursor-pointer transition-shadow relative ${isChiikawaTheme
         ? 'bg-gradient-to-br from-pink-100 to-pink-200 hover:shadow-pink-300/50 border-4 border-white'
