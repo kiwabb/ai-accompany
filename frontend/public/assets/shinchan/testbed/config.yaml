@@ -1,0 +1,27 @@
+# 当前使用的模型 (对应下方 models 中的 key)
+current_model: "doubao-seed-2.0"
+
+models:
+  doubao-seed-2.0:
+    api_key: ""
+    model: "doubao-seed-2-0-code-preview-260215"
+    base_url: "https://ark.cn-beijing.volces.com/api/v3"
+    temperature: 0.1
+
+# RAG 配置
+rag:
+  enabled: true
+  chunk_size: 1000
+  chunk_overlap: 200
+  collection_name: "emotional_support_knowledge"
+
+# Memory 配置
+memory:
+  enabled: true
+  max_history_length: 50
+  summary_interval: 10
+
+# Workflow 配置
+workflow:
+  enable_emotion_analysis: true
+  enable_support_generation: true

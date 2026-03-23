@@ -1,0 +1,15 @@
+llm:
+  provider: ollama
+  model: qwen2.5-coder:0.5b
+  embed_model: mxbai-embed-large
+  base_url: http://localhost:11434
+neo4j:
+  uri: bolt://localhost:7687
+  username: neo4j
+  database: neo4j
+  password: password
+wiki:
+  output_dir: docs/wiki
+  languages:
+  - python
+  language: chinese
