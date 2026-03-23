@@ -99,7 +99,7 @@ const ReaderPage: React.FC = () => {
             <AmbientBackground />
 
             {/* Premium Header */}
-            <div className="h-20 bg-white/60 backdrop-blur-3xl border-b border-slate-100 flex items-center justify-between px-8 z-50 flex-shrink-0">
+            <div className={`${fileType === 'pdf' ? 'h-16' : 'h-20'} bg-white/60 backdrop-blur-3xl border-b border-slate-100 flex items-center justify-between px-8 z-50 flex-shrink-0`}>
                 <motion.button
                     whileHover={{ x: -2 }}
                     whileTap={{ scale: 0.98 }}
@@ -124,7 +124,7 @@ const ReaderPage: React.FC = () => {
 
             <div className="flex flex-1 relative overflow-hidden h-full z-10">
                 {/* Main Content Area */}
-                <motion.div className="flex-1 overflow-y-auto pb-20 transition-all duration-300 ease-out h-full">
+                <motion.div className="flex-1 overflow-y-auto transition-all duration-300 ease-out h-full">
                     {isLoading ? (
                         <div className="flex flex-col justify-center items-center h-full gap-4">
                             <Loader2 className="animate-spin text-indigo-500 w-10 h-10" />
@@ -134,7 +134,7 @@ const ReaderPage: React.FC = () => {
                         </div>
                     ) : fileType === 'pdf' ? (
                         <div className="w-full relative h-full bg-slate-50/50">
-                            <PdfReader fileUrl={pdfUrl} title={title} />
+                            <PdfReader fileUrl={pdfUrl} title={title} documentId={id} />
                         </div>
                     ) : (
                         <div className="max-w-4xl mx-auto px-8 py-16">
