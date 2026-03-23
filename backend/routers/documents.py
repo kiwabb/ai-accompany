@@ -81,7 +81,10 @@ async def get_document_file(
     if storage_key:
         from ..services.storage_service import storage_service
         from fastapi.responses import RedirectResponse
-        download_url = storage_service.get_presigned_download_url(str(storage_key))
+        try:
+            download_url = storage_service.get_presigned_download_url(str(storage_key))
+        except Exception:
+            raise HTTPException(status_code=503, detail="Document storage temporarily unavailable")
         return RedirectResponse(download_url)
         
     file_path = getattr(document, "file_path", None)

@@ -5,7 +5,7 @@ from datetime import date
 from typing import List, Optional
 
 from ..database import get_db, AsyncSessionLocal
-from .. import crud, schemas
+from .. import crud, schemas, crud_stats
 from ..services.chat_service import chat_service
 from ..services.memory_service import memory_service
 from ..services.achievement_service import achievement_service
@@ -102,7 +102,7 @@ async def chat_completions(
     x_google_api_key: Optional[str] = Header(None),
     current_user_id: str = Depends(get_current_user_id),
 ):
-    daily_stats = await crud.get_daily_stats(db, date.today())
+    daily_stats = await crud_stats.get_daily_stats(db, date.today(), current_user_id)
     daily_focus = daily_stats.total_focus_minutes if daily_stats else 0
     daily_sessions = daily_stats.total_sessions if daily_stats else 0
 
@@ -127,6 +127,23 @@ async def chat_completions(
         ),
         media_type="text/plain",
     )
+
+
+@router.get("/chat/history")
+async def chat_history(
+    limit: int = Query(10, ge=1, le=100),
+    topic_id: Optional[int] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user_id: str = Depends(get_current_user_id),
+):
+    raw_history = await crud.get_recent_chat_history(
+        db,
+        user_id=current_user_id,
+        limit=limit,
+        topic_id=topic_id,
+    )
+    messages = [schemas.ChatMessage.model_validate(msg) for msg in raw_history]
+    return {"messages": messages}
 
 
 def _detect_language(request: schemas.ChatRequest) -> str:
@@ -159,8 +176,9 @@ async def get_provider_models(
 async def get_daily_learning_stats(
     target_date: date = Query(default_factory=date.today),
     db: AsyncSession = Depends(get_db),
+    current_user_id: str = Depends(get_current_user_id),
 ):
-    stats = await crud.get_daily_stats(db=db, target_date=target_date)
+    stats = await crud_stats.get_daily_stats(db=db, target_date=target_date, user_id=current_user_id)
     if not stats:
         return schemas.DailyStats(date=target_date.isoformat(), total_focus_minutes=0, total_sessions=0, sessions_by_theme={})
     return stats
