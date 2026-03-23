@@ -1,6 +1,12 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from .database import Base, engine
 from . import models  # 确保导入模型，以便Base.metadata知道它们
@@ -28,7 +34,7 @@ app.add_middleware(
 )
 
 app.include_router(sessions.router)
-app.include_router(auth.router)
+app.include_router(auth.router, prefix="/api/auth")
 app.include_router(users.router)
 app.include_router(topics.router, prefix="/api/topics", tags=["topics"])
 app.include_router(countdowns.router)
