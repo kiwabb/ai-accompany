@@ -26,4 +26,5 @@ async def create_user(db: AsyncSession, user_in: schemas.UserCreate):
     from .crud_settings import upsert_user_settings
     await upsert_user_settings(db, user_in.username, schemas.UserSettingsBase())
     
+    await db.commit()
     return db_user

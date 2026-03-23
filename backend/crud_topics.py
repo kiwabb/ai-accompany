@@ -8,7 +8,21 @@ async def get_topics(db: AsyncSession, user_id: str) -> List[models.Topic]:
     result = await db.execute(
         select(models.Topic).where(models.Topic.user_id == user_id)
     )
-    return list(result.scalars().all())
+    topics = list(result.scalars().all())
+    
+    if not topics:
+        default_topic = models.Topic(
+            name="默认分类",
+            description="自动创建的默认分类",
+            user_id=user_id,
+            is_active=True
+        )
+        db.add(default_topic)
+        await db.commit()
+        await db.refresh(default_topic)
+        topics = [default_topic]
+        
+    return topics
 
 
 async def get_topic(

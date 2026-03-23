@@ -6,11 +6,12 @@ from typing import Dict, Optional
 
 
 async def get_daily_stats(
-    db: AsyncSession, target_date: date
+    db: AsyncSession, target_date: date, user_id: str
 ) -> Optional[schemas.DailyStats]:
     # 计算总专注分钟数 (只计算 phase_type == 'focus' 的 session)
     total_focus_seconds_result = await db.execute(
         select(func.sum(models.LearningSession.duration_seconds)).where(
+            models.LearningSession.user_id == user_id,
             func.date(models.LearningSession.start_time) == target_date,
             models.LearningSession.phase_type == "focus",
         )
@@ -21,6 +22,7 @@ async def get_daily_stats(
     # 计算总会话数 (所有类型的 session)
     total_sessions_result = await db.execute(
         select(func.count(models.LearningSession.id)).where(
+            models.LearningSession.user_id == user_id,
             func.date(models.LearningSession.start_time) == target_date
         )
     )
@@ -33,6 +35,7 @@ async def get_daily_stats(
             func.sum(models.LearningSession.duration_seconds).label("total_seconds"),
         )
         .where(
+            models.LearningSession.user_id == user_id,
             func.date(models.LearningSession.start_time) == target_date,
             models.LearningSession.phase_type == "focus",
         )
