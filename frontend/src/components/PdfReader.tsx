@@ -3538,6 +3538,18 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                 body.theme-shinchan .notes-flat-panel button:not([class*="rounded-full"]) {
                     border-radius: 0 !important;
                 }
+
+                /* 荧光笔模式下文字选区直接显示成高亮色，模拟 macOS Preview 的拖动落色效果 */
+                ${isPenMode && penTool === 'highlight' ? `
+                    .react-pdf__Page__textContent ::selection {
+                        background-color: ${HIGHLIGHT_COLORS[currentHighlightColor].bg} !important;
+                        color: inherit !important;
+                    }
+                    .react-pdf__Page__textContent ::-moz-selection {
+                        background-color: ${HIGHLIGHT_COLORS[currentHighlightColor].bg} !important;
+                        color: inherit !important;
+                    }
+                ` : ''}
             `}</style>
 
             {/* 浮动底部工具栏：翻页 + 缩放，覆盖 PDF 展示区中下方，
