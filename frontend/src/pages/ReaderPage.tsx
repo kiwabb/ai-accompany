@@ -130,7 +130,10 @@ const ReaderPage: React.FC = () => {
 
             <div className="flex flex-1 relative overflow-hidden h-full z-10">
                 {/* Main Content Area */}
-                <motion.div className="flex-1 overflow-y-auto transition-all duration-300 ease-out h-full">
+                <motion.div
+                    className="flex-1 overflow-y-auto transition-all duration-300 ease-out h-full"
+                    style={{ scrollbarGutter: 'stable' }}
+                >
                     {isLoading ? (
                         <div className="flex flex-col justify-center items-center h-full gap-4">
                             <Loader2 className="animate-spin text-indigo-500 w-10 h-10" />

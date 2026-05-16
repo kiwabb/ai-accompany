@@ -2220,12 +2220,14 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
         let debounceId: number | undefined;
         const update = () => {
             const next = container.clientWidth;
-            // 仅在显著变化时更新，避免亚像素抖动导致页面持续重渲
-            setContainerWidth((prev) => (Math.abs(prev - next) >= 4 ? next : prev));
+            // 阈值 ≥24px 才更新：滚动条出现/消失（~15px）、UI padding 微调（几 px）
+            // 这些都不应该触发 PDF 重新渲染，否则会陷入"内容高→滚条→宽变→重渲→
+            // 内容高变→滚条变..."的视觉抖动循环。
+            setContainerWidth((prev) => (Math.abs(prev - next) >= 24 ? next : prev));
         };
         const scheduleUpdate = () => {
             if (debounceId !== undefined) window.clearTimeout(debounceId);
-            debounceId = window.setTimeout(update, 120);
+            debounceId = window.setTimeout(update, 200);
         };
 
         update();
