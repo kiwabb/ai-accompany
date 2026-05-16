@@ -3079,7 +3079,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                             animate={{ x: 0, opacity: 1 }}
                             exit={{ x: '-100%', opacity: 0 }}
                             transition={{ duration: 0.3, ease: 'easeInOut' }}
-                            className="w-72 h-[calc(100vh-4rem)] fixed top-16 left-0 z-30 bg-[#faf9f6]/95 backdrop-blur-md border-r border-[#e9e6da] flex flex-col"
+                            className="w-72 h-[calc(100vh-2.25rem)] fixed top-9 left-0 z-30 bg-[#faf9f6]/95 backdrop-blur-md border-r border-[#e9e6da] flex flex-col"
                         >
                             <div className="flex items-center gap-1 border-b border-[#e9e6da] p-2 bg-[#f9f8f6]">
                                 <button
@@ -3481,7 +3481,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                             animate={{ x: 0, opacity: 1 }}
                             exit={{ x: '100%', opacity: 0 }}
                             transition={{ duration: 0.25, ease: 'easeInOut' }}
-                            className="shrink-0 h-[calc(100vh-4rem)] sticky top-16 self-start flex"
+                            className="shrink-0 h-[calc(100vh-2.25rem)] sticky top-9 self-start flex"
                         >
                             <div
                                 onMouseDown={handleNoteResizeMouseDown}
