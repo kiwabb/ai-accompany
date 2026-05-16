@@ -44,11 +44,13 @@ interface HighlightItem {
     color?: HighlightColor;
 }
 
-const HIGHLIGHT_COLORS: Record<HighlightColor, { bg: string; border: string; swatch: string }> = {
-    yellow: { bg: 'rgba(250, 204, 21, 0.30)', border: 'rgba(202, 138, 4, 0.45)', swatch: '#facc15' },
-    green: { bg: 'rgba(74, 222, 128, 0.28)', border: 'rgba(22, 163, 74, 0.45)', swatch: '#4ade80' },
-    blue: { bg: 'rgba(96, 165, 250, 0.30)', border: 'rgba(37, 99, 235, 0.45)', swatch: '#60a5fa' },
-    pink: { bg: 'rgba(244, 114, 182, 0.28)', border: 'rgba(219, 39, 119, 0.45)', swatch: '#f472b6' },
+// 用饱和的高亮色 + 较高 alpha，配合无 blend mode，模拟 macOS Preview
+// 的纯色高亮条：底色饱和但半透明，文字本身从底层 canvas 透过来不被混合。
+const HIGHLIGHT_COLORS: Record<HighlightColor, { bg: string; swatch: string }> = {
+    yellow: { bg: 'rgba(255, 240, 0, 0.55)', swatch: '#fff000' },
+    green: { bg: 'rgba(110, 240, 130, 0.50)', swatch: '#6ef082' },
+    blue: { bg: 'rgba(120, 190, 255, 0.55)', swatch: '#78beff' },
+    pink: { bg: 'rgba(255, 130, 200, 0.50)', swatch: '#ff82c8' },
 };
 
 interface PxRect {
@@ -161,9 +163,7 @@ const HighlightInteractiveLayer: React.FC<{
                         width: `${rect.width}%`,
                         height: `${rect.height}%`,
                         backgroundColor: palette.bg,
-                        border: `1px solid ${palette.border}`,
-                        borderRadius: 2,
-                        mixBlendMode: 'multiply',
+                        borderRadius: 0,
                     }}
                 />
             );
