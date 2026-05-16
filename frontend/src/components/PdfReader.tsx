@@ -145,6 +145,22 @@ interface ColoredHighlightRect extends HighlightRect {
     color: HighlightColor;
 }
 
+// 把存储在 0° 坐标下的 HighlightRect（%）旋转到当前页面方向。
+// 各角点变换：90° CW (x,y)→(1-y,x)；180° (x,y)→(1-x,1-y)；270° (x,y)→(y,1-x)。
+const rotateHighlightRect = (rect: HighlightRect, rotation: 0 | 90 | 180 | 270): HighlightRect => {
+    const { left, top, width, height } = rect;
+    switch (rotation) {
+        case 90:
+            return { left: 100 - top - height, top: left, width: height, height: width };
+        case 180:
+            return { left: 100 - left - width, top: 100 - top - height, width, height };
+        case 270:
+            return { left: top, top: 100 - left - width, width: height, height: width };
+        default:
+            return rect;
+    }
+};
+
 const HighlightInteractiveLayer: React.FC<{
     pageNumber: number;
     highlightRects: ColoredHighlightRect[];
@@ -153,31 +169,33 @@ const HighlightInteractiveLayer: React.FC<{
     onHighlightLeave: () => void;
     actionTitle: string;
     disabled?: boolean;
-}> = ({ pageNumber, highlightRects, highlightActionAreas, onHighlightHover, onHighlightLeave, actionTitle, disabled = false }) => (
+    rotation: 0 | 90 | 180 | 270;
+}> = ({ pageNumber, highlightRects, highlightActionAreas, onHighlightHover, onHighlightLeave, actionTitle, disabled = false, rotation }) => (
     <>
         {highlightRects.map((rect, idx) => {
             const palette = HIGHLIGHT_COLORS[rect.color] ?? HIGHLIGHT_COLORS.yellow;
+            const r = rotateHighlightRect(rect, rotation);
             return (
                 <div
                     key={`${pageNumber}-${idx}`}
                     className="pdf-highlight-rect absolute pointer-events-none"
                     style={{
-                        left: `${rect.left}%`,
-                        top: `${rect.top}%`,
-                        width: `${rect.width}%`,
-                        height: `${rect.height}%`,
+                        left: `${r.left}%`,
+                        top: `${r.top}%`,
+                        width: `${r.width}%`,
+                        height: `${r.height}%`,
                         backgroundColor: palette.bg,
                         mixBlendMode: 'multiply',
                         borderRadius: 0,
-                        // 强制独立合成层，避免被祖先 transform/opacity 把 blend 模式
-                        // 误合成成普通 alpha 叠加。
                         willChange: 'transform',
                         transform: 'translateZ(0)',
                     }}
                 />
             );
         })}
-        {!disabled && highlightActionAreas.map((area) => (
+        {!disabled && highlightActionAreas.map((area) => {
+            const a = rotateHighlightRect(area, rotation);
+            return (
             <button
                 key={`hit-${pageNumber}-${area.id}`}
                 type="button"
@@ -185,17 +203,18 @@ const HighlightInteractiveLayer: React.FC<{
                 onMouseLeave={onHighlightLeave}
                 className="absolute z-20 bg-transparent cursor-pointer hover:outline hover:outline-1 hover:outline-amber-500/70"
                 style={{
-                    left: `${area.left}%`,
-                    top: `${area.top}%`,
-                    width: `${area.width}%`,
-                    height: `${area.height}%`,
+                    left: `${a.left}%`,
+                    top: `${a.top}%`,
+                    width: `${a.width}%`,
+                    height: `${a.height}%`,
                     borderRadius: 0,
                     outlineOffset: 0,
                 }}
                 aria-label="highlight-actions"
                 title={actionTitle}
             />
-        ))}
+            );
+        })}
     </>
 );
 
@@ -465,6 +484,7 @@ const LazyPage = React.memo(({
                 onHighlightLeave={onHighlightLeave}
                 actionTitle={t('reader.highlightActions', '高亮操作')}
                 disabled={highlightActionsDisabled}
+                rotation={rotation}
             />
             <HandwritingLayer
                 strokes={penStrokes}
@@ -3388,6 +3408,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                                     onHighlightLeave={scheduleHideHighlightMenu}
                                     actionTitle={t('reader.highlightActions', '高亮操作')}
                                     disabled={isPenMode}
+                                    rotation={rotation}
                                 />
                                 <HandwritingLayer
                                     strokes={getPagePenStrokes(1)}
