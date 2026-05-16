@@ -1967,12 +1967,13 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
             });
     };
 
-    const addAreaHighlight = async () => {
+    const addAreaHighlight = async (colorOverride?: HighlightColor) => {
         if (!documentId || !areaSelection) return;
 
         const selection = areaSelection;
         const highlightId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         const bookmarkId = `bm-${highlightId}`;
+        const effectiveColor = colorOverride ?? currentHighlightColor;
 
         const newBookmark: BookmarkType = {
             id: bookmarkId,
@@ -1988,7 +1989,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
             rects: [selection.rect],
             createdAt: new Date().toISOString(),
             linkedBookmarkId: bookmarkId,
-            color: currentHighlightColor,
+            color: effectiveColor,
         };
 
         const nextHighlights = [...highlights, newHighlight];
@@ -3449,10 +3450,13 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                             <button
                                 key={c}
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => setCurrentHighlightColor(c)}
+                                onClick={() => {
+                                    setCurrentHighlightColor(c);
+                                    void addAreaHighlight(c);
+                                }}
                                 className={`w-4 h-4 rounded-full border-2 transition-transform hover:scale-110 ${currentHighlightColor === c ? 'border-white' : 'border-white/40'}`}
                                 style={{ backgroundColor: HIGHLIGHT_COLORS[c].swatch }}
-                                title={t('reader.highlightColor', '高亮颜色')}
+                                title={t('reader.highlightColor', '该色高亮')}
                                 aria-label={`hl-color-${c}`}
                             />
                         ))}
