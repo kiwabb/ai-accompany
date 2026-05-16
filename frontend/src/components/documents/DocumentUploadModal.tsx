@@ -33,6 +33,47 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<'info' | 'uploading' | 'complete'>('info');
+  const [isDragging, setIsDragging] = useState(false);
+
+  const ACCEPTED_EXTS = ['pdf', 'docx', 'txt', 'md'];
+
+  const acceptFile = (selected: File) => {
+    const ext = selected.name.split('.').pop()?.toLowerCase() || '';
+    if (!ACCEPTED_EXTS.includes(ext)) {
+      setError(t('common.unsupportedFile', '不支持的文件类型：') + selected.name);
+      return;
+    }
+    setError(null);
+    setFile(selected);
+    if (!title) {
+      setTitle(selected.name.replace(/\.[^/.]+$/, ''));
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const dropped = e.dataTransfer.files?.[0];
+    if (dropped) acceptFile(dropped);
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
 
   const fetchThemes = async () => {
     try {
@@ -57,12 +98,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      if (!title) {
-        setTitle(selectedFile.name.replace(/\.[^/.]+$/, ''));
-      }
-    }
+    if (selectedFile) acceptFile(selectedFile);
   };
 
   const handleUpload = async () => {
@@ -149,12 +185,28 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
               <div className="space-y-6">
                 {/* File Dropzone */}
                 {!file ? (
-                  <label className="border-4 border-dashed border-slate-100 rounded-[32px] p-10 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors group">
+                  <label
+                    onDrop={handleDrop}
+                    onDragEnter={handleDragEnter}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    className={`border-4 border-dashed rounded-[32px] p-10 flex flex-col items-center justify-center cursor-pointer transition-colors group ${isDragging
+                        ? 'border-indigo-400 bg-indigo-50/70 scale-[1.01]'
+                        : 'border-slate-100 hover:bg-slate-50'
+                      }`}
+                  >
                     <input type="file" className="hidden" onChange={handleFileChange} accept=".pdf,.docx,.txt,.md" />
-                    <div className="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-transform ${isDragging
+                        ? 'bg-indigo-500 text-white scale-110'
+                        : 'bg-indigo-50 text-indigo-500 group-hover:scale-110'
+                      }`}>
                       <Upload size={32} />
                     </div>
-                    <p className="text-slate-600 font-bold">{t('common.selectFile', '选择文件')}</p>
+                    <p className="text-slate-600 font-bold">
+                      {isDragging
+                        ? t('common.dropToUpload', '释放以上传')
+                        : t('common.selectOrDrop', '点击或拖拽文件到此')}
+                    </p>
                     <p className="text-slate-400 text-sm mt-1">PDF, DOCX, TXT, MD</p>
                   </label>
                 ) : (
