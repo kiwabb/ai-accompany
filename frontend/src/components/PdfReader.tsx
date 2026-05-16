@@ -2753,35 +2753,15 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                             </button>
                             <div className="w-px h-5 bg-[#d9d5c8] mx-0.5" />
                             <button
-                                onClick={() => setPenStrokes((prev) => prev.slice(0, -1))}
-                                disabled={penStrokes.length === 0}
-                                className="p-1.5 rounded-md transition-all hover:bg-white text-[#6b6654] disabled:opacity-30 disabled:cursor-not-allowed"
-                                title={t('reader.penUndo', '撤销上一笔')}
-                            >
-                                ↶
-                            </button>
-                            <button
-                                onClick={() => {
-                                    if (pageNumber <= 0) return;
-                                    setPenStrokes((prev) => prev.filter((stroke) => stroke.page !== pageNumber));
-                                }}
-                                className="px-2 h-7 text-[10px] font-semibold rounded-md hover:bg-white text-[#6b6654]"
-                                title={t('reader.clearInkPage', '清空本页笔迹')}
-                            >
-                                {t('reader.clearInk', '清笔迹')}
-                            </button>
-                            <div className="w-px h-5 bg-[#d9d5c8] mx-0.5" />
-                            <button
                                 onClick={() => setPenTool('draw')}
                                 className={`p-1.5 rounded-md transition-all ${penTool === 'draw' ? 'bg-blue-100 text-blue-700' : 'hover:bg-white text-[#6b6654]'}`}
                                 title={t('reader.penDraw', '画笔')}
                             >
-                                <PenLine size={16} className="md:w-[18px] md:h-[18px]" />
+                                <Pencil size={16} className="md:w-[18px] md:h-[18px]" />
                             </button>
                             <button
                                 onClick={() => {
                                     setPenTool('highlight');
-                                    // 切到荧光笔默认换成黄色
                                     if (penColor === '#111827' || penColor === '#2563eb' || penColor === '#dc2626' || penColor === '#059669' || penColor === '#7c3aed') {
                                         setPenColor('#facc15');
                                     }
@@ -2799,6 +2779,26 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                                 title={t('reader.penEraser', '橡皮')}
                             >
                                 <Eraser size={16} className="md:w-[18px] md:h-[18px]" />
+                            </button>
+                            <div className="w-px h-5 bg-[#d9d5c8] mx-0.5" />
+                            <button
+                                onClick={() => setPenStrokes((prev) => prev.slice(0, -1))}
+                                disabled={penStrokes.length === 0}
+                                className="p-1.5 rounded-md transition-all hover:bg-white text-[#6b6654] disabled:opacity-30 disabled:cursor-not-allowed"
+                                title={t('reader.penUndo', '撤销上一笔')}
+                            >
+                                ↶
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (pageNumber <= 0) return;
+                                    setPenStrokes((prev) => prev.filter((stroke) => stroke.page !== pageNumber));
+                                }}
+                                disabled={!penStrokes.some((s) => s.page === pageNumber)}
+                                className="p-1.5 rounded-md transition-all hover:bg-white text-[#6b6654] disabled:opacity-30 disabled:cursor-not-allowed"
+                                title={t('reader.clearInkPage', '清空本页笔迹')}
+                            >
+                                <Trash2 size={16} className="md:w-[18px] md:h-[18px]" />
                             </button>
 
                             {(penTool === 'draw' || penTool === 'highlight') && (
