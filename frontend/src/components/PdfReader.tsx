@@ -2683,78 +2683,8 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
 
                 </div>
 
-                {/* Center: Page Indicator + Prev/Next + Jump */}
-                <div className="flex-1 flex flex-col justify-center items-center overflow-hidden px-4 gap-1">
-                    <div className="flex items-center bg-[#f0eee9]/50 rounded-lg px-2 md:px-3 py-1 border border-[#e9e6da] max-w-full gap-1.5">
-                        <button
-                            onClick={() => pageNumber > 1 && goToPage(pageNumber - 1)}
-                            disabled={pageNumber <= 1}
-                            className="p-1 rounded hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed text-[#6b6654] transition-colors"
-                            title={t('reader.prevPage', '上一页 (←)')}
-                        >
-                            <ChevronLeft size={14} />
-                        </button>
-
-                        {isEditingPage ? (
-                            <input
-                                type="number"
-                                autoFocus
-                                value={pageInputValue}
-                                onChange={(e) => setPageInputValue(e.target.value)}
-                                onBlur={submitJumpPage}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') submitJumpPage();
-                                    else if (e.key === 'Escape') {
-                                        setIsEditingPage(false);
-                                        setPageInputValue('');
-                                    }
-                                }}
-                                min={1}
-                                max={numPages || 1}
-                                className="w-12 text-center text-[11px] font-semibold bg-white border border-indigo-300 rounded px-1 py-0.5 outline-none focus:ring-2 focus:ring-indigo-200 tabular-nums"
-                            />
-                        ) : (
-                            <button
-                                onClick={() => {
-                                    setPageInputValue(String(pageNumber));
-                                    setIsEditingPage(true);
-                                }}
-                                className="text-[10px] md:text-xs font-semibold text-[#6b6654] hover:text-indigo-600 hover:bg-white px-1.5 py-0.5 rounded transition-colors whitespace-nowrap tabular-nums"
-                                title={t('reader.jumpToPage', '点击跳页')}
-                            >
-                                {pageNumber}
-                            </button>
-                        )}
-                        <span className="opacity-40 text-[10px]">/</span>
-                        <span className="text-[10px] md:text-xs font-semibold text-[#6b6654] tabular-nums">
-                            {numPages || '-'}
-                        </span>
-
-                        <button
-                            onClick={() => pageNumber < numPages && goToPage(pageNumber + 1)}
-                            disabled={pageNumber >= numPages}
-                            className="p-1 rounded hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed text-[#6b6654] transition-colors"
-                            title={t('reader.nextPage', '下一页 (→)')}
-                        >
-                            <ChevronRight size={14} />
-                        </button>
-
-                        <div className="w-px h-3 bg-slate-300 mx-0.5" />
-
-                        <button
-                            onClick={toggleBookmark}
-                            className={`p-1 rounded hover:bg-white transition-colors ${bookmarks.some(b => b.page === pageNumber) ? 'text-indigo-500' : 'text-[#6b6654] hover:text-indigo-500'}`}
-                            title={t('reader.toggleBookmark', '书签 (B)')}
-                        >
-                            <Bookmark size={12} fill={bookmarks.some(b => b.page === pageNumber) ? "currentColor" : "none"} />
-                        </button>
-                    </div>
-                    <div className="w-full max-w-[200px] h-1 bg-slate-200/50 rounded-full overflow-hidden">
-                        <div
-                            className="h-full bg-[#d97706]/60 transition-all duration-300 ease-out"
-                            style={{ width: `${numPages > 0 ? (pageNumber / numPages) * 100 : 0}%` }}
-                        />
-                    </div>
+                {/* Center: just spacer; 页面导航与缩放移至底部浮动栏 */}
+                <div className="flex-1 flex items-center justify-center overflow-hidden px-4">
                     <div className="text-[9px] font-bold text-slate-400 tabular-nums tracking-wider" title={t('reader.sessionTime', '本次阅读时长')}>
                         ⏱ {formatReadingTime(sessionSeconds)}
                     </div>
@@ -2877,42 +2807,6 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                                 aria-label={`highlight-${c}`}
                             />
                         ))}
-                    </div>
-
-                    <div className="flex items-center gap-1 bg-[#f0eee9]/50 rounded-lg p-0.5 border border-[#e9e6da]">
-                    <button
-                        onClick={() => {
-                            setIsManualZoom(false);
-                            setScale(1);
-                        }}
-                        className={`px-2 h-7 rounded-md transition-all text-[10px] font-semibold ${!isManualZoom ? 'bg-white text-[#4b483e]' : 'hover:bg-white text-[#6b6654]'}`}
-                        title={t('reader.fitWidth', '适应宽度 (0)')}
-                    >
-                        {t('reader.fit', '适应')}
-                    </button>
-                    <button
-                        onClick={() => {
-                            setIsManualZoom(true);
-                            setScale(s => Math.max(0.6, s - 0.08));
-                        }}
-                        className="p-1 md:p-1.5 hover:bg-white rounded-md transition-all text-[#6b6654]"
-                        title={t('reader.zoomOut', '缩小 (-)')}
-                    >
-                        <ZoomOut size={16} className="md:w-[18px] md:h-[18px]" />
-                    </button>
-                    <span className="text-[9px] md:text-[10px] font-bold text-[#6b6654] min-w-[35px] md:min-w-[40px] text-center">
-                        {Math.round(scale * 100)}%
-                    </span>
-                    <button
-                        onClick={() => {
-                            setIsManualZoom(true);
-                            setScale(s => Math.min(2.0, s + 0.08));
-                        }}
-                        className="p-1 md:p-1.5 hover:bg-white rounded-md transition-all text-[#6b6654]"
-                        title={t('reader.zoomIn', '放大 (+)')}
-                    >
-                        <ZoomIn size={16} className="md:w-[18px] md:h-[18px]" />
-                    </button>
                     </div>
 
                     <div className="flex items-center gap-1 bg-[#f0eee9]/50 rounded-lg p-0.5 border border-[#e9e6da]">
@@ -3579,6 +3473,147 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                     border-radius: 0 !important;
                 }
             `}</style>
+
+            {/* 浮动底部工具栏：翻页 + 缩放，覆盖 PDF 展示区中下方，
+                自动避开侧栏 / 笔记面板 / CozyPal 偏移。 */}
+            <div
+                className="fixed z-40 flex justify-center pointer-events-none"
+                style={{
+                    bottom: 24,
+                    left: isSidebarOpen ? 288 : 0,
+                    right: isNotebookOpen
+                        ? `${notePanelWidth}px`
+                        : 'var(--cozypal-offset, 0px)',
+                    transition: 'left 0.2s ease, right 0.2s ease',
+                }}
+            >
+                <div
+                    className="pointer-events-auto flex items-center gap-2 bg-white/85 backdrop-blur-xl border border-white shadow-[0_12px_36px_-8px_rgba(0,0,0,0.18)] px-3 py-2"
+                    style={{ borderRadius: 14 }}
+                >
+                    {/* 翻页组 */}
+                    <div
+                        className="flex items-center gap-1 px-1"
+                        style={{ borderRadius: 10 }}
+                    >
+                        <button
+                            onClick={() => pageNumber > 1 && goToPage(pageNumber - 1)}
+                            disabled={pageNumber <= 1}
+                            className="p-1.5 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed text-slate-700 transition-colors"
+                            style={{ borderRadius: 8 }}
+                            title={t('reader.prevPage', '上一页 (←)')}
+                        >
+                            <ChevronLeft size={16} />
+                        </button>
+
+                        {isEditingPage ? (
+                            <input
+                                type="number"
+                                autoFocus
+                                value={pageInputValue}
+                                onChange={(e) => setPageInputValue(e.target.value)}
+                                onBlur={submitJumpPage}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') submitJumpPage();
+                                    else if (e.key === 'Escape') {
+                                        setIsEditingPage(false);
+                                        setPageInputValue('');
+                                    }
+                                }}
+                                min={1}
+                                max={numPages || 1}
+                                className="w-14 text-center text-xs font-semibold bg-white border border-indigo-300 px-1 py-1 outline-none focus:ring-2 focus:ring-indigo-200 tabular-nums"
+                                style={{ borderRadius: 6 }}
+                            />
+                        ) : (
+                            <button
+                                onClick={() => {
+                                    setPageInputValue(String(pageNumber));
+                                    setIsEditingPage(true);
+                                }}
+                                className="text-xs font-semibold text-slate-700 hover:text-indigo-600 hover:bg-slate-100 px-2 py-1 transition-colors whitespace-nowrap tabular-nums min-w-[2.5rem] text-center"
+                                style={{ borderRadius: 6 }}
+                                title={t('reader.jumpToPage', '点击跳页')}
+                            >
+                                {pageNumber}
+                            </button>
+                        )}
+                        <span className="opacity-40 text-xs select-none">/</span>
+                        <span className="text-xs font-semibold text-slate-500 tabular-nums min-w-[1.5rem]">
+                            {numPages || '-'}
+                        </span>
+
+                        <button
+                            onClick={() => pageNumber < numPages && goToPage(pageNumber + 1)}
+                            disabled={pageNumber >= numPages}
+                            className="p-1.5 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed text-slate-700 transition-colors"
+                            style={{ borderRadius: 8 }}
+                            title={t('reader.nextPage', '下一页 (→)')}
+                        >
+                            <ChevronRight size={16} />
+                        </button>
+                    </div>
+
+                    <div className="w-px h-6 bg-slate-200" />
+
+                    {/* 缩放组 */}
+                    <div className="flex items-center gap-1 px-1">
+                        <button
+                            onClick={() => {
+                                setIsManualZoom(true);
+                                setScale(s => Math.max(0.6, s - 0.08));
+                            }}
+                            className="p-1.5 hover:bg-slate-100 text-slate-700 transition-colors"
+                            style={{ borderRadius: 8 }}
+                            title={t('reader.zoomOut', '缩小 (-)')}
+                        >
+                            <ZoomOut size={16} />
+                        </button>
+                        <button
+                            onClick={() => {
+                                setIsManualZoom(false);
+                                setScale(1);
+                            }}
+                            className={`px-2 py-1 transition-all text-[11px] font-semibold tabular-nums min-w-[3rem] ${!isManualZoom ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-100'}`}
+                            style={{ borderRadius: 6 }}
+                            title={t('reader.fitWidth', '适应宽度 (0)')}
+                        >
+                            {!isManualZoom ? t('reader.fit', '适应') : `${Math.round(scale * 100)}%`}
+                        </button>
+                        <button
+                            onClick={() => {
+                                setIsManualZoom(true);
+                                setScale(s => Math.min(2.0, s + 0.08));
+                            }}
+                            className="p-1.5 hover:bg-slate-100 text-slate-700 transition-colors"
+                            style={{ borderRadius: 8 }}
+                            title={t('reader.zoomIn', '放大 (+)')}
+                        >
+                            <ZoomIn size={16} />
+                        </button>
+                    </div>
+
+                    <div className="w-px h-6 bg-slate-200" />
+
+                    {/* 书签快捷 */}
+                    <button
+                        onClick={toggleBookmark}
+                        className={`p-1.5 hover:bg-slate-100 transition-colors ${bookmarks.some(b => b.page === pageNumber) ? 'text-indigo-500' : 'text-slate-700 hover:text-indigo-500'}`}
+                        style={{ borderRadius: 8 }}
+                        title={t('reader.toggleBookmark', '书签 (B)')}
+                    >
+                        <Bookmark size={14} fill={bookmarks.some(b => b.page === pageNumber) ? 'currentColor' : 'none'} />
+                    </button>
+
+                    {/* 进度细条 */}
+                    <div className="w-24 h-1 bg-slate-200/70 overflow-hidden ml-1" style={{ borderRadius: 999 }}>
+                        <div
+                            className="h-full bg-indigo-500/70 transition-all duration-300 ease-out"
+                            style={{ width: `${numPages > 0 ? (pageNumber / numPages) * 100 : 0}%` }}
+                        />
+                    </div>
+                </div>
+            </div>
 
             <AnimatePresence>
                 {showShortcuts && (
