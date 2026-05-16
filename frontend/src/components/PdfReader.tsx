@@ -49,10 +49,10 @@ interface HighlightItem {
 // 视觉上是文字保持原色、背景被刷成纯色高亮条。
 // dragBg：拖动时 ::selection 用的半透明色（不能用不透明，否则文字会被遮）。
 const HIGHLIGHT_COLORS: Record<HighlightColor, { bg: string; dragBg: string; swatch: string }> = {
-    yellow: { bg: 'rgb(255, 232, 0)', dragBg: 'rgba(255, 232, 0, 0.55)', swatch: '#ffe800' },
-    green: { bg: 'rgb(120, 240, 140)', dragBg: 'rgba(120, 240, 140, 0.50)', swatch: '#78f08c' },
-    blue: { bg: 'rgb(125, 200, 255)', dragBg: 'rgba(125, 200, 255, 0.55)', swatch: '#7dc8ff' },
-    pink: { bg: 'rgb(255, 145, 210)', dragBg: 'rgba(255, 145, 210, 0.50)', swatch: '#ff91d2' },
+    yellow: { bg: 'rgb(255, 210, 0)', dragBg: 'rgba(255, 210, 0, 0.6)', swatch: '#ffd200' },
+    green: { bg: 'rgb(90, 230, 130)', dragBg: 'rgba(90, 230, 130, 0.55)', swatch: '#5ae682' },
+    blue: { bg: 'rgb(95, 180, 255)', dragBg: 'rgba(95, 180, 255, 0.6)', swatch: '#5fb4ff' },
+    pink: { bg: 'rgb(255, 110, 195)', dragBg: 'rgba(255, 110, 195, 0.55)', swatch: '#ff6ec3' },
 };
 
 interface PxRect {
