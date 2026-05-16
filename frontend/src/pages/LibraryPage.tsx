@@ -37,6 +37,7 @@ const LibraryPage: React.FC = () => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [docToEdit, setDocToEdit] = useState<Document | null>(null);
     const [progressMap, setProgressMap] = useState<Record<number, number>>({});
+    const [lastOpenedMap, setLastOpenedMap] = useState<Record<number, string>>({});
     const [draggedFile, setDraggedFile] = useState<File | null>(null);
     const [isPageDragging, setIsPageDragging] = useState(false);
     const dragDepthRef = React.useRef(0);
@@ -46,10 +47,11 @@ const LibraryPage: React.FC = () => {
         fetchThemes();
     }, []);
 
-    // Load progress for all documents
+    // Load progress and last opened for all documents
     useEffect(() => {
         if (documents.length > 0) {
             const newProgressMap: Record<number, number> = {};
+            const newLastOpenedMap: Record<number, string> = {};
             documents.forEach(doc => {
                 if (doc.file_type === 'pdf') {
                     const saved = localStorage.getItem(`pdf_progress_${doc.id}`);
@@ -64,10 +66,26 @@ const LibraryPage: React.FC = () => {
                         }
                     }
                 }
+                const last = localStorage.getItem(`doc_last_opened_${doc.id}`);
+                if (last) newLastOpenedMap[doc.id] = last;
             });
             setProgressMap(newProgressMap);
+            setLastOpenedMap(newLastOpenedMap);
         }
     }, [documents]);
+
+    const formatRelative = (iso: string): string => {
+        const t0 = new Date(iso).getTime();
+        const diff = Date.now() - t0;
+        if (diff < 60_000) return t('common.justNow', '刚刚');
+        const min = Math.floor(diff / 60_000);
+        if (min < 60) return t('common.minutesAgo', { defaultValue: '{{n}} 分钟前', n: min });
+        const hr = Math.floor(min / 60);
+        if (hr < 24) return t('common.hoursAgo', { defaultValue: '{{n}} 小时前', n: hr });
+        const day = Math.floor(hr / 24);
+        if (day < 30) return t('common.daysAgoN', { defaultValue: '{{n}} 天前', n: day });
+        return new Date(iso).toLocaleDateString();
+    };
 
     const fetchThemes = async () => {
         try {
@@ -309,6 +327,14 @@ const LibraryPage: React.FC = () => {
                                                 <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
                                                     {new Date(doc.created_at).toLocaleDateString()}
                                                 </span>
+                                                {lastOpenedMap[doc.id] && (
+                                                    <>
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+                                                        <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest" title={t('common.lastOpened', '上次打开')}>
+                                                            ⏱ {formatRelative(lastOpenedMap[doc.id])}
+                                                        </span>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

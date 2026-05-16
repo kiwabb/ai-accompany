@@ -28,6 +28,12 @@ const ReaderPage: React.FC = () => {
 
         if (id) {
             fetchDocumentContent(id, abortController.signal);
+            // 记录最近打开时间，用于书库展示
+            try {
+                localStorage.setItem(`doc_last_opened_${id}`, new Date().toISOString());
+            } catch {
+                // ignore
+            }
         }
 
         return () => {
