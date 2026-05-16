@@ -2773,7 +2773,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
     return (
         <div className="flex flex-col items-center w-full transition-all duration-500">
             {/* Minimalist Cozy Toolbar - Simplified for Scrolling */}
-            <div className="w-full bg-[#faf9f6]/95 backdrop-blur-md border-b border-[#e9e6da] px-4 md:px-8 py-2 flex items-center sticky top-0 z-50">
+            <div className="w-full bg-[#faf9f6]/95 backdrop-blur-md border-b border-[#e9e6da] px-3 md:px-6 py-1 flex items-center sticky top-0 z-50">
                 {/* Left space for the back button in ReaderPage */}
                 <div className="shrink-0 flex items-center gap-1">
                     <button
@@ -2839,18 +2839,8 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                         <NotebookPen size={18} />
                     </button>
 
-                </div>
-
-                {/* Center: just spacer; 页面导航与缩放移至底部浮动栏 */}
-                <div className="flex-1 flex items-center justify-center overflow-hidden px-4">
-                    <div className="text-[9px] font-bold text-slate-400 tabular-nums tracking-wider" title={t('reader.sessionTime', '本次阅读时长')}>
-                        ⏱ {formatReadingTime(sessionSeconds)}
-                    </div>
-                </div>
-
-                {/* Right: Pen + Zoom Controls */}
-                <div className="flex items-center gap-2 shrink-0">
-                    <div className="flex items-center gap-1 bg-[#f0eee9]/50 rounded-lg p-0.5 border border-[#e9e6da]">
+                    {/* 手写笔组：移到笔记图标右侧 */}
+                    <div className="flex items-center gap-1 bg-[#f0eee9]/50 rounded-lg p-0.5 border border-[#e9e6da] ml-1">
                         <button
                             onClick={() => {
                                 if (isPenMode) {
@@ -2964,6 +2954,13 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                         )}
                     </div>
 
+                </div>
+
+                {/* Center: spacer */}
+                <div className="flex-1" />
+
+                {/* Right: reading mode + meta tools */}
+                <div className="flex items-center gap-2 shrink-0">
                     <div className="flex items-center gap-1 bg-[#f0eee9]/50 rounded-lg p-0.5 border border-[#e9e6da]">
                         <button
                             onClick={() => setReadingMode((prev) => prev === 'day' ? 'sepia' : prev === 'sepia' ? 'night' : 'day')}

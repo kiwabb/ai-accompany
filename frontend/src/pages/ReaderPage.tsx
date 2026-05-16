@@ -104,28 +104,23 @@ const ReaderPage: React.FC = () => {
         <div className="h-screen bg-[#FCFAF7] flex flex-col overflow-hidden relative">
             <AmbientBackground />
 
-            {/* Premium Header */}
-            <div className={`${fileType === 'pdf' ? 'h-16' : 'h-20'} bg-white/60 backdrop-blur-3xl border-b border-slate-100 flex items-center justify-between px-8 z-50 flex-shrink-0`}>
+            {/* Slim Header: PDF 模式下做矮，普通文档保留原大小 */}
+            <div className={`${fileType === 'pdf' ? 'h-9' : 'h-20'} bg-white/60 backdrop-blur-3xl border-b border-slate-100 flex items-center justify-between px-6 z-50 flex-shrink-0`}>
                 <motion.button
                     whileHover={{ x: -2 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => navigate('/library')}
-                    className="flex items-center gap-2 group text-slate-400 hover:text-slate-900 transition-colors font-bold uppercase tracking-widest text-[10px]"
+                    className="flex items-center gap-1.5 group text-slate-400 hover:text-slate-900 transition-colors font-bold uppercase tracking-widest text-[10px]"
                 >
-                    <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                    <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
                     <span>{t('common.back')}</span>
                 </motion.button>
 
-                <div className="flex flex-col items-center max-w-xl">
-                    <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mb-1">
-                        {fileType.toUpperCase()} READER
-                    </span>
-                    <h1 className="font-bold text-slate-800 truncate w-full text-center leading-tight">
-                        {title}
-                    </h1>
-                </div>
+                <h1 className={`font-bold text-slate-700 truncate text-center leading-tight ${fileType === 'pdf' ? 'text-xs max-w-md' : 'text-base max-w-xl'}`}>
+                    {title}
+                </h1>
 
-                <div className="w-20" />
+                <div className="w-16" />
             </div>
 
             <div className="flex flex-1 relative overflow-hidden h-full z-10">
