@@ -37,6 +37,9 @@ const LibraryPage: React.FC = () => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [docToEdit, setDocToEdit] = useState<Document | null>(null);
     const [progressMap, setProgressMap] = useState<Record<number, number>>({});
+    const [draggedFile, setDraggedFile] = useState<File | null>(null);
+    const [isPageDragging, setIsPageDragging] = useState(false);
+    const dragDepthRef = React.useRef(0);
 
     useEffect(() => {
         fetchDocuments();
@@ -122,9 +125,54 @@ const LibraryPage: React.FC = () => {
         }
     };
 
+    const handlePageDragEnter = (e: React.DragEvent) => {
+        if (e.dataTransfer.types.includes('Files')) {
+            e.preventDefault();
+            dragDepthRef.current += 1;
+            setIsPageDragging(true);
+        }
+    };
+
+    const handlePageDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+        if (dragDepthRef.current === 0) setIsPageDragging(false);
+    };
+
+    const handlePageDragOver = (e: React.DragEvent) => {
+        if (e.dataTransfer.types.includes('Files')) e.preventDefault();
+    };
+
+    const handlePageDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        dragDepthRef.current = 0;
+        setIsPageDragging(false);
+        const dropped = e.dataTransfer.files?.[0];
+        if (dropped) {
+            setDraggedFile(dropped);
+            setIsUploadModalOpen(true);
+        }
+    };
+
     return (
-        <div className="min-h-screen bg-[#FCFAF7] relative overflow-hidden flex flex-col items-center py-12 px-6">
+        <div
+            className="min-h-screen bg-[#FCFAF7] relative overflow-hidden flex flex-col items-center py-12 px-6"
+            onDragEnter={handlePageDragEnter}
+            onDragLeave={handlePageDragLeave}
+            onDragOver={handlePageDragOver}
+            onDrop={handlePageDrop}
+        >
             <AmbientBackground />
+
+            {isPageDragging && (
+                <div className="fixed inset-0 z-[200] pointer-events-none flex items-center justify-center bg-indigo-500/15 backdrop-blur-sm">
+                    <div className="bg-white rounded-3xl shadow-2xl border-4 border-dashed border-indigo-400 p-12 flex flex-col items-center gap-3">
+                        <Upload size={48} className="text-indigo-500" />
+                        <p className="text-lg font-bold text-slate-900">{t('common.dropToUpload', '释放以上传')}</p>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">PDF · DOCX · TXT · MD</p>
+                    </div>
+                </div>
+            )}
 
             <motion.button
                 initial={{ opacity: 0, x: -20 }}
@@ -307,9 +355,16 @@ const LibraryPage: React.FC = () => {
 
             <DocumentUploadModal
                 isOpen={isUploadModalOpen}
-                onClose={() => setIsUploadModalOpen(false)}
-                onUploadComplete={fetchDocuments}
+                onClose={() => {
+                    setIsUploadModalOpen(false);
+                    setDraggedFile(null);
+                }}
+                onUploadComplete={() => {
+                    setDraggedFile(null);
+                    fetchDocuments();
+                }}
                 defaultTopicId={themeFilter}
+                initialFile={draggedFile}
             />
 
             <DocumentEditModal

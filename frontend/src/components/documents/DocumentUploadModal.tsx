@@ -13,6 +13,7 @@ interface DocumentUploadModalProps {
   onClose: () => void;
   onUploadComplete: () => void;
   defaultTopicId?: string | null;
+  initialFile?: File | null;
 }
 
 const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
@@ -20,6 +21,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   onClose,
   onUploadComplete,
   defaultTopicId,
+  initialFile,
 }) => {
   const { t } = useTranslation();
   const { state } = useTimerContext();
@@ -93,8 +95,12 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
       setSelectedTopicId(fallbackTopicId);
       setProgress(0);
       setError(null);
+      if (initialFile) {
+        acceptFile(initialFile);
+      }
     }
-  }, [isOpen, fallbackTopicId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, fallbackTopicId, initialFile]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
