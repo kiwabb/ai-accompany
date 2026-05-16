@@ -104,24 +104,26 @@ const ReaderPage: React.FC = () => {
         <div className="h-screen bg-[#FCFAF7] flex flex-col overflow-hidden relative">
             <AmbientBackground />
 
-            {/* Slim Header: PDF 模式下做矮，普通文档保留原大小 */}
-            <div className={`${fileType === 'pdf' ? 'h-9' : 'h-20'} bg-white/60 backdrop-blur-3xl border-b border-slate-100 flex items-center justify-between px-6 z-50 flex-shrink-0`}>
-                <motion.button
-                    whileHover={{ x: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => navigate('/library')}
-                    className="flex items-center gap-1.5 group text-slate-400 hover:text-slate-900 transition-colors font-bold uppercase tracking-widest text-[10px]"
-                >
-                    <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
-                    <span>{t('common.back')}</span>
-                </motion.button>
+            {/* PDF 模式下 header 已合并进 PdfReader 顶部工具栏；非 PDF 文档保留单独 header */}
+            {fileType !== 'pdf' && (
+                <div className="h-20 bg-white/60 backdrop-blur-3xl border-b border-slate-100 flex items-center justify-between px-8 z-50 flex-shrink-0">
+                    <motion.button
+                        whileHover={{ x: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => navigate('/library')}
+                        className="flex items-center gap-2 group text-slate-400 hover:text-slate-900 transition-colors font-bold uppercase tracking-widest text-[10px]"
+                    >
+                        <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                        <span>{t('common.back')}</span>
+                    </motion.button>
 
-                <h1 className={`font-bold text-slate-700 truncate text-center leading-tight ${fileType === 'pdf' ? 'text-xs max-w-md' : 'text-base max-w-xl'}`}>
-                    {title}
-                </h1>
+                    <h1 className="font-bold text-slate-700 truncate text-center leading-tight text-base max-w-xl">
+                        {title}
+                    </h1>
 
-                <div className="w-16" />
-            </div>
+                    <div className="w-20" />
+                </div>
+            )}
 
             <div className="flex flex-1 relative overflow-hidden h-full z-10">
                 {/* Main Content Area */}

@@ -7,7 +7,9 @@ import '@blocknote/mantine/style.css';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { Loader2, ZoomIn, ZoomOut, ListTree, Bookmark, Trash2, Pencil, Check, X, Search, Copy, PenLine, Eraser, NotebookPen, RotateCw, Download, Maximize2, Minimize2, ChevronLeft, ChevronRight, Sun, Moon, Coffee, LayoutGrid } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft } from 'lucide-react';
 import { createWorker } from 'tesseract.js';
 import { useCreateBlockNote } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/mantine';
@@ -537,7 +539,8 @@ const OutlineItem: React.FC<{ item: any; onClick: (item: any) => void; level: nu
     );
 };
 
-const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
+const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => {
+    const navigate = useNavigate();
     const { t } = useTranslation();
     const [numPages, setNumPages] = useState<number>(0);
     const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
@@ -2773,8 +2776,23 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
     return (
         <div className="flex flex-col items-center w-full transition-all duration-500">
             {/* Minimalist Cozy Toolbar - Simplified for Scrolling */}
-            <div className="w-full bg-[#faf9f6]/95 backdrop-blur-md border-b border-[#e9e6da] px-3 md:px-6 py-1 flex items-center sticky top-0 z-50">
-                {/* Left space for the back button in ReaderPage */}
+            <div className="w-full bg-[#faf9f6]/95 backdrop-blur-md border-b border-[#e9e6da] px-3 md:px-5 py-1 flex items-center sticky top-0 z-50">
+                {/* 返回 + 标题，与原 ReaderPage header 合并到这一行 */}
+                <button
+                    onClick={() => navigate('/library')}
+                    className="shrink-0 mr-2 p-1.5 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-white transition-colors"
+                    title={t('common.back', '返回')}
+                >
+                    <ArrowLeft size={16} />
+                </button>
+                <h1
+                    className="shrink min-w-0 max-w-[260px] mr-3 text-sm font-bold text-slate-700 truncate"
+                    title={title}
+                >
+                    {title || ''}
+                </h1>
+                <div className="w-px h-5 bg-[#e9e6da] mr-2 shrink-0" />
+
                 <div className="shrink-0 flex items-center gap-1">
                     <button
                         onClick={() => {
