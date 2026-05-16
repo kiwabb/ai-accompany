@@ -2480,8 +2480,9 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
         }
         
         setOutline(loadedOutline ? [...loadedOutline] : null);
+        // 仅记忆 sidebar 默认 tab 为 outline（若有大纲），但不自动展开，
+        // 避免每次重新加载页面侧栏从左侧滑入打扰阅读。
         if (loadedOutline && loadedOutline.length > 0) {
-            setIsSidebarOpen(true);
             setSidebarTab('outline');
         }
     };
