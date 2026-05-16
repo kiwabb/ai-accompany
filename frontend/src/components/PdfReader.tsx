@@ -1495,6 +1495,14 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
             const page = Number(pageElement.getAttribute('data-page-number'));
             if (Number.isNaN(page)) return;
 
+            // 荧光笔：鼠标落在文字上时让浏览器原生选择（文字吸附），
+            // 不进入 pen draft 流程；鼠标抬起后由 handleTextSelection 自动转高亮。
+            if (penTool === 'highlight' && hasSelectableTextAtPoint(pageElement, e.clientX, e.clientY)) {
+                hideAreaSelection();
+                closeHighlightMenu();
+                return;
+            }
+
             e.preventDefault();
             e.stopPropagation();
             setSelectionMenu({ visible: false, x: 0, y: 0, page: null });
@@ -1696,6 +1704,14 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
 
         selectedRangeRef.current = range.cloneRange();
         hideAreaSelection();
+
+        // 荧光笔模式：跳过选区菜单，直接用当前色应用高亮
+        if (isPenMode && penTool === 'highlight') {
+            setSelectionMenu({ visible: false, x: 0, y: 0, page });
+            void addHighlightFromSelection(page);
+            return;
+        }
+
         setSelectionMenu({
             visible: true,
             x: rect.left + rect.width / 2,
@@ -1704,8 +1720,9 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
         });
     };
 
-    const addHighlightFromSelection = async () => {
-        if (!documentId || !selectedRangeRef.current || !selectionMenu.page) return;
+    const addHighlightFromSelection = async (pageOverride?: number) => {
+        const page = pageOverride ?? selectionMenu.page;
+        if (!documentId || !selectedRangeRef.current || !page) return;
 
         const range = selectedRangeRef.current;
         const selectedText = range.toString().replace(/\s+/g, ' ').trim();
@@ -1726,7 +1743,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
 
         const newBookmark: BookmarkType = {
             id: bookmarkId,
-            page: selectionMenu.page,
+            page,
             createdAt: new Date().toISOString(),
             note: selectedText || undefined,
             linkedHighlightId: highlightId,
@@ -1734,7 +1751,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
 
         const newHighlight: HighlightItem = {
             id: highlightId,
-            page: selectionMenu.page,
+            page,
             rects,
             createdAt: new Date().toISOString(),
             text: selectedText || undefined,
@@ -3185,7 +3202,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                                 : readingMode === 'night' ? 'invert(0.92) hue-rotate(180deg) saturate(0.95) brightness(0.92)'
                                     : undefined,
                     }}
-                    className={`flex-1 flex flex-col items-center pt-0 pb-4 transition-all duration-300 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-0'} ${isPenMode || penDraftView || areaDrag || isAltPressed ? 'cursor-crosshair' : cursorMode === 'text' ? 'cursor-text' : cursorMode === 'crosshair' ? 'cursor-crosshair' : 'cursor-auto'}`}
+                    className={`flex-1 flex flex-col items-center pt-0 pb-4 transition-all duration-300 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-0'} ${(isPenMode && penTool === 'highlight' && !penDraftView) ? 'cursor-text' : isPenMode || penDraftView || areaDrag || isAltPressed ? 'cursor-crosshair' : cursorMode === 'text' ? 'cursor-text' : cursorMode === 'crosshair' ? 'cursor-crosshair' : 'cursor-auto'}`}
                     onMouseDown={handleAreaMouseDown}
                     onMouseMove={handleAreaMouseMove}
                     onMouseUp={handleAreaMouseUp}
