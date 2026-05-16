@@ -5,7 +5,7 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import '@blocknote/core/fonts/inter.css';
 import '@blocknote/mantine/style.css';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
-import { Loader2, ZoomIn, ZoomOut, ListTree, Bookmark, Trash2, Pencil, Check, X, Search, Copy, PenLine, Eraser, NotebookPen } from 'lucide-react';
+import { Loader2, ZoomIn, ZoomOut, ListTree, Bookmark, Trash2, Pencil, Check, X, Search, Copy, PenLine, Eraser, NotebookPen, RotateCw, Download, Maximize2, Minimize2, ChevronLeft, ChevronRight, Sun, Moon, Coffee } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createWorker } from 'tesseract.js';
@@ -220,6 +220,7 @@ const HandwritingLayer: React.FC<{ strokes: PenStroke[]; draftPath?: string }> =
 const LazyPage = React.memo(({
     pageNumber,
     pageWidth,
+    rotation,
     onVisible,
     highlightRects,
     highlightActionAreas,
@@ -232,6 +233,7 @@ const LazyPage = React.memo(({
     areaSelectedRect,
 }: {
     pageNumber: number;
+    rotation: 0 | 90 | 180 | 270;
     pageWidth: number;
     onVisible: (page: number) => void;
     highlightRects: HighlightRect[];
@@ -276,8 +278,10 @@ const LazyPage = React.memo(({
                 <Page
                     pageNumber={pageNumber}
                     width={pageWidth}
+                    rotate={rotation}
                     renderTextLayer={true}
                     renderAnnotationLayer={true}
+                    devicePixelRatio={Math.max(2, typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1)}
                     className="shadow-[0_4px_24px_rgba(0,0,0,0.06)] border border-[#e9e6da]"
                     loading={
                         <div className="w-full flex items-center justify-center p-20 bg-white/50 rounded-lg animate-pulse" style={{ height: `${Math.round(pageWidth * 1.35)}px`, width: `${pageWidth}px` }}>
@@ -390,7 +394,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
     const [firstPageRendered, setFirstPageRendered] = useState(false);
     const [outline, setOutline] = useState<any[] | null>(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [sidebarTab, setSidebarTab] = useState<'outline' | 'bookmarks'>('outline');
+    const [sidebarTab, setSidebarTab] = useState<'outline' | 'bookmarks' | 'search'>('outline');
     const [bookmarks, setBookmarks] = useState<BookmarkType[]>([]);
     const [highlights, setHighlights] = useState<HighlightItem[]>([]);
     const [bookmarkQuery, setBookmarkQuery] = useState('');
@@ -421,6 +425,27 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
     const [noteDraft, setNoteDraft] = useState('');
     const [editingBookmarkId, setEditingBookmarkId] = useState<string | null>(null);
     const [editNote, setEditNote] = useState('');
+    const [rotation, setRotation] = useState<0 | 90 | 180 | 270>(0);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [isEditingPage, setIsEditingPage] = useState(false);
+    const [pageInputValue, setPageInputValue] = useState('');
+    const [readingMode, setReadingMode] = useState<'day' | 'sepia' | 'night'>(() => {
+        const saved = typeof window !== 'undefined' ? localStorage.getItem('pdf_reading_mode') : null;
+        if (saved === 'day' || saved === 'sepia' || saved === 'night') return saved;
+        return 'day';
+    });
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<Array<{ page: number; snippet: string; offset: number }>>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [searchCursor, setSearchCursor] = useState(0);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem('pdf_reading_mode', readingMode);
+        } catch {
+            // ignore
+        }
+    }, [readingMode]);
     const mainContainerRef = useRef<HTMLDivElement>(null);
     const selectedRangeRef = useRef<Range | null>(null);
     const ocrWorkerRef = useRef<{ recognize: (image: Blob) => Promise<{ data: { text: string } }>; terminate: () => Promise<void> } | null>(null);
@@ -1871,7 +1896,9 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
     const pageRenderWidth = React.useMemo(() => {
         const fitWidth = Math.max(340, Math.floor(containerWidth - 16));
         const zoom = isManualZoom ? scale : 1;
-        return Math.max(320, Math.min(1600, Math.floor(fitWidth * zoom)));
+        // 上限放宽到 2400，确保 200%+ 缩放时仍然有足够 CSS 像素，避免 react-pdf 被截断
+        // 真实 canvas 像素 = pageRenderWidth × devicePixelRatio，retina 显示器实际可达 4800px
+        return Math.max(320, Math.min(2400, Math.floor(fitWidth * zoom)));
     }, [containerWidth, isManualZoom, scale]);
 
     useEffect(() => {
@@ -1909,17 +1936,92 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
     }, [notice]);
 
     useEffect(() => {
+        const isTypingTarget = (target: EventTarget | null): boolean => {
+            if (!(target instanceof HTMLElement)) return false;
+            const tag = target.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+            if (target.isContentEditable) return true;
+            // BlockNote 笔记面板内的可编辑节点
+            if (target.closest('[contenteditable="true"]')) return true;
+            if (target.closest('.notes-flat-panel')) return true;
+            return false;
+        };
+
         const onKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Alt') {
                 setIsAltPressed(true);
+                return;
             }
-            if (e.key !== 'Escape') return;
-            setSelectionMenu({ visible: false, x: 0, y: 0, page: null });
-            selectedRangeRef.current = null;
-            hideAreaSelection();
-            clearPenDraft();
-            closeHighlightMenu();
-            window.getSelection()?.removeAllRanges();
+
+            if (e.key === 'Escape') {
+                setSelectionMenu({ visible: false, x: 0, y: 0, page: null });
+                selectedRangeRef.current = null;
+                hideAreaSelection();
+                clearPenDraft();
+                closeHighlightMenu();
+                window.getSelection()?.removeAllRanges();
+                setIsEditingPage(false);
+                return;
+            }
+
+            // 在输入框/笔记面板内不拦截快捷键
+            if (isTypingTarget(e.target)) return;
+            // 修饰键由浏览器/系统处理
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+            switch (e.key) {
+                case 'ArrowLeft':
+                case 'PageUp':
+                    e.preventDefault();
+                    if (pageNumber > 1) goToPage(pageNumber - 1);
+                    break;
+                case 'ArrowRight':
+                case 'PageDown':
+                case ' ':
+                    e.preventDefault();
+                    if (pageNumber < numPages) goToPage(pageNumber + 1);
+                    break;
+                case 'Home':
+                    e.preventDefault();
+                    if (numPages > 0) goToPage(1);
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    if (numPages > 0) goToPage(numPages);
+                    break;
+                case '+':
+                case '=':
+                    e.preventDefault();
+                    setIsManualZoom(true);
+                    setScale(s => Math.min(2.0, s + 0.1));
+                    break;
+                case '-':
+                case '_':
+                    e.preventDefault();
+                    setIsManualZoom(true);
+                    setScale(s => Math.max(0.6, s - 0.1));
+                    break;
+                case '0':
+                    e.preventDefault();
+                    setIsManualZoom(false);
+                    setScale(1);
+                    break;
+                case 'b':
+                case 'B':
+                    e.preventDefault();
+                    toggleBookmark();
+                    break;
+                case 'r':
+                case 'R':
+                    e.preventDefault();
+                    setRotation((prev) => ((prev + 90) % 360) as 0 | 90 | 180 | 270);
+                    break;
+                case 'f':
+                case 'F':
+                    e.preventDefault();
+                    void toggleFullscreen();
+                    break;
+            }
         };
 
         const onKeyUp = (e: KeyboardEvent) => {
@@ -1941,7 +2043,8 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
             window.removeEventListener('keyup', onKeyUp);
             window.removeEventListener('blur', onWindowBlur);
         };
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pageNumber, numPages]);
 
     useEffect(() => {
         return () => {
@@ -2019,6 +2122,94 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
         if (loadedOutline && loadedOutline.length > 0) {
             setIsSidebarOpen(true);
             setSidebarTab('outline');
+        }
+    };
+
+    const performSearch = async (query: string) => {
+        const term = query.trim();
+        if (!term || !pdf) {
+            setSearchResults([]);
+            return;
+        }
+        setIsSearching(true);
+        const results: Array<{ page: number; snippet: string; offset: number }> = [];
+        const lower = term.toLowerCase();
+        try {
+            for (let p = 1; p <= numPages; p++) {
+                const page = await pdf.getPage(p);
+                const content = await page.getTextContent();
+                const text = content.items
+                    .map((item: { str?: string }) => item.str || '')
+                    .join(' ');
+                const textLower = text.toLowerCase();
+                let idx = 0;
+                while ((idx = textLower.indexOf(lower, idx)) !== -1) {
+                    const start = Math.max(0, idx - 40);
+                    const end = Math.min(text.length, idx + term.length + 40);
+                    results.push({
+                        page: p,
+                        snippet: (start > 0 ? '…' : '') + text.slice(start, end).trim() + (end < text.length ? '…' : ''),
+                        offset: idx,
+                    });
+                    idx += term.length;
+                    if (results.length >= 200) break;
+                }
+                if (results.length >= 200) break;
+            }
+        } catch (err) {
+            console.error('Search failed', err);
+        } finally {
+            setSearchResults(results);
+            setSearchCursor(0);
+            setIsSearching(false);
+        }
+    };
+
+    const toggleFullscreen = async () => {
+        try {
+            if (!document.fullscreenElement) {
+                const el = mainContainerRef.current?.parentElement || document.documentElement;
+                await el.requestFullscreen?.();
+            } else {
+                await document.exitFullscreen?.();
+            }
+        } catch (err) {
+            console.warn('Failed to toggle fullscreen', err);
+        }
+    };
+
+    useEffect(() => {
+        const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+        document.addEventListener('fullscreenchange', onFsChange);
+        return () => document.removeEventListener('fullscreenchange', onFsChange);
+    }, []);
+
+    const downloadPdf = async () => {
+        if (!documentId) return;
+        try {
+            const headers = (await import('../api/client')).getAuthHeaders();
+            const resp = await fetch(`/api/documents/${documentId}/file`, { headers });
+            if (!resp.ok) throw new Error(`status ${resp.status}`);
+            const blob = await resp.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `document_${documentId}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } catch (err) {
+            console.error('Failed to download PDF', err);
+        }
+    };
+
+    const submitJumpPage = () => {
+        const target = parseInt(pageInputValue, 10);
+        setIsEditingPage(false);
+        setPageInputValue('');
+        if (!isNaN(target) && target >= 1 && target <= numPages) {
+            goToPage(target);
         }
     };
 
@@ -2155,6 +2346,21 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
 
                     <button
                         onClick={() => {
+                            if (isSidebarOpen && sidebarTab === 'search') {
+                                setIsSidebarOpen(false);
+                            } else {
+                                setSidebarTab('search');
+                                setIsSidebarOpen(true);
+                            }
+                        }}
+                        className={`p-2 rounded-lg transition-colors ${isSidebarOpen && sidebarTab === 'search' ? 'bg-[#f0eee9] text-[#4b483e]' : 'hover:bg-white text-[#6b6654]'}`}
+                        title={t('reader.searchInPdf', '搜索全文')}
+                    >
+                        <Search size={18} />
+                    </button>
+
+                    <button
+                        onClick={() => {
                             setIsNotebookOpen((prev) => !prev);
                         }}
                         className={`p-2 rounded-lg transition-colors ${isNotebookOpen ? 'bg-[#f0eee9] text-[#4b483e]' : 'hover:bg-white text-[#6b6654]'}`}
@@ -2165,25 +2371,74 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
 
                 </div>
 
-                {/* Center: Page Indicator */}
+                {/* Center: Page Indicator + Prev/Next + Jump */}
                 <div className="flex-1 flex flex-col justify-center items-center overflow-hidden px-4 gap-1">
-                    <div className="flex items-center bg-[#f0eee9]/50 rounded-lg px-3 md:px-4 py-1 border border-[#e9e6da] max-w-full gap-2">
-                        <div className="text-[10px] md:text-xs font-semibold text-[#6b6654] text-center whitespace-nowrap">
-                            {t('reader.page')} <span className="mx-0.5 md:mx-1">{pageNumber}</span> <span className="opacity-40 mx-0.5">/</span> {numPages || '-'}
-                        </div>
-                        
-                        <div className="w-px h-3 bg-slate-300 mx-1" />
-                        
-                        <button 
+                    <div className="flex items-center bg-[#f0eee9]/50 rounded-lg px-2 md:px-3 py-1 border border-[#e9e6da] max-w-full gap-1.5">
+                        <button
+                            onClick={() => pageNumber > 1 && goToPage(pageNumber - 1)}
+                            disabled={pageNumber <= 1}
+                            className="p-1 rounded hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed text-[#6b6654] transition-colors"
+                            title={t('reader.prevPage', '上一页 (←)')}
+                        >
+                            <ChevronLeft size={14} />
+                        </button>
+
+                        {isEditingPage ? (
+                            <input
+                                type="number"
+                                autoFocus
+                                value={pageInputValue}
+                                onChange={(e) => setPageInputValue(e.target.value)}
+                                onBlur={submitJumpPage}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') submitJumpPage();
+                                    else if (e.key === 'Escape') {
+                                        setIsEditingPage(false);
+                                        setPageInputValue('');
+                                    }
+                                }}
+                                min={1}
+                                max={numPages || 1}
+                                className="w-12 text-center text-[11px] font-semibold bg-white border border-indigo-300 rounded px-1 py-0.5 outline-none focus:ring-2 focus:ring-indigo-200 tabular-nums"
+                            />
+                        ) : (
+                            <button
+                                onClick={() => {
+                                    setPageInputValue(String(pageNumber));
+                                    setIsEditingPage(true);
+                                }}
+                                className="text-[10px] md:text-xs font-semibold text-[#6b6654] hover:text-indigo-600 hover:bg-white px-1.5 py-0.5 rounded transition-colors whitespace-nowrap tabular-nums"
+                                title={t('reader.jumpToPage', '点击跳页')}
+                            >
+                                {pageNumber}
+                            </button>
+                        )}
+                        <span className="opacity-40 text-[10px]">/</span>
+                        <span className="text-[10px] md:text-xs font-semibold text-[#6b6654] tabular-nums">
+                            {numPages || '-'}
+                        </span>
+
+                        <button
+                            onClick={() => pageNumber < numPages && goToPage(pageNumber + 1)}
+                            disabled={pageNumber >= numPages}
+                            className="p-1 rounded hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed text-[#6b6654] transition-colors"
+                            title={t('reader.nextPage', '下一页 (→)')}
+                        >
+                            <ChevronRight size={14} />
+                        </button>
+
+                        <div className="w-px h-3 bg-slate-300 mx-0.5" />
+
+                        <button
                             onClick={toggleBookmark}
-                            className={`transition-colors ${bookmarks.some(b => b.page === pageNumber) ? 'text-indigo-500 fill-indigo-500' : 'text-[#6b6654] hover:text-indigo-500'}`}
-                            title={t('reader.toggleBookmark')}
+                            className={`p-1 rounded hover:bg-white transition-colors ${bookmarks.some(b => b.page === pageNumber) ? 'text-indigo-500' : 'text-[#6b6654] hover:text-indigo-500'}`}
+                            title={t('reader.toggleBookmark', '书签 (B)')}
                         >
                             <Bookmark size={12} fill={bookmarks.some(b => b.page === pageNumber) ? "currentColor" : "none"} />
                         </button>
                     </div>
                     <div className="w-full max-w-[200px] h-1 bg-slate-200/50 rounded-full overflow-hidden">
-                        <div 
+                        <div
                             className="h-full bg-[#d97706]/60 transition-all duration-300 ease-out"
                             style={{ width: `${numPages > 0 ? (pageNumber / numPages) * 100 : 0}%` }}
                         />
@@ -2293,7 +2548,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                             setScale(1);
                         }}
                         className={`px-2 h-7 rounded-md transition-all text-[10px] font-semibold ${!isManualZoom ? 'bg-white text-[#4b483e]' : 'hover:bg-white text-[#6b6654]'}`}
-                        title={t('reader.fitWidth', '适应宽度')}
+                        title={t('reader.fitWidth', '适应宽度 (0)')}
                     >
                         {t('reader.fit', '适应')}
                     </button>
@@ -2301,8 +2556,9 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                         onClick={() => {
                             setIsManualZoom(true);
                             setScale(s => Math.max(0.6, s - 0.08));
-                        }} // Allow smaller scale for large docs
+                        }}
                         className="p-1 md:p-1.5 hover:bg-white rounded-md transition-all text-[#6b6654]"
+                        title={t('reader.zoomOut', '缩小 (-)')}
                     >
                         <ZoomOut size={16} className="md:w-[18px] md:h-[18px]" />
                     </button>
@@ -2312,19 +2568,68 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                     <button
                         onClick={() => {
                             setIsManualZoom(true);
-                            setScale(s => Math.min(1.8, s + 0.08));
+                            setScale(s => Math.min(2.0, s + 0.08));
                         }}
                         className="p-1 md:p-1.5 hover:bg-white rounded-md transition-all text-[#6b6654]"
+                        title={t('reader.zoomIn', '放大 (+)')}
                     >
                         <ZoomIn size={16} className="md:w-[18px] md:h-[18px]" />
                     </button>
+                    </div>
+
+                    <div className="flex items-center gap-1 bg-[#f0eee9]/50 rounded-lg p-0.5 border border-[#e9e6da]">
+                        <button
+                            onClick={() => setReadingMode((prev) => prev === 'day' ? 'sepia' : prev === 'sepia' ? 'night' : 'day')}
+                            className="p-1.5 hover:bg-white rounded-md transition-all text-[#6b6654]"
+                            title={t('reader.readingMode', '阅读模式：日间/护眼/夜间')}
+                        >
+                            {readingMode === 'day' ? (
+                                <Sun size={16} className="md:w-[18px] md:h-[18px]" />
+                            ) : readingMode === 'sepia' ? (
+                                <Coffee size={16} className="md:w-[18px] md:h-[18px] text-amber-700" />
+                            ) : (
+                                <Moon size={16} className="md:w-[18px] md:h-[18px] text-indigo-500" />
+                            )}
+                        </button>
+                        <button
+                            onClick={() => setRotation((prev) => ((prev + 90) % 360) as 0 | 90 | 180 | 270)}
+                            className="p-1.5 hover:bg-white rounded-md transition-all text-[#6b6654]"
+                            title={t('reader.rotate', '旋转 90° (R)')}
+                        >
+                            <RotateCw size={16} className="md:w-[18px] md:h-[18px]" />
+                        </button>
+                        <button
+                            onClick={downloadPdf}
+                            disabled={!documentId}
+                            className="p-1.5 hover:bg-white rounded-md transition-all text-[#6b6654] disabled:opacity-30"
+                            title={t('reader.download', '下载 PDF')}
+                        >
+                            <Download size={16} className="md:w-[18px] md:h-[18px]" />
+                        </button>
+                        <button
+                            onClick={toggleFullscreen}
+                            className="p-1.5 hover:bg-white rounded-md transition-all text-[#6b6654]"
+                            title={t('reader.fullscreen', isFullscreen ? '退出全屏 (F)' : '全屏 (F)')}
+                        >
+                            {isFullscreen ? (
+                                <Minimize2 size={16} className="md:w-[18px] md:h-[18px]" />
+                            ) : (
+                                <Maximize2 size={16} className="md:w-[18px] md:h-[18px]" />
+                            )}
+                        </button>
                     </div>
                 </div>
             </div>
 
             <div
                 className={`w-full flex relative items-start gap-0 ${isSidebarOpen ? 'pl-72' : ''}`}
-                style={{ paddingRight: 'var(--cozypal-offset, 0px)' }}
+                style={{
+                    paddingRight: 'var(--cozypal-offset, 0px)',
+                    backgroundColor:
+                        readingMode === 'sepia' ? '#f4ecd8'
+                            : readingMode === 'night' ? '#0f0e0c'
+                                : undefined,
+                }}
             >
                 <AnimatePresence>
                     {isSidebarOpen && (
@@ -2347,6 +2652,12 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                                     className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all ${sidebarTab === 'bookmarks' ? 'bg-white text-slate-800 shadow-sm ring-1 ring-black/5' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
                                 >
                                     {t('reader.bookmarks', 'Bookmarks')} <span className="ml-1 opacity-60">({bookmarks.length})</span>
+                                </button>
+                                <button
+                                    onClick={() => setSidebarTab('search')}
+                                    className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all ${sidebarTab === 'search' ? 'bg-white text-slate-800 shadow-sm ring-1 ring-black/5' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+                                >
+                                    {t('reader.search', '搜索')}
                                 </button>
                             </div>
                             
@@ -2474,6 +2785,78 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                                             ))
                                         )}
                                     </div>
+                                ) : sidebarTab === 'search' ? (
+                                    <div className="space-y-3">
+                                        <div className="relative">
+                                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                            <input
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') performSearch(searchQuery);
+                                                }}
+                                                placeholder={t('reader.searchPlaceholder', '搜索 PDF 全文...')}
+                                                className="w-full h-9 pl-9 pr-3 text-xs rounded-lg border border-[#e9e6da] bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                                            />
+                                        </div>
+
+                                        <div className="flex items-center justify-between gap-2">
+                                            <button
+                                                onClick={() => performSearch(searchQuery)}
+                                                disabled={!searchQuery.trim() || isSearching || !pdf}
+                                                className="flex-1 py-2 bg-indigo-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-indigo-600 transition-colors"
+                                            >
+                                                {isSearching ? t('reader.searching', '搜索中...') : t('reader.search', '搜索')}
+                                            </button>
+                                            {searchResults.length > 0 && (
+                                                <span className="text-[10px] font-bold text-slate-500 tabular-nums">
+                                                    {searchResults.length} {t('reader.matches', '项')}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {searchResults.length === 0 && !isSearching && searchQuery.trim() && (
+                                            <div className="text-center py-12 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                                {t('reader.noMatches', '无匹配结果')}
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-1.5 max-h-[calc(100vh-280px)] overflow-y-auto custom-scrollbar">
+                                            {searchResults.map((result, idx) => {
+                                                const lower = result.snippet.toLowerCase();
+                                                const term = searchQuery.toLowerCase();
+                                                const matchIdx = lower.indexOf(term);
+                                                const before = matchIdx >= 0 ? result.snippet.slice(0, matchIdx) : result.snippet;
+                                                const match = matchIdx >= 0 ? result.snippet.slice(matchIdx, matchIdx + searchQuery.length) : '';
+                                                const after = matchIdx >= 0 ? result.snippet.slice(matchIdx + searchQuery.length) : '';
+                                                const isActive = idx === searchCursor;
+                                                return (
+                                                    <button
+                                                        key={`${result.page}-${result.offset}-${idx}`}
+                                                        onClick={() => {
+                                                            setSearchCursor(idx);
+                                                            goToPage(result.page);
+                                                        }}
+                                                        className={`w-full text-left p-3 rounded-lg border transition-all ${isActive ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-[#e9e6da] hover:bg-slate-50 hover:border-slate-200'}`}
+                                                    >
+                                                        <div className="flex items-baseline justify-between mb-1">
+                                                            <span className="text-[9px] font-black uppercase tracking-widest text-indigo-500">
+                                                                {t('reader.page', '页')} {result.page}
+                                                            </span>
+                                                            <span className="text-[9px] font-bold text-slate-300 tabular-nums">
+                                                                #{idx + 1}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-[11px] leading-relaxed text-slate-700 break-words">
+                                                            {before}
+                                                            <mark className="bg-amber-200 text-slate-900 px-0.5 rounded">{match}</mark>
+                                                            {after}
+                                                        </p>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
                                 ) : null}
                             </div>
                         </motion.div>
@@ -2483,6 +2866,12 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                 {/* Content Area - Virtualized Scrolling List */}
                 <div
                     ref={mainContainerRef}
+                    style={{
+                        filter:
+                            readingMode === 'sepia' ? 'sepia(0.35) saturate(1.05) brightness(0.97)'
+                                : readingMode === 'night' ? 'invert(0.92) hue-rotate(180deg) saturate(0.95) brightness(0.92)'
+                                    : undefined,
+                    }}
                     className={`flex-1 flex flex-col items-center pt-0 pb-4 transition-all duration-300 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-0'} ${isPenMode || penDraftView || areaDrag || isAltPressed ? 'cursor-crosshair' : cursorMode === 'text' ? 'cursor-text' : cursorMode === 'crosshair' ? 'cursor-crosshair' : 'cursor-auto'}`}
                     onMouseDown={handleAreaMouseDown}
                     onMouseMove={handleAreaMouseMove}
@@ -2524,8 +2913,10 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                                 <Page
                                     pageNumber={1}
                                     width={pageRenderWidth}
+                                    rotate={rotation}
                                     renderTextLayer={true}
                                     renderAnnotationLayer={true}
+                                    devicePixelRatio={Math.max(2, typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1)}
                                     className="shadow-[0_4px_24px_rgba(0,0,0,0.06)] border border-[#e9e6da]"
                                     onRenderSuccess={onFirstPageRenderSuccess}
                                     loading={null}
@@ -2571,6 +2962,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                                 key={`page_${index + 2}`}
                                 pageNumber={index + 2}
                                 pageWidth={pageRenderWidth}
+                                rotation={rotation}
                                 onVisible={handlePageVisible}
                                 highlightRects={getPageHighlights(index + 2)}
                                 highlightActionAreas={getPageHighlightActionAreas(index + 2)}
