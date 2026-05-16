@@ -306,9 +306,13 @@ const PageThumbnail: React.FC<{
         <button
             ref={wrapRef}
             onClick={onClick}
-            className={`group w-full flex flex-col items-center gap-1 p-1.5 rounded-lg transition-all ${isActive ? 'bg-indigo-50 ring-2 ring-indigo-300' : 'hover:bg-slate-50'}`}
+            style={{ borderRadius: 4 }}
+            className={`group w-full flex flex-col items-center gap-1 p-1.5 transition-all ${isActive ? 'bg-indigo-50 ring-2 ring-indigo-300' : 'hover:bg-slate-50'}`}
         >
-            <div className="w-full aspect-[3/4] bg-white border border-[#e9e6da] rounded overflow-hidden flex items-center justify-center">
+            <div
+                className="w-full aspect-[3/4] bg-white border border-[#e9e6da] overflow-hidden flex items-center justify-center"
+                style={{ borderRadius: 2 }}
+            >
                 <canvas
                     ref={canvasRef}
                     style={{ display: isReady ? 'block' : 'none', width: '100%', height: 'auto' }}
@@ -388,11 +392,7 @@ const LazyPage = React.memo(({
                     renderAnnotationLayer={true}
                     devicePixelRatio={Math.max(2, typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1)}
                     className="shadow-[0_4px_24px_rgba(0,0,0,0.06)] border border-[#e9e6da]"
-                    loading={
-                        <div className="w-full flex items-center justify-center p-20 bg-white/50 rounded-lg animate-pulse" style={{ height: `${Math.round(pageWidth * 1.35)}px`, width: `${pageWidth}px` }}>
-                            <p className="text-[#8d8876] text-xs font-medium">{t('reader.loadingPage', { pageNumber })}</p>
-                        </div>
-                    }
+                    loading={null}
                 />
             ) : (
                 <div
@@ -418,6 +418,7 @@ const LazyPage = React.memo(({
                         top: `${areaDraftRect.top}%`,
                         width: `${areaDraftRect.width}%`,
                         height: `${areaDraftRect.height}%`,
+                        borderRadius: 2,
                     }}
                 />
             )}
@@ -429,6 +430,7 @@ const LazyPage = React.memo(({
                         top: `${areaSelectedRect.top}%`,
                         width: `${areaSelectedRect.width}%`,
                         height: `${areaSelectedRect.height}%`,
+                        borderRadius: 2,
                     }}
                 />
             )}
@@ -1159,6 +1161,41 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
         const targetId = highlightMenu.highlightId;
         closeHighlightMenu();
         await deleteHighlightById(targetId);
+    };
+
+    const insertHighlightToNotebook = () => {
+        if (!highlightMenu.highlightId) return;
+        const target = highlights.find((h) => h.id === highlightMenu.highlightId);
+        if (!target || !target.text) {
+            showNotice(t('reader.noteInsertFailed', '该高亮无文本'), 'error');
+            closeHighlightMenu();
+            return;
+        }
+        const text = target.text.replace(/\s+/g, ' ').trim();
+        if (!text) {
+            closeHighlightMenu();
+            return;
+        }
+        const excerpt = text.length > 160 ? `${text.slice(0, 160)}...` : text;
+        const refUrl = `https://pdf.local/ref?page=${target.page}`;
+        const markdownSnippet = `「${excerpt}」\n\n[跳转到PDF原文（第${target.page}页）](${refUrl})`;
+        const blocksToInsert = noteEditor.tryParseMarkdownToBlocks(markdownSnippet);
+        if (!Array.isArray(blocksToInsert) || blocksToInsert.length === 0) {
+            closeHighlightMenu();
+            return;
+        }
+        const currentBlocks = noteEditor.document;
+        if (currentBlocks.length === 0) {
+            noteEditor.replaceBlocks([], blocksToInsert);
+        } else {
+            noteEditor.insertBlocks(blocksToInsert, currentBlocks[currentBlocks.length - 1].id, 'after');
+        }
+        const next = noteEditor.blocksToMarkdownLossy(noteEditor.document);
+        setNoteDraft(next);
+        void saveNotebook(next, { silent: true });
+        showNotice(t('reader.noteInserted', '已插入到笔记'), 'success');
+        if (!isNotebookOpen) setIsNotebookOpen(true);
+        closeHighlightMenu();
     };
 
     const recolorHighlight = async (color: HighlightColor) => {
@@ -2046,15 +2083,23 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
         const container = mainContainerRef.current;
         if (!container) return;
 
+        let debounceId: number | undefined;
         const update = () => {
-            setContainerWidth(container.clientWidth);
+            const next = container.clientWidth;
+            // 仅在显著变化时更新，避免亚像素抖动导致页面持续重渲
+            setContainerWidth((prev) => (Math.abs(prev - next) >= 4 ? next : prev));
+        };
+        const scheduleUpdate = () => {
+            if (debounceId !== undefined) window.clearTimeout(debounceId);
+            debounceId = window.setTimeout(update, 120);
         };
 
         update();
-        const observer = new ResizeObserver(update);
+        const observer = new ResizeObserver(scheduleUpdate);
         observer.observe(container);
 
         return () => {
+            if (debounceId !== undefined) window.clearTimeout(debounceId);
             observer.disconnect();
         };
     }, [isNotebookOpen, isSidebarOpen]);
@@ -2569,7 +2614,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
             {/* Minimalist Cozy Toolbar - Simplified for Scrolling */}
             <div className="w-full bg-[#faf9f6]/95 backdrop-blur-md border-b border-[#e9e6da] px-4 md:px-8 py-2 flex items-center sticky top-0 z-50">
                 {/* Left space for the back button in ReaderPage */}
-                <div className="w-20 md:w-32 shrink-0 flex items-center gap-2">
+                <div className="shrink-0 flex items-center gap-1">
                     <button
                         onClick={() => {
                             setSidebarTab(prev => prev === 'outline' && isSidebarOpen ? 'bookmarks' : 'outline');
@@ -2756,6 +2801,15 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                                 title={t('reader.exitPen', '退出手写')}
                             >
                                 {t('reader.exitPen', '退出')}
+                            </button>
+                            <div className="w-px h-5 bg-[#d9d5c8] mx-0.5" />
+                            <button
+                                onClick={() => setPenStrokes((prev) => prev.slice(0, -1))}
+                                disabled={penStrokes.length === 0}
+                                className="p-1.5 rounded-md transition-all hover:bg-white text-[#6b6654] disabled:opacity-30 disabled:cursor-not-allowed"
+                                title={t('reader.penUndo', '撤销上一笔')}
+                            >
+                                ↶
                             </button>
                             <div className="w-px h-5 bg-[#d9d5c8] mx-0.5" />
                             <button
@@ -3277,6 +3331,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                                             top: `${areaDraft.rect.top}%`,
                                             width: `${areaDraft.rect.width}%`,
                                             height: `${areaDraft.rect.height}%`,
+                                            borderRadius: 2,
                                         }}
                                     />
                                 )}
@@ -3288,6 +3343,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                                             top: `${areaSelection.rect.top}%`,
                                             width: `${areaSelection.rect.width}%`,
                                             height: `${areaSelection.rect.height}%`,
+                                            borderRadius: 2,
                                         }}
                                     />
                                 )}
@@ -3376,17 +3432,18 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                 >
                     <button
                         onMouseDown={(e) => e.preventDefault()}
+                        onClick={insertSelectionToNotebook}
+                        className="text-xs font-semibold tracking-wide px-2 py-1 rounded hover:bg-slate-700 inline-flex items-center gap-1"
+                    >
+                        <NotebookPen size={12} />
+                        {t('reader.addToNote', '添加笔记')}
+                    </button>
+                    <button
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={addHighlightFromSelection}
                         className="text-xs font-semibold tracking-wide px-2 py-1 rounded hover:bg-slate-700"
                     >
                         {t('reader.highlight', '高亮')}
-                    </button>
-                    <button
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={insertSelectionToNotebook}
-                        className="text-xs font-semibold tracking-wide px-2 py-1 rounded hover:bg-slate-700"
-                    >
-                        {t('reader.insertNote', '插入笔记')}
                     </button>
                 </div>
             )}
@@ -3398,7 +3455,15 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                     onMouseEnter={cancelHideHighlightMenu}
                     onMouseLeave={scheduleHideHighlightMenu}
                 >
-                    <div className="flex items-center gap-1 px-1 border-r border-slate-700 pr-2 mr-1">
+                    <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={insertHighlightToNotebook}
+                        className="text-xs font-semibold tracking-wide px-2 py-1 rounded hover:bg-slate-700 inline-flex items-center gap-1"
+                    >
+                        <NotebookPen size={12} />
+                        {t('reader.addToNote', '添加笔记')}
+                    </button>
+                    <div className="flex items-center gap-1 px-1 border-l border-r border-slate-700 mx-0.5">
                         {(Object.keys(HIGHLIGHT_COLORS) as HighlightColor[]).map((c) => (
                             <button
                                 key={c}

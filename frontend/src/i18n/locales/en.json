@@ -130,7 +130,10 @@
     "shortcutSearchNav": "Search input: Enter for next / Shift+Enter for previous",
     "highlightColor": "Highlight color",
     "changeColor": "Change color",
-    "sessionTime": "Session reading time"
+    "sessionTime": "Session reading time",
+    "addToNote": "Add note",
+    "penUndo": "Undo last stroke",
+    "noteInsertFailed": "Highlight has no text"
   },
   "themes": {
     "english": "English",
