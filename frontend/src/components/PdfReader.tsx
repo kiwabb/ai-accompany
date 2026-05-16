@@ -44,13 +44,15 @@ interface HighlightItem {
     color?: HighlightColor;
 }
 
-// 用饱和的高亮色 + 较高 alpha，配合无 blend mode，模拟 macOS Preview
-// 的纯色高亮条：底色饱和但半透明，文字本身从底层 canvas 透过来不被混合。
-const HIGHLIGHT_COLORS: Record<HighlightColor, { bg: string; swatch: string }> = {
-    yellow: { bg: 'rgba(255, 240, 0, 0.55)', swatch: '#fff000' },
-    green: { bg: 'rgba(110, 240, 130, 0.50)', swatch: '#6ef082' },
-    blue: { bg: 'rgba(120, 190, 255, 0.55)', swatch: '#78beff' },
-    pink: { bg: 'rgba(255, 130, 200, 0.50)', swatch: '#ff82c8' },
+// macOS Preview 风格：不透明饱和底色 + mix-blend-mode: multiply。
+// multiply 让纯白纸背景变成饱和色，但深色文字（接近黑）几乎不变（min×y ≈ 黑），
+// 视觉上是文字保持原色、背景被刷成纯色高亮条。
+// dragBg：拖动时 ::selection 用的半透明色（不能用不透明，否则文字会被遮）。
+const HIGHLIGHT_COLORS: Record<HighlightColor, { bg: string; dragBg: string; swatch: string }> = {
+    yellow: { bg: 'rgb(255, 232, 0)', dragBg: 'rgba(255, 232, 0, 0.55)', swatch: '#ffe800' },
+    green: { bg: 'rgb(120, 240, 140)', dragBg: 'rgba(120, 240, 140, 0.50)', swatch: '#78f08c' },
+    blue: { bg: 'rgb(125, 200, 255)', dragBg: 'rgba(125, 200, 255, 0.55)', swatch: '#7dc8ff' },
+    pink: { bg: 'rgb(255, 145, 210)', dragBg: 'rgba(255, 145, 210, 0.50)', swatch: '#ff91d2' },
 };
 
 interface PxRect {
@@ -163,6 +165,7 @@ const HighlightInteractiveLayer: React.FC<{
                         width: `${rect.width}%`,
                         height: `${rect.height}%`,
                         backgroundColor: palette.bg,
+                        mixBlendMode: 'multiply',
                         borderRadius: 0,
                     }}
                 />
@@ -3539,14 +3542,14 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                     border-radius: 0 !important;
                 }
 
-                /* 荧光笔模式下文字选区直接显示成高亮色，模拟 macOS Preview 的拖动落色效果 */
+                /* 荧光笔模式下文字选区直接显示成高亮色（半透明，避免遮挡文字） */
                 ${isPenMode && penTool === 'highlight' ? `
                     .react-pdf__Page__textContent ::selection {
-                        background-color: ${HIGHLIGHT_COLORS[currentHighlightColor].bg} !important;
+                        background-color: ${HIGHLIGHT_COLORS[currentHighlightColor].dragBg} !important;
                         color: inherit !important;
                     }
                     .react-pdf__Page__textContent ::-moz-selection {
-                        background-color: ${HIGHLIGHT_COLORS[currentHighlightColor].bg} !important;
+                        background-color: ${HIGHLIGHT_COLORS[currentHighlightColor].dragBg} !important;
                         color: inherit !important;
                     }
                 ` : ''}
