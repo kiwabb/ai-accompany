@@ -100,7 +100,11 @@
     "searching": "搜索中...",
     "searchPlaceholder": "搜索 PDF 全文...",
     "matches": "项",
-    "noMatches": "无匹配结果"
+    "noMatches": "无匹配结果",
+    "exportNotes": "导出书签、高亮和笔记到 Markdown",
+    "thumbnails": "页面缩略图",
+    "thumbnailsShort": "页面",
+    "loadingThumbnails": "正在加载缩略图..."
   },
   "themes": {
     "english": "英语",

@@ -5,7 +5,7 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import '@blocknote/core/fonts/inter.css';
 import '@blocknote/mantine/style.css';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
-import { Loader2, ZoomIn, ZoomOut, ListTree, Bookmark, Trash2, Pencil, Check, X, Search, Copy, PenLine, Eraser, NotebookPen, RotateCw, Download, Maximize2, Minimize2, ChevronLeft, ChevronRight, Sun, Moon, Coffee } from 'lucide-react';
+import { Loader2, ZoomIn, ZoomOut, ListTree, Bookmark, Trash2, Pencil, Check, X, Search, Copy, PenLine, Eraser, NotebookPen, RotateCw, Download, Maximize2, Minimize2, ChevronLeft, ChevronRight, Sun, Moon, Coffee, LayoutGrid } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createWorker } from 'tesseract.js';
@@ -217,6 +217,94 @@ const HandwritingLayer: React.FC<{ strokes: PenStroke[]; draftPath?: string }> =
 );
 
 // Sub-component for Lazy Loading Individual Pages
+const PageThumbnail: React.FC<{
+    pdf: PDFDocumentProxy;
+    pageNumber: number;
+    isActive: boolean;
+    onClick: () => void;
+}> = ({ pdf, pageNumber, isActive, onClick }) => {
+    const wrapRef = useRef<HTMLButtonElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [isVisible, setIsVisible] = useState(false);
+    const [isReady, setIsReady] = useState(false);
+
+    useEffect(() => {
+        const el = wrapRef.current;
+        if (!el) return;
+        const io = new IntersectionObserver(
+            (entries) => {
+                for (const e of entries) {
+                    if (e.isIntersecting) {
+                        setIsVisible(true);
+                        io.disconnect();
+                        break;
+                    }
+                }
+            },
+            { rootMargin: '240px 0px' }
+        );
+        io.observe(el);
+        return () => io.disconnect();
+    }, []);
+
+    // 直接用 pdfjs 把页面渲染到 canvas，共享 PDFDocumentProxy 缓存，避免重新解析。
+    useEffect(() => {
+        if (!isVisible) return;
+        let cancelled = false;
+        const renderThumb = async () => {
+            try {
+                const page = await pdf.getPage(pageNumber);
+                if (cancelled) return;
+                const viewport = page.getViewport({ scale: 0.3 });
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
+                const dpr = Math.min(2, window.devicePixelRatio || 1);
+                canvas.width = Math.floor(viewport.width * dpr);
+                canvas.height = Math.floor(viewport.height * dpr);
+                canvas.style.width = '100%';
+                canvas.style.height = 'auto';
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                const renderTask = page.render({ canvas, canvasContext: ctx, viewport });
+                await renderTask.promise;
+                if (!cancelled) setIsReady(true);
+            } catch (err) {
+                if (!cancelled) console.warn('thumbnail render failed', err);
+            }
+        };
+        void renderThumb();
+        return () => {
+            cancelled = true;
+        };
+    }, [isVisible, pdf, pageNumber]);
+
+    useEffect(() => {
+        if (isActive && wrapRef.current) {
+            wrapRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+    }, [isActive]);
+
+    return (
+        <button
+            ref={wrapRef}
+            onClick={onClick}
+            className={`group w-full flex flex-col items-center gap-1 p-1.5 rounded-lg transition-all ${isActive ? 'bg-indigo-50 ring-2 ring-indigo-300' : 'hover:bg-slate-50'}`}
+        >
+            <div className="w-full aspect-[3/4] bg-white border border-[#e9e6da] rounded overflow-hidden flex items-center justify-center">
+                <canvas
+                    ref={canvasRef}
+                    style={{ display: isReady ? 'block' : 'none', width: '100%', height: 'auto' }}
+                />
+                {!isReady && <div className="w-full h-full bg-slate-50 animate-pulse" />}
+            </div>
+            <span className={`text-[10px] font-bold tabular-nums ${isActive ? 'text-indigo-600' : 'text-slate-500'}`}>
+                {pageNumber}
+            </span>
+        </button>
+    );
+};
+
 const LazyPage = React.memo(({
     pageNumber,
     pageWidth,
@@ -394,7 +482,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
     const [firstPageRendered, setFirstPageRendered] = useState(false);
     const [outline, setOutline] = useState<any[] | null>(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [sidebarTab, setSidebarTab] = useState<'outline' | 'bookmarks' | 'search'>('outline');
+    const [sidebarTab, setSidebarTab] = useState<'outline' | 'bookmarks' | 'search' | 'thumbnails'>('outline');
     const [bookmarks, setBookmarks] = useState<BookmarkType[]>([]);
     const [highlights, setHighlights] = useState<HighlightItem[]>([]);
     const [bookmarkQuery, setBookmarkQuery] = useState('');
@@ -2125,6 +2213,71 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
         }
     };
 
+    const exportAnnotations = () => {
+        const lines: string[] = [];
+        const docTitle = document.title || 'Document';
+        lines.push(`# ${docTitle} — 阅读笔记`);
+        lines.push('');
+        lines.push(`*导出时间：${new Date().toLocaleString()}*`);
+        lines.push('');
+
+        if (bookmarks.length > 0) {
+            lines.push('## 📑 书签');
+            lines.push('');
+            const sorted = [...bookmarks].sort((a, b) => a.page - b.page);
+            for (const b of sorted) {
+                lines.push(`- **第 ${b.page} 页**${b.note ? ` — ${b.note}` : ''}`);
+                if (b.fullText && b.fullText.trim()) {
+                    lines.push(`  > ${b.fullText.replace(/\n+/g, ' ').slice(0, 200)}${b.fullText.length > 200 ? '…' : ''}`);
+                }
+            }
+            lines.push('');
+        }
+
+        if (highlights.length > 0) {
+            lines.push('## 🖍 高亮');
+            lines.push('');
+            const byPage = new Map<number, HighlightItem[]>();
+            for (const h of highlights) {
+                if (!byPage.has(h.page)) byPage.set(h.page, []);
+                byPage.get(h.page)!.push(h);
+            }
+            const pages = Array.from(byPage.keys()).sort((a, b) => a - b);
+            for (const p of pages) {
+                lines.push(`### 第 ${p} 页`);
+                for (const h of byPage.get(p)!) {
+                    if (h.text && h.text.trim()) {
+                        lines.push(`- ${h.text.replace(/\n+/g, ' ').trim()}`);
+                    }
+                }
+                lines.push('');
+            }
+        }
+
+        const noteContent = (noteDraft || noteMarkdown || '').trim();
+        if (noteContent) {
+            lines.push('## 📝 笔记');
+            lines.push('');
+            lines.push(noteContent);
+            lines.push('');
+        }
+
+        if (bookmarks.length === 0 && highlights.length === 0 && !noteContent) {
+            lines.push('*暂无书签、高亮或笔记。*');
+        }
+
+        const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `notes_${documentId || 'document'}.md`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        setNotice({ text: '已导出 Markdown', tone: 'success' });
+    };
+
     const performSearch = async (query: string) => {
         const term = query.trim();
         if (!term || !pdf) {
@@ -2357,6 +2510,21 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                         title={t('reader.searchInPdf', '搜索全文')}
                     >
                         <Search size={18} />
+                    </button>
+
+                    <button
+                        onClick={() => {
+                            if (isSidebarOpen && sidebarTab === 'thumbnails') {
+                                setIsSidebarOpen(false);
+                            } else {
+                                setSidebarTab('thumbnails');
+                                setIsSidebarOpen(true);
+                            }
+                        }}
+                        className={`p-2 rounded-lg transition-colors ${isSidebarOpen && sidebarTab === 'thumbnails' ? 'bg-[#f0eee9] text-[#4b483e]' : 'hover:bg-white text-[#6b6654]'}`}
+                        title={t('reader.thumbnails', '页面缩略图')}
+                    >
+                        <LayoutGrid size={18} />
                     </button>
 
                     <button
@@ -2607,6 +2775,13 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                             <Download size={16} className="md:w-[18px] md:h-[18px]" />
                         </button>
                         <button
+                            onClick={exportAnnotations}
+                            className="px-2 h-7 text-[10px] font-semibold hover:bg-white rounded-md transition-all text-[#6b6654]"
+                            title={t('reader.exportNotes', '导出书签、高亮和笔记到 Markdown')}
+                        >
+                            .md
+                        </button>
+                        <button
                             onClick={toggleFullscreen}
                             className="p-1.5 hover:bg-white rounded-md transition-all text-[#6b6654]"
                             title={t('reader.fullscreen', isFullscreen ? '退出全屏 (F)' : '全屏 (F)')}
@@ -2658,6 +2833,12 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                                     className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all ${sidebarTab === 'search' ? 'bg-white text-slate-800 shadow-sm ring-1 ring-black/5' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
                                 >
                                     {t('reader.search', '搜索')}
+                                </button>
+                                <button
+                                    onClick={() => setSidebarTab('thumbnails')}
+                                    className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all ${sidebarTab === 'thumbnails' ? 'bg-white text-slate-800 shadow-sm ring-1 ring-black/5' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+                                >
+                                    {t('reader.thumbnailsShort', '页面')}
                                 </button>
                             </div>
                             
@@ -2856,6 +3037,24 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                                                 );
                                             })}
                                         </div>
+                                    </div>
+                                ) : sidebarTab === 'thumbnails' ? (
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {numPages > 0 && pdf ? (
+                                            Array.from(new Array(numPages), (_, i) => (
+                                                <PageThumbnail
+                                                    key={`thumb_${i + 1}`}
+                                                    pdf={pdf}
+                                                    pageNumber={i + 1}
+                                                    isActive={pageNumber === i + 1}
+                                                    onClick={() => goToPage(i + 1)}
+                                                />
+                                            ))
+                                        ) : (
+                                            <div className="col-span-2 text-center py-12 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                                {t('reader.loadingThumbnails', '正在加载缩略图...')}
+                                            </div>
+                                        )}
                                     </div>
                                 ) : null}
                             </div>

@@ -100,7 +100,11 @@
     "searching": "Searching...",
     "searchPlaceholder": "Search PDF text...",
     "matches": "matches",
-    "noMatches": "No matches"
+    "noMatches": "No matches",
+    "exportNotes": "Export bookmarks, highlights and notes to Markdown",
+    "thumbnails": "Page thumbnails",
+    "thumbnailsShort": "Pages",
+    "loadingThumbnails": "Loading thumbnails..."
   },
   "themes": {
     "english": "English",
