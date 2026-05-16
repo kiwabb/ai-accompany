@@ -3553,6 +3553,10 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                         color: inherit !important;
                     }
                 ` : ''}
+
+                /* 让 pdf-page-wrapper 创建独立堆叠上下文，
+                   把高亮 multiply 限定在 page 内部与 canvas 像素相乘。 */
+                .pdf-page-wrapper { isolation: isolate; }
             `}</style>
 
             {/* 浮动底部工具栏：翻页 + 缩放，覆盖 PDF 展示区中下方，
