@@ -69,6 +69,7 @@ class ThemeBase(BaseModel):
     name: str
     focus_duration: int
     is_default: bool = False
+    icon_type: Optional[str] = None
 
 
 class ThemeCreate(ThemeBase):

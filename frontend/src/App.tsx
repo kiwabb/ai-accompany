@@ -13,6 +13,7 @@ import AchievementWall from './pages/AchievementWall';
 import FocusStatsPage from './pages/FocusStatsPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import ProfilePage from './pages/ProfilePage';
 import FloatingTimer from './components/FloatingTimer';
 import CozyPal from './components/CozyPal';
 import AchievementToast from './components/AchievementToast';
@@ -74,12 +75,13 @@ const AppContent: React.FC = () => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/" element={<FocusListPage />} />
-        <Route path="/timer/:id" element={<TimerPage />} />
+        <Route path="/timer/:themeId" element={<TimerPage />} />
         <Route path="/library" element={<LibraryPage />} />
         <Route path="/read/:id" element={<ReaderPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/achievements" element={<AchievementWall />} />
         <Route path="/stats" element={<FocusStatsPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
       </Routes>
 
       {!hideCozyPal && (

@@ -133,25 +133,25 @@ const CountdownWidget: React.FC<CountdownWidgetProps> = ({ variant = 'full', tex
                                 animate={{ opacity: 1, x: 0, scale: 1 }}
                                 exit={{ opacity: 0, x: -10, scale: 0.9 }}
                                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                                className="group relative flex items-center justify-between p-3.5 bg-gradient-to-br from-white to-slate-50/50 rounded-2xl border border-slate-100/80 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.06)] transition-all duration-300"
+                                className="group relative flex items-center gap-3 p-3.5 bg-gradient-to-br from-white to-slate-50/50 rounded-2xl border border-slate-100/80 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.06)] transition-all duration-300"
                             >
-                                <div className="flex flex-col gap-0.5">
-                                    <p className="text-[10px] font-bold text-slate-400 truncate max-w-[120px] uppercase tracking-wider">{c.title}</p>
-                                    <div className="flex items-baseline gap-1">
-                                        <span className={`text-xl font-black tabular-nums transition-colors ${isToday ? 'text-orange-500' : isPast ? 'text-slate-300' : 'text-slate-800'}`}>
-                                            {Math.abs(days)}
-                                        </span>
-                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                                            {isToday ? t('countdown.today') : isPast ? t('countdown.daysAgo') : t('countdown.daysLeft')}
-                                        </span>
-                                    </div>
+                                <p className="flex-1 min-w-0 text-xs font-bold text-slate-500 truncate uppercase tracking-wider">
+                                    {c.title}
+                                </p>
+                                <div className="flex items-baseline gap-1 shrink-0">
+                                    <span className={`text-3xl font-black tabular-nums leading-none transition-colors ${isToday ? 'text-orange-500' : isPast ? 'text-slate-300' : 'text-slate-800'}`}>
+                                        {Math.abs(days)}
+                                    </span>
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                                        {isToday ? t('countdown.today') : isPast ? t('countdown.daysAgo') : t('countdown.daysLeft')}
+                                    </span>
                                 </div>
                                 <motion.button
                                     initial={{ opacity: 0 }}
                                     whileHover={{ scale: 1.1, backgroundColor: '#fef2f2', color: '#ef4444' }}
                                     whileTap={{ scale: 0.9 }}
                                     onClick={() => handleDelete(c.id)}
-                                    className="opacity-0 group-hover:opacity-100 p-2 rounded-xl text-slate-300 transition-all border border-transparent hover:border-red-100"
+                                    className="shrink-0 opacity-0 group-hover:opacity-100 p-2 rounded-xl text-slate-300 transition-all border border-transparent hover:border-red-100"
                                     aria-label={`Delete ${c.title}`}
                                 >
                                     <Trash2 className="w-4 h-4" />

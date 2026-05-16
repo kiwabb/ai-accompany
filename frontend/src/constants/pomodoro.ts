@@ -20,6 +20,7 @@ export const DEFAULT_SETTINGS: TimerSettings = {
   soundVolume: 0.5,
   focusTrack: 'lofi-beats',
   breakTrack: 'rain-sounds',
+  useDefaultThemeIcon: true,
 };
 
 export const FOCUS_TRACKS = [

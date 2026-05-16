@@ -35,10 +35,11 @@ const TimerContext = createContext<TimerContextType | undefined>(undefined);
 
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { state, dispatch, activeTheme, totalTimeValue } = usePomodoroState();
-    const { todayStats, initialLoaded, saveLearningSession } = usePomodoroData(dispatch);
+    const { todayStats, setTodayStats, initialLoaded, saveLearningSession } = usePomodoroData(dispatch);
 
     const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
     const isAutoStartPending = useRef(false);
+    const isSkipPending = useRef(false);
 
     const { settings, phase } = state;
 
@@ -67,11 +68,42 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onComplete: handleTimerComplete,
     });
 
+    // 乐观更新当日学习时长：focus 阶段每过 60 秒就增加当前主题 1 分钟；会话结束后由 fetchDailyStats 重新校准。
+    const lastAccumulatedSecondsRef = useRef(totalTimeValue);
+    useEffect(() => {
+        if (!isActive || phase !== 'focus' || !activeTheme) {
+            lastAccumulatedSecondsRef.current = timeLeft;
+            return;
+        }
+        const last = lastAccumulatedSecondsRef.current;
+        if (last - timeLeft >= 60) {
+            const elapsedMinutes = Math.floor((last - timeLeft) / 60);
+            lastAccumulatedSecondsRef.current = last - elapsedMinutes * 60;
+            const themeName = activeTheme.name;
+            setTodayStats(prev => {
+                const base: DailyStats = prev ?? {
+                    date: new Date().toISOString().split('T')[0],
+                    total_focus_minutes: 0,
+                    total_sessions: 0,
+                    sessions_by_theme: {},
+                };
+                return {
+                    ...base,
+                    total_focus_minutes: base.total_focus_minutes + elapsedMinutes,
+                    sessions_by_theme: {
+                        ...base.sessions_by_theme,
+                        [themeName]: (base.sessions_by_theme[themeName] || 0) + elapsedMinutes,
+                    },
+                };
+            });
+        }
+    }, [timeLeft, isActive, phase, activeTheme, setTodayStats]);
+
     const timerActions = useTimerActions({
         isActive, timeLeft, sessionStartTime, totalTimeValue,
         activeTheme, phase, settings, dispatch,
         start, pause, reset, saveLearningSession,
-        setSessionStartTime, isAutoStartPending,
+        setSessionStartTime, isAutoStartPending, isSkipPending,
     });
 
     const sessionHandlers = useSessionHandlers({
@@ -81,19 +113,26 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setSessionStartTime,
     });
 
-    // Handle auto-start next phase
+    // Stable ref to avoid re-running auto-start effect when timerActions identity changes
+    const timerActionsRef = useRef(timerActions);
+    useEffect(() => { timerActionsRef.current = timerActions; }, [timerActions]);
+
+    // Handle auto-start next phase (after timer complete with autoStartNext, OR after explicit skip)
     useEffect(() => {
-        if (initialLoaded && settings.autoStartNext && !isActive && isAutoStartPending.current) {
+        if (initialLoaded && !isActive && isAutoStartPending.current) {
+            const shouldAutoStart = settings.autoStartNext || isSkipPending.current;
+            if (!shouldAutoStart) return;
             const isAtStart = Math.abs(timeLeft - totalTimeValue) < 2;
             if (isAtStart) {
                 isAutoStartPending.current = false;
+                isSkipPending.current = false;
                 const timer = setTimeout(() => {
-                    timerActions.handleStart();
+                    timerActionsRef.current.handleStart();
                 }, 1000);
                 return () => clearTimeout(timer);
             }
         }
-    }, [phase, settings.autoStartNext, initialLoaded, isActive, timeLeft, totalTimeValue, timerActions]);
+    }, [phase, settings.autoStartNext, initialLoaded, isActive, timeLeft, totalTimeValue]);
 
     const handleVisualThemeChange = useCallback((themeId: string) => {
         dispatch({ type: 'SET_VISUAL_THEME', themeId });

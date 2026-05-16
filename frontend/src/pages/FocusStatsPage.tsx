@@ -49,7 +49,7 @@ const FocusStatsPage: React.FC = () => {
     const maxDailyMinutes = stats?.daily_stats?.reduce((max: number, day: DailyStat) => Math.max(max, day.total_focus_minutes), 0) || 1;
 
     return (
-        <main className="min-h-screen w-full bg-[#FCFAF7] flex flex-col items-center p-6 selection:bg-cozy-orange/30 relative overflow-hidden">
+        <main className="min-h-screen w-full bg-[#FCFAF7] flex flex-col items-center p-6 pb-32 selection:bg-cozy-orange/30 relative overflow-x-hidden">
             <AmbientBackground />
 
             {/* Back Button */}

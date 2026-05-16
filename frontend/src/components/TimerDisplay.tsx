@@ -71,7 +71,8 @@ export const TimerDisplay = React.memo(({ timeLeft, totalTime, phase }: TimerDis
 
   const label = t(`common.${phase}`);
 
-  const angle = (1 - progress) * 360 - 90;
+  // SVG 整体 -rotate-90 后 path 起点位于视觉 12 点；y-down 系统下 cos/sin 角度递减对应视觉顺时针。
+  const angle = -(1 - progress) * 360;
   const radius = 120;
   const charX = 160 + radius * Math.cos((angle * Math.PI) / 180);
   const charY = 160 + radius * Math.sin((angle * Math.PI) / 180);

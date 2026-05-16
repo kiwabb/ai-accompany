@@ -3,17 +3,18 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTimerContext } from '../contexts/TimerContext';
 import PomodoroTimer from '../components/PomodoroTimer';
 import { motion } from 'framer-motion';
-import { ChevronLeft as ChevronLeftIcon } from 'lucide-react';
+import { ChevronLeft as ChevronLeftIcon, BookOpen as BookOpenIcon } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 import { useTranslation } from 'react-i18next';
 import AmbientBackground from '../components/AmbientBackground';
 import { useVisualTheme } from '../hooks/useVisualTheme';
+import TodoWidget from '../components/TodoWidget';
 
 const TimerPage: React.FC = () => {
     const { themeId } = useParams<{ themeId: string }>();
     const navigate = useNavigate();
     const { t } = useTranslation();
-    const { handleThemeChange, state, isActive, timeLeft, totalTimeValue, reset } = useTimerContext();
+    const { handleThemeChange, state, isActive, timeLeft, totalTimeValue, reset, activeTheme } = useTimerContext();
 
     const { isShinchanTheme } = useVisualTheme({
         activeVisualThemeId: state.activeVisualThemeId,
@@ -80,6 +81,31 @@ const TimerPage: React.FC = () => {
                 <ChevronLeftIcon size={16} className="group-hover:-translate-x-1 transition-transform" />
                 <span>返回列表</span>
             </motion.button>
+
+            <div className="fixed top-8 right-8 z-50 flex items-center gap-3">
+                <TodoWidget isShinchanTheme={isShinchanTheme} />
+                {activeTheme && (
+                    <motion.button
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        whileHover={{ x: 2 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => navigate(`/library?theme=${activeTheme.id}`)}
+                        className={`py-3 px-6 bg-white/60 backdrop-blur-2xl shadow-xl rounded-2xl flex items-center gap-2 group transition-colors font-bold uppercase tracking-widest text-[10px] ${isShinchanTheme
+                                ? 'border border-[#FF6B6B]/20 text-[#8D6E63] hover:text-[#5D4037] hover:bg-[#FF6B6B]/10'
+                                : 'border border-white text-slate-400 hover:text-slate-900'
+                            }`}
+                    >
+                        <BookOpenIcon size={16} className="group-hover:scale-110 transition-transform" />
+                        <span>
+                            {t('common.themeLibrary', {
+                                theme: t(`themes.${activeTheme.id}`, { defaultValue: activeTheme.name }),
+                                defaultValue: `{{theme}} ${t('common.library', '书架')}`,
+                            })}
+                        </span>
+                    </motion.button>
+                )}
+            </div>
 
             <div className="relative z-10 w-full max-w-6xl flex items-center justify-center py-12">
                 <PomodoroTimer />

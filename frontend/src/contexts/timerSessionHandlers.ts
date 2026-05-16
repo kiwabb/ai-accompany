@@ -2,7 +2,6 @@ import { useCallback } from 'react';
 import { upsertUserSettings } from '../api/client';
 import type { FocusTheme, TimerSettings, Phase } from '../types/pomodoro';
 import type { PomodoroState, PomodoroAction } from '../hooks/usePomodoroState';
-import { DEFAULT_THEMES } from '../constants/pomodoro';
 
 const CONTEXT_STORAGE_KEY = 'pomodoro_context_state';
 
@@ -70,7 +69,8 @@ export const useSessionHandlers = (deps: SessionHandlerDeps) => {
     const handleSaveSettings = useCallback(async (s: TimerSettings) => {
         try {
             const updatedSettings = await upsertUserSettings(s);
-            dispatch({ type: 'SAVE_SETTINGS', settings: updatedSettings, themes: DEFAULT_THEMES });
+            // Merge so client-only fields (e.g. useDefaultThemeIcon) survive the round-trip
+            dispatch({ type: 'SAVE_SETTINGS', settings: { ...s, ...updatedSettings }, themes: [] });
             reset();
             dispatch({ type: 'RESET_TO_FOCUS' });
         } catch (error) {

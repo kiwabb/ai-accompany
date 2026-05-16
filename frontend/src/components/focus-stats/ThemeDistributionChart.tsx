@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { PieChart, Activity } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { StatsRangeResponse } from '../../api/client';
 import type { TimeRange } from '../../hooks/useFocusStats';
+import MiniBars from './MiniBars';
 
 interface ThemeDistributionChartProps {
     pieStats: StatsRangeResponse | null;
@@ -12,6 +13,45 @@ interface ThemeDistributionChartProps {
     getChartColorForTheme: (themeName: string, index: number) => string;
     formatDuration: (minutes: number) => string;
 }
+
+const polarToCartesian = (cx: number, cy: number, r: number, angleDeg: number) => {
+    const angleRad = ((angleDeg - 90) * Math.PI) / 180;
+    return {
+        x: cx + r * Math.cos(angleRad),
+        y: cy + r * Math.sin(angleRad),
+    };
+};
+
+const describeDonutSlice = (
+    cx: number,
+    cy: number,
+    rOuter: number,
+    rInner: number,
+    startAngle: number,
+    endAngle: number,
+) => {
+    const sweep = endAngle - startAngle;
+    if (sweep <= 0) return '';
+    if (sweep >= 360 - 0.0001) {
+        const half = startAngle + 180;
+        return [
+            describeDonutSlice(cx, cy, rOuter, rInner, startAngle, half),
+            describeDonutSlice(cx, cy, rOuter, rInner, half, endAngle),
+        ].join(' ');
+    }
+    const largeArc = sweep > 180 ? 1 : 0;
+    const outerStart = polarToCartesian(cx, cy, rOuter, startAngle);
+    const outerEnd = polarToCartesian(cx, cy, rOuter, endAngle);
+    const innerEnd = polarToCartesian(cx, cy, rInner, endAngle);
+    const innerStart = polarToCartesian(cx, cy, rInner, startAngle);
+    return [
+        `M ${outerStart.x} ${outerStart.y}`,
+        `A ${rOuter} ${rOuter} 0 ${largeArc} 1 ${outerEnd.x} ${outerEnd.y}`,
+        `L ${innerEnd.x} ${innerEnd.y}`,
+        `A ${rInner} ${rInner} 0 ${largeArc} 0 ${innerStart.x} ${innerStart.y}`,
+        'Z',
+    ].join(' ');
+};
 
 export const ThemeDistributionChart: React.FC<ThemeDistributionChartProps> = ({
     pieStats,
@@ -22,17 +62,48 @@ export const ThemeDistributionChart: React.FC<ThemeDistributionChartProps> = ({
 }) => {
     const { t } = useTranslation();
 
-    // Pie Chart Helpers
-    const themeEntries = Object.entries(pieStats?.sessions_by_theme || {});
-    const totalMinutes = pieStats?.total_focus_minutes || 0;
-    
-    let currentPercentage = 0;
-    const pieSegments = themeEntries.map(([theme, minutes]) => {
-        const percentage = totalMinutes > 0 ? (minutes / totalMinutes) * 100 : 0;
-        const start = currentPercentage;
-        currentPercentage += percentage;
-        return { theme, minutes, percentage, start };
-    });
+    // 从 sessions_details 计算每个主题的「专注次数」(session count)
+    // 主题颜色依据 sessions_by_theme 中的索引保持一致
+    const segments = useMemo(() => {
+        const details = pieStats?.sessions_details || [];
+        const minutesByTheme = pieStats?.sessions_by_theme || {};
+        const countMap = new Map<string, number>();
+        const minuteMap = new Map<string, number>();
+        details.forEach(s => {
+            countMap.set(s.theme_name, (countMap.get(s.theme_name) || 0) + 1);
+            minuteMap.set(s.theme_name, (minuteMap.get(s.theme_name) || 0) + s.duration_minutes);
+        });
+        // 兜底：如果 details 为空但有 sessions_by_theme，用分钟数作为权重展示
+        const entries = countMap.size > 0
+            ? Array.from(countMap.entries())
+            : Object.entries(minutesByTheme).filter(([, m]) => m > 0);
+
+        const totalCount = entries.reduce((sum, [, c]) => sum + c, 0);
+        let cumulative = 0;
+        return entries.map(([theme, count], i) => {
+            const percentage = totalCount > 0 ? (count / totalCount) * 100 : 0;
+            const startAngle = cumulative;
+            const endAngle = cumulative + percentage * 3.6;
+            cumulative = endAngle;
+            return {
+                theme,
+                count,
+                minutes: minuteMap.get(theme) ?? minutesByTheme[theme] ?? 0,
+                percentage,
+                startAngle,
+                endAngle,
+                color: getChartColorForTheme(theme, i),
+            };
+        });
+    }, [pieStats, getChartColorForTheme]);
+
+    const totalSessions = segments.reduce((sum, s) => sum + s.count, 0) || pieStats?.total_sessions || 0;
+
+    // viewBox 留出更多 padding 防止边缘被裁剪；外径 40 + 中心 60 + 边距 20 = 120
+    const cx = 60;
+    const cy = 60;
+    const rOuter = 40;
+    const rInner = 26;
 
     return (
         <motion.div
@@ -46,17 +117,16 @@ export const ThemeDistributionChart: React.FC<ThemeDistributionChartProps> = ({
                     <PieChart size={20} className="text-theme-text-muted/40" />
                     {t('stats.themes', 'Themes')}
                 </h3>
-                
+
                 <div className="bg-white/50 p-1 rounded-2xl flex items-center border border-white/80 shadow-inner">
                     {(['day', 'week', 'month'] as const).map((range) => (
                         <button
                             key={range}
                             onClick={() => onPieRangeChange(range)}
-                            className={`px-3 py-1 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
-                                pieRange === range 
-                                ? 'bg-white text-cozy-orange shadow-md' 
+                            className={`px-3 py-1 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${pieRange === range
+                                ? 'bg-white text-cozy-orange shadow-md'
                                 : 'text-cozy-text-light hover:text-cozy-text'
-                            }`}
+                                }`}
                         >
                             {t(`stats.ranges.${range}`, range)}
                         </button>
@@ -64,92 +134,108 @@ export const ThemeDistributionChart: React.FC<ThemeDistributionChartProps> = ({
                 </div>
             </div>
 
-            <div className="flex flex-col items-center gap-8 flex-1 overflow-hidden">
-                {/* SVG Pie Chart */}
-                <div className="relative w-48 h-48 flex-shrink-0">
-                    <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-                        {pieSegments.length > 0 ? pieSegments.map((seg, i) => {
-                            const color = getChartColorForTheme(seg.theme, i);
-                            const circumference = 251.32;
-                            const offset = circumference - (seg.percentage / 100) * circumference;
-                            // Adjust rotation so segments stack correctly
-                            const rotation = (seg.start / 100) * 360;
-                            
-                            return (
-                                <motion.circle
-                                    key={i}
-                                    cx="50"
-                                    cy="50"
-                                    r="40"
-                                    fill="transparent"
-                                    stroke={color}
-                                    strokeWidth="12"
-                                    strokeDasharray={`${circumference} ${circumference}`}
-                                    strokeDashoffset={offset}
-                                    initial={{ strokeDashoffset: circumference }}
-                                    animate={{ strokeDashoffset: offset }}
-                                    transition={{ duration: 1.5, delay: 0.8 + (i * 0.1), ease: "easeOut" }}
-                                    transform={`rotate(${rotation} 50 50)`}
+            <div className="flex flex-col items-center gap-8 flex-1">
+                <div className="relative w-56 h-56 flex-shrink-0">
+                    <svg
+                        viewBox="0 0 120 120"
+                        className="w-full h-full"
+                        style={{ overflow: 'visible' }}
+                    >
+                        {segments.length > 0 ? (
+                            segments.map((seg, i) => (
+                                <motion.path
+                                    key={seg.theme}
+                                    d={describeDonutSlice(cx, cy, rOuter, rInner, seg.startAngle, seg.endAngle)}
+                                    fill={seg.color}
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ duration: 0.35, delay: i * 0.06, ease: 'easeOut' }}
                                 />
-                            );
-                        }) : (
-                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="var(--color-border)" strokeWidth="12" />
+                            ))
+                        ) : (
+                            <circle
+                                cx={cx}
+                                cy={cy}
+                                r={(rOuter + rInner) / 2}
+                                fill="transparent"
+                                stroke="var(--theme-border)"
+                                strokeWidth={rOuter - rInner}
+                            />
                         )}
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        <span className="text-3xl font-black text-theme-text">{pieStats?.total_sessions || 0}</span>
-                        <span className="text-[10px] font-bold text-theme-text-muted uppercase tracking-widest">{t('stats.completed', 'Completed')}</span>
+                        <span className="text-3xl font-black text-theme-text tabular-nums">{totalSessions}</span>
+                        <span className="text-[10px] font-bold text-theme-text-muted uppercase tracking-widest">
+                            {t('stats.completed', '次专注')}
+                        </span>
                     </div>
                 </div>
 
-                {/* Theme List / Breakdown - Scrollable if needed */}
-                <div className="w-full space-y-4 overflow-y-auto pr-2 max-h-[200px] custom-scrollbar">
-                    {pieSegments.map((seg, index) => {
-                        const color = getChartColorForTheme(seg.theme, index);
+                <div className="w-full space-y-4 pr-1">
+                    {segments.map((seg, index) => (
+                        <motion.div
+                            key={seg.theme}
+                            className="group"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.5 + index * 0.08 }}
+                        >
+                            <div className="flex justify-between items-center mb-1.5">
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: seg.color }} />
+                                    <span className="font-bold text-theme-text text-sm truncate" title={seg.theme}>
+                                        {seg.theme}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                    <span className="text-xs font-medium text-theme-text-muted/60 tabular-nums">
+                                        {seg.count} {t('stats.sessions', '次')} · {formatDuration(seg.minutes)}
+                                    </span>
+                                    <span className="text-sm font-black w-[44px] text-right tabular-nums" style={{ color: seg.color }}>
+                                        {seg.percentage.toFixed(1)}%
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="h-2 w-full bg-theme-surface/50 rounded-full overflow-hidden">
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${seg.percentage}%` }}
+                                    transition={{ duration: 1.2, delay: 0.7 + index * 0.08, ease: 'circOut' }}
+                                    className="h-full rounded-full relative"
+                                    style={{ backgroundColor: seg.color }}
+                                >
+                                    <div className="absolute inset-0 bg-white/10" />
+                                </motion.div>
+                            </div>
+                        </motion.div>
+                    ))}
 
-                        return (
-                            <motion.div 
-                                key={seg.theme} 
-                                className="group"
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.6 + (index * 0.1) }}
-                            >
-                                <div className="flex justify-between items-center mb-1.5">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-                                        <span className="font-bold text-theme-text text-sm truncate" title={seg.theme}>{seg.theme}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 flex-shrink-0">
-                                        <span className="text-xs font-medium text-theme-text-muted/60">{formatDuration(seg.minutes)}</span>
-                                        <span className="text-sm font-black w-[36px] text-right" style={{ color: color }}>{Math.round(seg.percentage)}%</span>
-                                    </div>
-                                </div>
-                                <div className="h-2 w-full bg-theme-surface/50 rounded-full overflow-hidden">
-                                    <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${seg.percentage}%` }}
-                                        transition={{ duration: 1.2, delay: 0.9 + (index * 0.1), ease: "circOut" }}
-                                        className="h-full rounded-full relative"
-                                        style={{ backgroundColor: color }}
-                                    >
-                                        <div className="absolute inset-0 bg-white/10" />
-                                    </motion.div>
-                                </div>
-                            </motion.div>
-                        );
-                    })}
-                    
-                    {pieSegments.length === 0 && (
-                        <div className="text-center py-16 text-theme-text-muted/40 bg-theme-text/5 rounded-[radius-theme] border border-dashed border-theme-border">
+                    {segments.length === 0 && (
+                        <div className="text-center py-16 text-theme-text-muted/40 bg-theme-text/5 rounded-3xl border border-dashed border-theme-border">
                             <div className="w-16 h-16 bg-theme-surface rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
                                 <Activity size={24} className="opacity-20" />
                             </div>
-                            <p className="text-sm font-bold uppercase tracking-widest">{t('stats.noData', 'No data collected')}</p>
+                            <p className="text-sm font-bold uppercase tracking-widest">
+                                {t('stats.noData', 'No data collected')}
+                            </p>
                         </div>
                     )}
                 </div>
             </div>
+
+            {/* 配套迷你柱状图：同周期每日趋势 */}
+            {(pieStats?.daily_stats?.length ?? 0) > 0 && (
+                <div className="mt-8 pt-6 border-t border-theme-text-muted/10">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-theme-text-muted/70 mb-2">
+                        {t('stats.dailyMini', '每日趋势（同周期）')}
+                    </div>
+                    <MiniBars
+                        dailyStats={pieStats!.daily_stats}
+                        getColor={getChartColorForTheme}
+                        height={64}
+                    />
+                </div>
+            )}
         </motion.div>
     );
 };

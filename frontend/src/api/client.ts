@@ -138,6 +138,7 @@ export const getUserThemes = async (): Promise<FocusTheme[]> => {
     name: t.name,
     focusDuration: t.focus_duration,
     isDefault: t.is_default,
+    iconType: t.icon_type ?? undefined,
   }));
 };
 
@@ -147,6 +148,7 @@ export const createUserTheme = async (theme: FocusTheme): Promise<void> => {
     name: theme.name,
     focus_duration: theme.focusDuration,
     is_default: theme.isDefault,
+    icon_type: theme.iconType ?? null,
   };
   const response = await fetch(`${API_BASE_URL}/themes`, {
     method: 'POST',

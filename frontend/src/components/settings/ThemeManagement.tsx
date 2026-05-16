@@ -41,6 +41,12 @@ const ThemeManagement: React.FC<ThemeManagementProps> = ({
     { id: 'action-mask', img: '/assets/shinchan/action-mask.png' },
   ];
 
+  const findIconImg = (key?: string) =>
+    key ? [...chiikawaIcons, ...shinchanIcons].find((i) => i.id === key)?.img : undefined;
+
+  const getThemeIconImg = (theme: FocusTheme) =>
+    findIconImg(theme.iconType) || findIconImg(theme.id);
+
   const handleThemeNameChange = useCallback((id: string, name: string) => {
     setThemes((prev) => prev.map((theme) => (theme.id === id ? { ...theme, name } : theme)));
   }, [setThemes]);
@@ -93,47 +99,8 @@ const ThemeManagement: React.FC<ThemeManagementProps> = ({
       </header>
 
       <div className="grid grid-cols-1 gap-4">
-        {themes.map((theme) => (
-          <div
-            key={theme.id}
-            className="bg-white/60 backdrop-blur-xl rounded-[32px] p-6 border border-white shadow-sm flex flex-col md:flex-row items-center gap-6 group hover:shadow-xl transition-all duration-500"
-          >
-            <div className="flex-1 w-full">
-              <input
-                type="text"
-                value={theme.name}
-                onChange={(e) => handleThemeNameChange(theme.id, e.target.value)}
-                disabled={theme.isDefault}
-                placeholder="Theme name"
-                className="w-full bg-transparent font-bold text-xl text-slate-800 focus:outline-none placeholder:text-slate-300 disabled:opacity-50"
-              />
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">卡片标题</div>
-            </div>
-
-            <div className="flex items-center gap-4 bg-slate-50/50 p-3 rounded-2xl border border-slate-100">
-              <input
-                type="number"
-                min={1}
-                value={theme.focusDuration}
-                onChange={(e) => handleThemeDurationChange(theme.id, parseInt(e.target.value))}
-                className="w-16 bg-transparent text-center font-bold text-slate-700 focus:outline-none"
-              />
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-l border-slate-200 pl-4">MINUTES</span>
-            </div>
-
-            {!theme.isDefault && (
-              <button
-                onClick={() => handleRemoveTheme(theme.id)}
-                className="p-4 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all active:scale-90"
-              >
-                <Trash2 size={20} />
-              </button>
-            )}
-          </div>
-        ))}
-
         {/* Add New Theme Card */}
-        <div className="bg-slate-900/5 border-2 border-dashed border-slate-200 rounded-[40px] p-8 mt-4">
+        <div className="bg-slate-900/5 border-2 border-dashed border-slate-200 rounded-[40px] p-8 mb-2">
           <div className="flex flex-col gap-6">
             <div className="flex flex-col md:flex-row gap-6 items-end">
               <div className="flex-1 space-y-2 w-full">
@@ -177,8 +144,8 @@ const ThemeManagement: React.FC<ThemeManagementProps> = ({
                     onClick={() => setSelectedIcon(icon.id)}
                     className={`
                       relative w-14 h-14 rounded-2xl border-2 transition-all p-2
-                      ${selectedIcon === icon.id 
-                        ? 'border-rose-400 bg-rose-50 ring-4 ring-rose-400/10' 
+                      ${selectedIcon === icon.id
+                        ? 'border-rose-400 bg-rose-50 ring-4 ring-rose-400/10'
                         : 'border-white bg-white/50 hover:border-slate-300'}
                     `}
                   >
@@ -197,8 +164,8 @@ const ThemeManagement: React.FC<ThemeManagementProps> = ({
                     onClick={() => setSelectedIcon(icon.id)}
                     className={`
                       relative w-14 h-14 rounded-2xl border-2 transition-all p-2
-                      ${selectedIcon === icon.id 
-                        ? 'border-yellow-400 bg-yellow-50 ring-4 ring-yellow-400/10' 
+                      ${selectedIcon === icon.id
+                        ? 'border-yellow-400 bg-yellow-50 ring-4 ring-yellow-400/10'
                         : 'border-white bg-white/50 hover:border-slate-300'}
                     `}
                   >
@@ -214,6 +181,53 @@ const ThemeManagement: React.FC<ThemeManagementProps> = ({
             </div>
           </div>
         </div>
+
+        {themes.map((theme) => (
+          <div
+            key={theme.id}
+            className="bg-white/60 backdrop-blur-xl rounded-[32px] p-6 border border-white shadow-sm flex flex-col md:flex-row items-center gap-6 group hover:shadow-xl transition-all duration-500"
+          >
+            <div className="w-14 h-14 rounded-2xl bg-white/70 border border-white p-2 flex-shrink-0 flex items-center justify-center shadow-inner">
+              {getThemeIconImg(theme) ? (
+                <img src={getThemeIconImg(theme)!} alt={theme.iconType || theme.id} className="w-full h-full object-contain" />
+              ) : (
+                <span className="text-xl font-bold text-slate-300 font-heading">
+                  {theme.name.charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
+
+            <div className="flex-1 w-full">
+              <input
+                type="text"
+                value={theme.name}
+                onChange={(e) => handleThemeNameChange(theme.id, e.target.value)}
+                disabled={theme.isDefault}
+                placeholder="Theme name"
+                className="w-full bg-transparent font-bold text-xl text-slate-800 focus:outline-none placeholder:text-slate-300 disabled:opacity-50"
+              />
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">卡片标题</div>
+            </div>
+
+            <div className="flex items-center gap-4 bg-slate-50/50 p-3 rounded-2xl border border-slate-100">
+              <input
+                type="number"
+                min={1}
+                value={theme.focusDuration}
+                onChange={(e) => handleThemeDurationChange(theme.id, parseInt(e.target.value))}
+                className="w-16 bg-transparent text-center font-bold text-slate-700 focus:outline-none"
+              />
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-l border-slate-200 pl-4">MINUTES</span>
+            </div>
+
+            <button
+              onClick={() => handleRemoveTheme(theme.id)}
+              className="p-4 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all active:scale-90"
+            >
+              <Trash2 size={20} />
+            </button>
+          </div>
+        ))}
       </div>
     </section>
   );

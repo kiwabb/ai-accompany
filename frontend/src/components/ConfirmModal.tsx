@@ -63,7 +63,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.3 }}
                         onClick={onCancel}
-                        className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
+                        className="absolute inset-0 bg-slate-900/40"
                     />
 
                     {/* Modal Card - Glassmorphism & Claymorphism Blend */}

@@ -26,6 +26,7 @@ export interface TimerSettings {
   soundVolume?: number;
   focusTrack?: string;
   breakTrack?: string;
+  useDefaultThemeIcon?: boolean;
 }
 
 export type Phase = 'focus' | 'shortBreak' | 'longBreak';

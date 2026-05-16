@@ -25,6 +25,7 @@ export interface TimerActionDeps {
     ) => Promise<void>;
     setSessionStartTime: (time: Date | null) => void;
     isAutoStartPending: React.MutableRefObject<boolean>;
+    isSkipPending: React.MutableRefObject<boolean>;
 }
 
 export const useTimerActions = (deps: TimerActionDeps) => {
@@ -43,6 +44,7 @@ export const useTimerActions = (deps: TimerActionDeps) => {
         saveLearningSession,
         setSessionStartTime,
         isAutoStartPending,
+        isSkipPending,
     } = deps;
 
     const handleStart = useCallback(() => {
@@ -72,9 +74,10 @@ export const useTimerActions = (deps: TimerActionDeps) => {
         }
         setSessionStartTime(null);
         isAutoStartPending.current = true;
+        isSkipPending.current = true;
         reset();
         dispatch({ type: 'NEXT_PHASE' });
-    }, [sessionStartTime, totalTimeValue, timeLeft, saveLearningSession, reset, activeTheme, phase, settings, dispatch, setSessionStartTime, isAutoStartPending]);
+    }, [sessionStartTime, totalTimeValue, timeLeft, saveLearningSession, reset, activeTheme, phase, settings, dispatch, setSessionStartTime, isAutoStartPending, isSkipPending]);
 
     const handleToggle = useCallback(() => {
         if (isActive) {

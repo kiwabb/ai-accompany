@@ -79,6 +79,7 @@ export interface UserThemeBackend {
   name: string;
   focus_duration: number;
   is_default: boolean;
+  icon_type?: string | null;
   created_at: string;
 }
 
@@ -87,6 +88,7 @@ export interface ThemeCreate {
   name: string;
   focus_duration: number;
   is_default: boolean;
+  icon_type?: string | null;
 }
 
 // Countdown types

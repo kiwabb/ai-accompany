@@ -1,10 +1,12 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useRef } from 'react';
+import { motion, useMotionValue } from 'framer-motion';
 import { Play, Pause } from 'lucide-react';
 import { useTimerContext } from '../contexts/TimerContext';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import CountdownWidget from './CountdownWidget';
+
+const POSITION_STORAGE_KEY = 'floating_timer_position';
 
 const FloatingTimer: React.FC = () => {
     const { state, timeLeft, isActive, handleToggle, activeTheme } = useTimerContext();
@@ -12,6 +14,23 @@ const FloatingTimer: React.FC = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
+
+    const x = useMotionValue(0);
+    const y = useMotionValue(0);
+    const wasDragged = useRef(false);
+
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem(POSITION_STORAGE_KEY);
+            if (saved) {
+                const pos = JSON.parse(saved);
+                if (typeof pos.x === 'number') x.set(pos.x);
+                if (typeof pos.y === 'number') y.set(pos.y);
+            }
+        } catch {
+            // ignore corrupted state
+        }
+    }, [x, y]);
 
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
@@ -96,11 +115,30 @@ const FloatingTimer: React.FC = () => {
 
     return (
         <motion.div
-            initial={{ scale: 0.8, opacity: 0, y: -20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
             drag
-            dragConstraints={{ left: 0, right: 0, top: 0, bottom: window.innerHeight - 100 }}
-            dragElastic={0.1}
+            dragMomentum={false}
+            dragElastic={0.05}
+            dragConstraints={{
+                left: -window.innerWidth + 100,
+                right: window.innerWidth - 200,
+                top: -50,
+                bottom: window.innerHeight - 200,
+            }}
+            style={{ x, y }}
+            onDragStart={() => { wasDragged.current = true; }}
+            onDragEnd={() => {
+                try {
+                    localStorage.setItem(
+                        POSITION_STORAGE_KEY,
+                        JSON.stringify({ x: x.get(), y: y.get() })
+                    );
+                } catch {
+                    // ignore quota errors
+                }
+                setTimeout(() => { wasDragged.current = false; }, 50);
+            }}
             whileDrag={{ scale: 1.02, rotate: 1 }}
             className="fixed top-24 left-8 z-[100] cursor-grab active:cursor-grabbing select-none group/timer"
         >
@@ -123,7 +161,10 @@ const FloatingTimer: React.FC = () => {
                 </div>
 
                 <div
-                    onClick={() => navigate(activeTheme ? `/timer/${activeTheme.id}` : '/')}
+                    onClick={() => {
+                        if (wasDragged.current) return;
+                        navigate(activeTheme ? `/timer/${activeTheme.id}` : '/');
+                    }}
                     className="flex flex-col min-w-[100px] cursor-pointer"
                 >
                     <span className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-300 leading-none mb-1 group-hover/timer:text-slate-400 transition-colors">

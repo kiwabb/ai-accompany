@@ -1,10 +1,12 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useTimerContext } from '../contexts/TimerContext';
-import { Book as BookIcon, Settings as SettingsIcon, Rocket as RocketIcon, Brain as BrainIcon, Coffee as CoffeeIcon, Sparkles as SparklesIcon, Trophy as TrophyIcon, BarChart3 as BarChartIcon, LogIn as LogInIcon, UserPlus as UserPlusIcon } from 'lucide-react';
+import { Book as BookIcon, Settings as SettingsIcon, Rocket as RocketIcon, Brain as BrainIcon, Coffee as CoffeeIcon, Sparkles as SparklesIcon, Trophy as TrophyIcon, BarChart3 as BarChartIcon, LogIn as LogInIcon, UserPlus as UserPlusIcon, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { getStatsRange } from '../api/client';
+import type { FocusTheme } from '../types/pomodoro';
 
 import ConfirmModal from '../components/ConfirmModal';
 import AmbientBackground from '../components/AmbientBackground';
@@ -20,15 +22,76 @@ const FocusListPage: React.FC = () => {
     const [pendingThemeId, setPendingThemeId] = React.useState<string | null>(null);
     const [confirmMessage, setConfirmMessage] = React.useState('');
 
+    const [menuState, setMenuState] = React.useState<{ theme: FocusTheme; x: number; y: number } | null>(null);
+    const [completion, setCompletion] = React.useState<{ themeName: string; minutes: number } | null>(null);
+    const longPressTimer = React.useRef<number | null>(null);
+
+    const openMenuAt = (theme: FocusTheme, x: number, y: number) => {
+        const pad = 12;
+        const w = 180;
+        const h = 80;
+        const clampedX = Math.min(window.innerWidth - w - pad, Math.max(pad, x));
+        const clampedY = Math.min(window.innerHeight - h - pad, Math.max(pad, y));
+        setMenuState({ theme, x: clampedX, y: clampedY });
+    };
+
+    const handleContextMenu = (e: React.MouseEvent, theme: FocusTheme) => {
+        e.preventDefault();
+        openMenuAt(theme, e.clientX, e.clientY);
+    };
+
+    const handleTouchStart = (e: React.TouchEvent, theme: FocusTheme) => {
+        const touch = e.touches[0];
+        if (longPressTimer.current) window.clearTimeout(longPressTimer.current);
+        longPressTimer.current = window.setTimeout(() => {
+            openMenuAt(theme, touch.clientX, touch.clientY);
+            longPressTimer.current = null;
+        }, 500);
+    };
+
+    const cancelLongPress = () => {
+        if (longPressTimer.current) {
+            window.clearTimeout(longPressTimer.current);
+            longPressTimer.current = null;
+        }
+    };
+
+    const handleComplete = async () => {
+        if (!menuState) return;
+        const theme = menuState.theme;
+        setMenuState(null);
+        try {
+            const startDate = new Date('2020-01-01');
+            const endDate = new Date();
+            const stats = await getStatsRange(startDate, endDate);
+            const minutes = stats.sessions_by_theme?.[theme.name] || 0;
+            setCompletion({ themeName: theme.name, minutes });
+        } catch {
+            setCompletion({ themeName: theme.name, minutes: 0 });
+        }
+    };
+
+    React.useEffect(() => {
+        if (!menuState) return;
+        const close = () => setMenuState(null);
+        window.addEventListener('click', close);
+        window.addEventListener('scroll', close);
+        return () => {
+            window.removeEventListener('click', close);
+            window.removeEventListener('scroll', close);
+        };
+    }, [menuState]);
+
     const isChiikawaTheme = state.activeVisualThemeId === 'chiikawa';
     const isShinchanTheme = state.activeVisualThemeId === 'shinchan';
+    const useDefaultIcon = state.settings.useDefaultThemeIcon !== false;
 
     const getIcon = (theme: any) => {
         const id = theme.id;
         const iconType = theme.iconType;
 
         if (isChiikawaTheme) {
-            const effectiveIcon = iconType || id;
+            const effectiveIcon = useDefaultIcon ? id : (iconType || id);
             switch (effectiveIcon) {
                 case 'english':
                 case 'hachiware': return <img src="/assets/chiikawa/sticker-1.png" alt="Hachiware" className="w-10 h-10 object-contain" />;
@@ -45,7 +108,7 @@ const FocusListPage: React.FC = () => {
         }
 
         if (isShinchanTheme) {
-            const effectiveIcon = iconType || id;
+            const effectiveIcon = useDefaultIcon ? id : (iconType || id);
             switch (effectiveIcon) {
                 case 'english':
                 case 'kazama': return <img src="/assets/shinchan/kazama.png" alt="Kazama" className="w-10 h-10 object-contain" />;
@@ -61,7 +124,7 @@ const FocusListPage: React.FC = () => {
             }
         }
 
-        const effectiveIcon = iconType || id;
+        const effectiveIcon = useDefaultIcon ? id : (iconType || id);
         switch (effectiveIcon) {
             case 'english': return <BrainIcon size={28} />;
             case '408': return <RocketIcon size={28} />;
@@ -216,7 +279,7 @@ const FocusListPage: React.FC = () => {
     };
 
     return (
-        <main className="min-h-screen w-full bg-[#FCFAF7] flex flex-col items-center justify-center p-6 selection:bg-cozy-orange/30 relative overflow-hidden">
+        <main className="min-h-screen w-full bg-[#FCFAF7] flex flex-col items-center justify-center p-6 pb-32 md:pb-36 selection:bg-cozy-orange/30 relative overflow-hidden">
             <AmbientBackground />
 
             <div className="relative z-10 w-full max-w-[1100px] flex flex-col items-center">
@@ -257,6 +320,11 @@ const FocusListPage: React.FC = () => {
                                 whileHover={{ y: -8, scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => handleThemeSelect(theme.id)}
+                                onContextMenu={(e) => handleContextMenu(e, theme)}
+                                onTouchStart={(e) => handleTouchStart(e, theme)}
+                                onTouchEnd={cancelLongPress}
+                                onTouchMove={cancelLongPress}
+                                onTouchCancel={cancelLongPress}
                                 className={`
                                     group relative flex flex-row md:flex-col items-center p-6 md:p-12
                                     rounded-[40px] md:rounded-[64px] bg-white/70 backdrop-blur-2xl
@@ -380,7 +448,7 @@ const FocusListPage: React.FC = () => {
                     <motion.button
                         whileHover={{ scale: 1.05, backgroundColor: 'rgba(255, 183, 102, 0.05)' }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => navigate(isAuthenticated ? '/settings' : '/login')}
+                        onClick={() => navigate(isAuthenticated ? '/profile' : '/login')}
                         className="flex flex-col md:flex-row items-center gap-1 md:gap-2.5 px-6 md:px-8 py-3 md:py-4 rounded-2xl text-cozy-warmOrange transition-all group"
                     >
                         <div className="p-2 md:p-0 bg-white/80 md:bg-transparent rounded-xl md:rounded-none shadow-sm md:shadow-none border border-white md:border-none">
@@ -426,6 +494,95 @@ const FocusListPage: React.FC = () => {
                 onCancel={cancelSwitch}
                 type="warning"
             />
+
+            <AnimatePresence>
+                {menuState && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.92 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.92 }}
+                        transition={{ duration: 0.12 }}
+                        style={{ position: 'fixed', left: menuState.x, top: menuState.y, zIndex: 1000 }}
+                        className="bg-white rounded-2xl shadow-[0_20px_50px_-10px_rgba(0,0,0,0.2)] border border-slate-100 p-2 min-w-[180px]"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <button
+                            onClick={handleComplete}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-left rounded-xl text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors font-bold text-sm"
+                        >
+                            <CheckCircle2 size={18} className="text-emerald-500" />
+                            <span>{t('common.complete', '完成')}</span>
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {completion && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setCompletion(null)}
+                        className="fixed inset-0 z-[1100] flex items-center justify-center bg-slate-900/40 p-6"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.7, y: 30 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.85, y: 20 }}
+                            transition={{ type: 'spring', damping: 18, stiffness: 280 }}
+                            className="relative bg-white rounded-[40px] shadow-2xl border border-white px-12 py-14 max-w-md w-full text-center overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {['🎉', '✨', '🌟', '💫', '🎊', '⭐'].map((emoji, i) => (
+                                <motion.span
+                                    key={i}
+                                    initial={{ opacity: 0, y: 0, x: 0, scale: 0 }}
+                                    animate={{
+                                        opacity: [0, 1, 1, 0],
+                                        y: [0, -80 - Math.random() * 60, -120 - Math.random() * 80],
+                                        x: [(i - 2.5) * 10, (i - 2.5) * 40, (i - 2.5) * 80],
+                                        scale: [0, 1.2, 0.8],
+                                        rotate: [0, 180, 360],
+                                    }}
+                                    transition={{ duration: 1.6, delay: i * 0.05, ease: 'easeOut' }}
+                                    className="absolute top-1/2 left-1/2 text-3xl pointer-events-none"
+                                    style={{ transformOrigin: 'center' }}
+                                >
+                                    {emoji}
+                                </motion.span>
+                            ))}
+
+                            <motion.div
+                                initial={{ scale: 0, rotate: -10 }}
+                                animate={{ scale: 1, rotate: 0 }}
+                                transition={{ delay: 0.15, type: 'spring', damping: 12, stiffness: 280 }}
+                                className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-xl shadow-emerald-200"
+                            >
+                                <CheckCircle2 size={40} className="text-white" strokeWidth={2.5} />
+                            </motion.div>
+
+                            <h3 className="text-2xl font-bold text-slate-900 mb-3 font-heading">
+                                {completion.themeName} {t('focus.completed', '完成了!')}
+                            </h3>
+                            <p className="text-slate-500 text-sm font-medium mb-2">
+                                {t('focus.totalSpent', '累计专注时长')}
+                            </p>
+                            <div className="text-5xl font-bold text-emerald-500 tabular-nums mb-6">
+                                {completion.minutes}
+                                <span className="text-base text-slate-400 font-bold uppercase tracking-widest ml-2">{t('timer.minutes', '分钟')}</span>
+                            </div>
+
+                            <button
+                                onClick={() => setCompletion(null)}
+                                className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-slate-800 transition-all active:scale-95"
+                            >
+                                {t('common.close', '关闭')}
+                            </button>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </main>
     );
 };

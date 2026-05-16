@@ -14,6 +14,29 @@
   --color-cozy-text: #4A4439;
   --color-cozy-text-light: #8E8575;
 
+  /* Dynamic visual theme tokens (defaults; useVisualTheme overrides at runtime) */
+  --theme-bg: #FDF7E4;
+  --theme-surface: rgba(255, 253, 250, 0.75);
+  --theme-glass: rgba(255, 253, 250, 0.5);
+  --theme-primary: #FFB766;
+  --theme-secondary: #D4EDDA;
+  --theme-accent: #FF6B6B;
+  --theme-text: #2D2923;
+  --theme-text-muted: #6D6556;
+  --theme-border: rgba(74, 68, 57, 0.1);
+
+  /* Tailwind color tokens bound to the visual theme so `bg-theme-*`, `text-theme-*`,
+     `border-theme-*` utilities resolve correctly across the focus-stats charts. */
+  --color-theme-bg: var(--theme-bg);
+  --color-theme-surface: var(--theme-surface);
+  --color-theme-glass: var(--theme-glass);
+  --color-theme-primary: var(--theme-primary);
+  --color-theme-secondary: var(--theme-secondary);
+  --color-theme-accent: var(--theme-accent);
+  --color-theme-text: var(--theme-text);
+  --color-theme-text-muted: var(--theme-text-muted);
+  --color-theme-border: var(--theme-border);
+
   /* Premium gradient colors */
   --color-gradient-purple: #A78BFA;
   --color-gradient-blue: #60A5FA;

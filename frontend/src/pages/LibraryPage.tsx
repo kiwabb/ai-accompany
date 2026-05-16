@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { Upload, Trash2, Edit2, FileText, BookOpen, Loader2, ArrowLeft, LayoutGrid, List, Tag } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Upload, Trash2, Edit2, FileText, BookOpen, Loader2, ChevronLeft as ChevronLeftIcon, LayoutGrid, List, Tag } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getAuthHeaders, getUserThemes } from '../api/client';
 import type { FocusTheme } from '../types/pomodoro';
 
@@ -25,6 +25,8 @@ import ConfirmModal from '../components/ConfirmModal';
 const LibraryPage: React.FC = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const themeFilter = searchParams.get('theme');
     const [documents, setDocuments] = useState<Document[]>([]);
     const [themes, setThemes] = useState<FocusTheme[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -124,20 +126,39 @@ const LibraryPage: React.FC = () => {
         <div className="min-h-screen bg-[#FCFAF7] relative overflow-hidden flex flex-col items-center py-12 px-6">
             <AmbientBackground />
 
+            <motion.button
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                whileHover={{ x: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate('/')}
+                className="fixed top-8 left-8 py-3 px-6 bg-white/60 backdrop-blur-2xl shadow-xl rounded-2xl flex items-center gap-2 group z-50 transition-colors font-bold uppercase tracking-widest text-[10px] border border-white text-slate-400 hover:text-slate-900"
+            >
+                <ChevronLeftIcon size={16} className="group-hover:-translate-x-1 transition-transform" />
+                <span>{t('common.backToTimer')}</span>
+            </motion.button>
+
             <div className="w-full max-w-5xl relative z-10">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
                     <div className="space-y-2">
-                        <button
-                            onClick={() => navigate('/')}
-                            className="group flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-all font-bold uppercase tracking-[2px] text-[10px] mb-2"
-                        >
-                            <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
-                            {t('common.backToTimer')}
-                        </button>
                         <h1 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight flex items-center gap-4 font-heading">
                             <BookOpen className="text-indigo-500" size={32} />
                             {t('common.library')}
                         </h1>
+                        {themeFilter && (
+                            <div className="flex items-center gap-2 mt-3">
+                                <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-50 text-indigo-600 text-xs font-bold uppercase tracking-widest border border-indigo-100">
+                                    <Tag size={12} />
+                                    {themes.find(t => t.id === themeFilter)?.name || themeFilter}
+                                </span>
+                                <button
+                                    onClick={() => navigate('/library')}
+                                    className="text-xs text-slate-400 hover:text-slate-600 font-bold uppercase tracking-widest"
+                                >
+                                    {t('common.clear', '清除筛选')}
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-4">
@@ -175,7 +196,7 @@ const LibraryPage: React.FC = () => {
                         <div className="flex justify-center items-center h-64">
                             <Loader2 className="animate-spin text-indigo-500 w-10 h-10" />
                         </div>
-                    ) : documents.length === 0 ? (
+                    ) : (themeFilter ? documents.filter(d => d.topic_id === themeFilter) : documents).length === 0 ? (
                         <div className="text-center py-24 rounded-[40px] border-4 border-dashed border-slate-100 bg-slate-50/30 flex flex-col items-center">
                             <div className="w-20 h-20 bg-white rounded-3xl shadow-inner flex items-center justify-center text-slate-200 mb-6 border border-white">
                                 <FileText size={40} />
@@ -184,7 +205,7 @@ const LibraryPage: React.FC = () => {
                         </div>
                     ) : (
                         <div className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" : "flex flex-col gap-4"}>
-                            {documents.map((doc) => (
+                            {(themeFilter ? documents.filter(d => d.topic_id === themeFilter) : documents).map((doc) => (
                                 <motion.div
                                     key={doc.id}
                                     initial={{ opacity: 0, scale: 0.95 }}
@@ -288,6 +309,7 @@ const LibraryPage: React.FC = () => {
                 isOpen={isUploadModalOpen}
                 onClose={() => setIsUploadModalOpen(false)}
                 onUploadComplete={fetchDocuments}
+                defaultTopicId={themeFilter}
             />
 
             <DocumentEditModal

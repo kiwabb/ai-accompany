@@ -113,7 +113,6 @@ export function useTimer({ initialSeconds, onComplete }: UseTimerProps) {
   useEffect(() => {
     if (!isActive) return;
     const id = setInterval(() => {
-      let isCompleted = false;
       setTimeLeft(t => {
         const newVal = t - 1;
         if (newVal <= 0) {

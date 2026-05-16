@@ -350,7 +350,7 @@ const OutlineItem: React.FC<{ item: any; onClick: (item: any) => void; level: nu
                 </span>
                 {!hasChildren && (
                     <span className="text-xs text-slate-400/80 font-mono">
-                        {typeof item.dest === 'string' ? item.dest : item.dest[0].num}
+                        {item.pageNumber || (typeof item.dest === 'string' ? item.dest : '')}
                     </span>
                 )}
             </div>
@@ -368,6 +368,7 @@ const OutlineItem: React.FC<{ item: any; onClick: (item: any) => void; level: nu
 const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
     const { t } = useTranslation();
     const [numPages, setNumPages] = useState<number>(0);
+    const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
     const [pageNumber, setPageNumber] = useState<number>(() => {
         if (!documentId) return 1;
         const saved = localStorage.getItem(`pdf_progress_${documentId}`);
@@ -1574,12 +1575,23 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                 return;
             }
 
-            const rect = pageElement.getBoundingClientRect();
-            const y = window.scrollY + rect.top + (Math.max(0, Math.min(100, topPercent)) / 100) * rect.height - 110;
-            window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+            const container = pageElement.closest('.overflow-y-auto');
+            if (container) {
+                const containerRect = container.getBoundingClientRect();
+                const elementRect = pageElement.getBoundingClientRect();
+                const relativeTop = elementRect.top - containerRect.top;
+                const scrollOffset = (Math.max(0, Math.min(100, topPercent)) / 100) * elementRect.height;
+                const targetY = container.scrollTop + relativeTop + scrollOffset - 72;
+                
+                container.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+            } else {
+                const rect = pageElement.getBoundingClientRect();
+                const y = window.scrollY + rect.top + (Math.max(0, Math.min(100, topPercent)) / 100) * rect.height - 110;
+                window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+            }
         };
 
-        window.setTimeout(tryScroll, 80);
+        window.setTimeout(tryScroll, 120);
     };
 
     const getPdfRefFromTarget = (target: HTMLElement): string | null => {
@@ -1948,9 +1960,10 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
         };
     }, []);
 
-    const onDocumentLoadSuccess = async (pdf: PDFDocumentProxy) => {
-        setNumPages(pdf.numPages);
-        const outlineData = await pdf.getOutline();
+    const onDocumentLoadSuccess = async (pdfDoc: PDFDocumentProxy) => {
+        setPdf(pdfDoc);
+        setNumPages(pdfDoc.numPages);
+        const outlineData = await pdfDoc.getOutline();
         onOutlineLoadSuccess(outlineData);
         
         if (pageNumber > 1) {
@@ -1960,26 +1973,141 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
         }
     };
 
-    const onOutlineLoadSuccess = (loadedOutline: any[] | null) => {
-        setOutline(loadedOutline);
+    const onOutlineLoadSuccess = async (loadedOutline: any[] | null) => {
+        if (loadedOutline && pdf) {
+            const resolveItems = async (items: any[]) => {
+                for (const item of items) {
+                    try {
+                        if (item.dest) {
+                            let dest = item.dest;
+                            if (typeof dest === 'string') {
+                                dest = await pdf.getDestination(dest);
+                            }
+                            if (Array.isArray(dest) && dest.length > 0) {
+                                const pageRef = dest[0];
+                                if (typeof pageRef === 'object' && pageRef !== null) {
+                                    item.pageNumber = (await pdf.getPageIndex(pageRef)) + 1;
+                                } else if (typeof pageRef === 'number') {
+                                    item.pageNumber = pageRef + 1;
+                                }
+
+                                if (dest.length >= 2) {
+                                    const typeObj = dest[1];
+                                    const type = typeof typeObj === 'object' && typeObj !== null ? typeObj.name : typeObj;
+                                    
+                                    if (type === 'XYZ' && dest.length >= 4) {
+                                        item.pdfY = dest[3];
+                                    } else if (type === 'FitH' && dest.length >= 3) {
+                                        item.pdfY = dest[2];
+                                    } else if (type === 'FitR' && dest.length >= 6) {
+                                        item.pdfY = dest[5];
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e) {
+                    }
+                    if (item.items && item.items.length > 0) {
+                        await resolveItems(item.items);
+                    }
+                }
+            };
+            await resolveItems(loadedOutline);
+        }
+        
+        setOutline(loadedOutline ? [...loadedOutline] : null);
         if (loadedOutline && loadedOutline.length > 0) {
             setIsSidebarOpen(true);
             setSidebarTab('outline');
         }
     };
 
-    const goToPage = (page: number) => {
+    const goToPage = (page: number, pdfY?: number) => {
         const pageElement = mainContainerRef.current?.querySelector(`[data-page-number="${page}"]`);
+        
         if (pageElement) {
-            pageElement.scrollIntoView({ behavior: 'smooth' });
+            if (pdfY !== undefined && pdfY !== null) {
+                void scrollToPdfCoordinate(page, pdfY);
+            } else {
+                pageElement.scrollIntoView({ behavior: 'smooth' });
+            }
             setPageNumber(page);
+        } else {
+            setPageNumber(page);
+            let attempts = 0;
+            const tryScroll = () => {
+                attempts++;
+                const el = mainContainerRef.current?.querySelector(`[data-page-number="${page}"]`);
+                if (el) {
+                    if (pdfY !== undefined && pdfY !== null) {
+                        void scrollToPdfCoordinate(page, pdfY);
+                    } else {
+                        el.scrollIntoView({ behavior: 'smooth' });
+                    }
+                } else if (attempts < 20) {
+                    setTimeout(tryScroll, 100);
+                }
+            };
+            setTimeout(tryScroll, 150);
         }
     };
 
-    const handleOutlineItemClick = (item: any) => {
-        if (item.dest) {
-            const page = typeof item.dest === 'string' ? item.dest : item.dest[0].num;
-            goToPage(page);
+    const scrollToPdfCoordinate = async (pageNumber: number, pdfY: number) => {
+        if (!pdf) return;
+        
+        try {
+            const page = await pdf.getPage(pageNumber);
+            const view = page.view; 
+            const pageHeightPoints = view[3] - view[1];
+            const topPercent = ((view[3] - pdfY) / pageHeightPoints) * 100;
+            
+            scrollPdfToReference(pageNumber, topPercent);
+        } catch (error) {
+            console.error('Failed to scroll to PDF coordinate', error);
+            const pageElement = mainContainerRef.current?.querySelector(`[data-page-number="${pageNumber}"]`);
+            pageElement?.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
+
+    const handleOutlineItemClick = async (item: any) => {
+        if (item.pageNumber) {
+            goToPage(item.pageNumber, item.pdfY);
+            return;
+        }
+
+        if (!item.dest || !pdf) return;
+
+        try {
+            let dest = item.dest;
+            if (typeof dest === 'string') {
+                dest = await pdf.getDestination(dest);
+            }
+
+            if (Array.isArray(dest) && dest.length > 0) {
+                const pageRef = dest[0];
+                let pageIndex = -1;
+                let pdfY: number | undefined;
+
+                if (typeof pageRef === 'object' && pageRef !== null) {
+                    pageIndex = await pdf.getPageIndex(pageRef);
+                } else if (typeof pageRef === 'number') {
+                    pageIndex = pageRef;
+                }
+
+                if (dest.length >= 2) {
+                    const typeObj = dest[1];
+                    const type = typeof typeObj === 'object' && typeObj !== null ? typeObj.name : typeObj;
+                    if (type === 'XYZ' && dest.length >= 4) pdfY = dest[3];
+                    else if (type === 'FitH' && dest.length >= 3) pdfY = dest[2];
+                }
+
+                if (pageIndex !== -1) {
+                    const targetPage = pageIndex + 1;
+                    goToPage(targetPage, pdfY);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to resolve outline destination', error);
         }
     };
 
@@ -2626,6 +2754,10 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
             )}
 
             <style>{`
+                .pdf-page-wrapper {
+                    scroll-margin-top: 72px;
+                }
+
                 .notes-flat-panel,
                 .notes-flat-panel * {
                     border-radius: 0 !important;

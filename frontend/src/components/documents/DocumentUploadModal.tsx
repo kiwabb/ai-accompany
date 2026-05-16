@@ -6,19 +6,24 @@ import { getAuthHeaders, getUserThemes } from '../../api/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { FocusTheme } from '../../types/pomodoro';
 import CustomSelect from '../ui/CustomSelect';
+import { useTimerContext } from '../../contexts/TimerContext';
 
 interface DocumentUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUploadComplete: () => void;
+  defaultTopicId?: string | null;
 }
 
 const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   isOpen,
   onClose,
   onUploadComplete,
+  defaultTopicId,
 }) => {
   const { t } = useTranslation();
+  const { state } = useTimerContext();
+  const fallbackTopicId = defaultTopicId ?? state.activeThemeId ?? null;
   const [themes, setThemes] = useState<FocusTheme[]>([]);
 
   const [file, setFile] = useState<File | null>(null);
@@ -44,11 +49,11 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
       setStep('info');
       setFile(null);
       setTitle('');
-      setSelectedTopicId(null);
+      setSelectedTopicId(fallbackTopicId);
       setProgress(0);
       setError(null);
     }
-  }, [isOpen]);
+  }, [isOpen, fallbackTopicId]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];

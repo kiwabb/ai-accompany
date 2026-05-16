@@ -59,6 +59,7 @@ class UserTheme(Base):
     name = Column(String, nullable=False)
     focus_duration = Column(Integer, nullable=False)
     is_default = Column(Boolean, default=False)
+    icon_type = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 

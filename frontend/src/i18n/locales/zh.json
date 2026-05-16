@@ -13,6 +13,7 @@
     "back": "返回",
     "backToTimer": "返回计时器",
     "library": "书架",
+    "themeLibrary": "{{theme}}书架",
     "login": "登录",
     "signup": "注册",
     "menu": "菜单",
@@ -39,6 +40,10 @@
     "minutes": "分钟"
   },
   "settings": {
+    "account": "账户",
+    "notLoggedIn": "未登录",
+    "viewProfile": "查看个人主页",
+    "tapToLogin": "点击登录",
     "visualTheme": "视觉主题",
     "durations": "计时器时长",
     "shortBreak": "短休时长 (分钟)",
@@ -119,6 +124,31 @@
       "saveAndRescan": "更新并重新扫描"
     }
   },
+  "profile": {
+    "welcomeBack": "欢迎回来",
+    "guest": "访客",
+    "logout": "退出登录",
+    "todayFocus": "今日专注",
+    "totalMinutes": "累计专注",
+    "activeDays": "坚持天数",
+    "days": "天",
+    "achievements": "成就",
+    "topTheme": "最专注的主题",
+    "statsDescription": "查看你的专注趋势与主题分布",
+    "achievementsDescription": "查看已解锁与正在解锁的成就",
+    "settingsDescription": "管理 AI、主题、计时与账号偏好"
+  },
+  "todo": {
+    "title": "待办",
+    "add": "添加",
+    "delete": "删除",
+    "check": "完成",
+    "uncheck": "取消勾选",
+    "placeholder": "添加一个待办...",
+    "empty": "暂无待办",
+    "remaining": "未完成",
+    "clearCompleted": "清除已完成"
+  },
   "countdown": {
     "title": "倒数日",
     "daysLeft": "天后",
@@ -134,6 +164,25 @@
     "hiddenDescription": "这是一个隐藏成就，达成后才能查看描述哦",
     "progress": "达成进度",
     "unlockedOn": "解锁于 {{date}}",
+    "unlockedCount": "已解锁",
+    "unlockedTag": "已解锁",
+    "completion": "完成度",
+    "nextUp": "即将解锁",
+    "allDone": "已全部解锁 ✨",
+    "justStarted": "刚刚起步",
+    "makingProgress": "稳步前进",
+    "almostThere": "即将完成",
+    "filterAll": "全部",
+    "filterUnlocked": "已解锁",
+    "filterInProgress": "进行中",
+    "empty": "暂无符合条件的成就",
+    "categories": {
+      "general": "通用成就",
+      "focus": "专注挑战",
+      "streak": "连续打卡",
+      "milestone": "里程碑",
+      "hidden": "隐藏成就"
+    },
     "items": {
       "first_session": {
         "name": "第一步",
@@ -159,6 +208,10 @@
     "dailyTrend": "专注趋势",
     "themes": "主题分布",
     "completed": "次专注",
+    "sessions": "次",
+    "minutesAxis": "分钟",
+    "themeBreakdown": "主题分布（同周期）",
+    "dailyMini": "每日趋势（同周期）",
     "perDay": "每日平均",
     "totalSessions": "总专注次数",
     "viewDetails": "查看详情",

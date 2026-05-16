@@ -2,7 +2,7 @@
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import CozyPal from '../CozyPal';
-import { I18nextProvider, useTranslation } from 'react-i18next';
+import { I18nextProvider } from 'react-i18next';
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import enTranslations from '../../i18n/locales/en.json';
@@ -24,7 +24,7 @@ testI18n
 vi.mock('react-i18next', async (importOriginal) => {
   const actual = await importOriginal();
   return {
-    ...actual,
+    ...(actual as object),
     useTranslation: () => ({
       t: (key: string) => {
         if (key === 'cozyPal.placeholder') return 'Type your message...';
@@ -121,7 +121,7 @@ describe('CozyPal', () => {
     await waitFor(() => {
       expect(screen.getByRole('dialog', { name: "Cozy Pal Chat Window" })).toBeInTheDocument();
     });
-    expect(screen.getByText((content, element) => {
+    expect(screen.getByText((_, element) => {
       return element?.textContent === 'Hello, how can I help you today?';
     })).toBeInTheDocument();
   });

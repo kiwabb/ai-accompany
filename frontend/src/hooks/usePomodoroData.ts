@@ -75,5 +75,5 @@ export const usePomodoroData = (dispatch: React.Dispatch<PomodoroAction>) => {
         fetchDailyStats();
     }, [fetchDailyStats, dispatch]);
 
-    return { todayStats, initialLoaded, fetchDailyStats, saveLearningSession };
+    return { todayStats, setTodayStats, initialLoaded, fetchDailyStats, saveLearningSession };
 };

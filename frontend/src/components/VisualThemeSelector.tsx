@@ -3,14 +3,18 @@ import { motion } from 'framer-motion';
 import { VISUAL_THEMES } from '../constants/themes';
 import { useTimerContext } from '../contexts/TimerContext';
 import { Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 
 const VisualThemeSelector: React.FC = () => {
-  const { state, handleVisualThemeChange } = useTimerContext();
-  const { activeVisualThemeId } = state;
+  const { t } = useTranslation();
+  const { state, handleVisualThemeChange, handleUpdateSetting } = useTimerContext();
+  const { activeVisualThemeId, settings } = state;
+  const useDefaultIcon = settings.useDefaultThemeIcon !== false;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       {VISUAL_THEMES.map((theme) => (
         <motion.button
           key={theme.id}
@@ -48,6 +52,26 @@ const VisualThemeSelector: React.FC = () => {
           )}
         </motion.button>
       ))}
+      </div>
+
+      <div className="bg-white/60 backdrop-blur-xl rounded-[24px] p-5 border border-white shadow-sm flex items-center gap-6">
+        <div className="flex-1">
+          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">
+            {t('settings.useDefaultThemeIcon', '使用主题默认图标')}
+          </label>
+          <p className="text-sm text-slate-400 font-medium">
+            {t('settings.useDefaultThemeIconDesc', '开:首页显示主题自带图标;关:使用专注主题列表里设置的图标')}
+          </p>
+        </div>
+        <button
+          onClick={() => handleUpdateSetting({ useDefaultThemeIcon: !useDefaultIcon })}
+          className={`w-16 h-8 rounded-full transition-all duration-300 relative shrink-0
+            ${useDefaultIcon ? 'bg-indigo-500' : 'bg-slate-200'}`}
+        >
+          <div className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-sm transition-all duration-300
+            ${useDefaultIcon ? 'left-9' : 'left-1'}`} />
+        </button>
+      </div>
     </div>
   );
 };

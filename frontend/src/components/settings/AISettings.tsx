@@ -54,41 +54,43 @@ const AISettings: React.FC<AISettingsProps> = ({
       </header>
 
       <div className="grid grid-cols-1 gap-4">
-        <div className="bg-white/60 backdrop-blur-xl rounded-[32px] p-6 border border-white shadow-sm flex flex-col md:flex-row items-center gap-6 group hover:shadow-xl transition-all duration-500">
-          <div className="w-full md:w-1/3">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">{t('settings.provider')}</label>
-            <p className="text-sm text-slate-400 font-medium">使用的 AI 核心服务商</p>
+        <div className="bg-white/60 backdrop-blur-xl rounded-[32px] p-6 border border-white shadow-sm group hover:shadow-xl transition-all duration-500 divide-y divide-slate-100/80">
+          <div className="flex flex-col md:flex-row items-center gap-6 pb-6">
+            <div className="w-full md:w-1/3">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">{t('settings.provider')}</label>
+              <p className="text-sm text-slate-400 font-medium">使用的 AI 核心服务商</p>
+            </div>
+            <div className="w-full md:flex-1">
+              <CustomSelect
+                value={settings.aiProvider || 'gemini'}
+                onChange={(val) => handleSettingChange('aiProvider', val)}
+                options={[
+                  { value: 'gemini', label: 'Google Gemini Pro 1.5' },
+                  { value: 'gpt', label: 'OpenAI (GPT-4o)' },
+                  { value: 'deepseek', label: 'DeepSeek V3' },
+                  { value: 'zhipu', label: '智谱 AI (GLM-4)' },
+                  { value: 'ollama', label: 'Ollama (Local Provider)' },
+                ]}
+              />
+            </div>
           </div>
-          <div className="w-full md:flex-1">
-            <CustomSelect
-              value={settings.aiProvider || 'gemini'}
-              onChange={(val) => handleSettingChange('aiProvider', val)}
-              options={[
-                { value: 'gemini', label: 'Google Gemini Pro 1.5' },
-                { value: 'gpt', label: 'OpenAI (GPT-4o)' },
-                { value: 'deepseek', label: 'DeepSeek V3' },
-                { value: 'zhipu', label: '智谱 AI (GLM-4)' },
-                { value: 'ollama', label: 'Ollama (Local Provider)' },
-              ]}
-            />
-          </div>
-        </div>
 
-        <div className="bg-white/60 backdrop-blur-xl rounded-[32px] p-6 border border-white shadow-sm flex flex-col md:flex-row items-center gap-6 group hover:shadow-xl transition-all duration-500">
-          <div className="w-full md:w-1/3">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">{t('settings.model')}</label>
-            <p className="text-sm text-slate-400 font-medium">选择具体的 AI 模型版本</p>
-          </div>
-          <div className="w-full md:flex-1">
-            <CustomSelect
-              value={settings.aiModel || ''}
-              onChange={(val) => handleSettingChange('aiModel', val)}
-              options={[
-                { value: '', label: isFetchingModels ? t('settings.loading') : t('settings.default') },
-                ...availableModels.map(model => ({ value: model, label: model }))
-              ]}
-              disabled={isFetchingModels}
-            />
+          <div className="flex flex-col md:flex-row items-center gap-6 pt-6">
+            <div className="w-full md:w-1/3">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">{t('settings.model')}</label>
+              <p className="text-sm text-slate-400 font-medium">选择具体的 AI 模型版本</p>
+            </div>
+            <div className="w-full md:flex-1">
+              <CustomSelect
+                value={settings.aiModel || ''}
+                onChange={(val) => handleSettingChange('aiModel', val)}
+                options={[
+                  { value: '', label: isFetchingModels ? t('settings.loading') : t('settings.default') },
+                  ...availableModels.map(model => ({ value: model, label: model }))
+                ]}
+                disabled={isFetchingModels}
+              />
+            </div>
           </div>
         </div>
 

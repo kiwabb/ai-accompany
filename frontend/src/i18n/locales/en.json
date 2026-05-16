@@ -13,6 +13,7 @@
     "back": "Back",
     "backToTimer": "Back to Timer",
     "library": "Library",
+    "themeLibrary": "{{theme}} Library",
     "login": "Login",
     "signup": "Sign Up",
     "menu": "Menu",
@@ -39,6 +40,10 @@
     "minutes": "min"
   },
   "settings": {
+    "account": "Account",
+    "notLoggedIn": "Not signed in",
+    "viewProfile": "View profile",
+    "tapToLogin": "Tap to sign in",
     "visualTheme": "Visual Theme",
     "durations": "Timer Durations",
     "shortBreak": "Short Break (minutes)",
@@ -119,6 +124,31 @@
       "saveAndRescan": "Update & Re-scan"
     }
   },
+  "profile": {
+    "welcomeBack": "Welcome back",
+    "guest": "Guest",
+    "logout": "Log out",
+    "todayFocus": "Today",
+    "totalMinutes": "Total focus",
+    "activeDays": "Active days",
+    "days": "days",
+    "achievements": "Achievements",
+    "topTheme": "Top theme",
+    "statsDescription": "See your focus trends and theme breakdown",
+    "achievementsDescription": "Browse unlocked and in-progress achievements",
+    "settingsDescription": "Manage AI, theme, timer and account preferences"
+  },
+  "todo": {
+    "title": "Todo",
+    "add": "Add",
+    "delete": "Delete",
+    "check": "Mark done",
+    "uncheck": "Uncheck",
+    "placeholder": "Add a todo...",
+    "empty": "No todos yet",
+    "remaining": "left",
+    "clearCompleted": "Clear completed"
+  },
   "countdown": {
     "title": "Countdowns",
     "daysLeft": "days left",
@@ -134,6 +164,25 @@
     "hiddenDescription": "This is a hidden achievement. Unlock it to see the description!",
     "progress": "Progress",
     "unlockedOn": "Unlocked on {{date}}",
+    "unlockedCount": "Unlocked",
+    "unlockedTag": "Unlocked",
+    "completion": "Completion",
+    "nextUp": "Up Next",
+    "allDone": "All unlocked ✨",
+    "justStarted": "Just getting started",
+    "makingProgress": "Making progress",
+    "almostThere": "Almost there",
+    "filterAll": "All",
+    "filterUnlocked": "Unlocked",
+    "filterInProgress": "In progress",
+    "empty": "No achievements match",
+    "categories": {
+      "general": "General",
+      "focus": "Focus",
+      "streak": "Streak",
+      "milestone": "Milestone",
+      "hidden": "Hidden"
+    },
     "items": {
       "first_session": {
         "name": "First Step",
@@ -159,6 +208,10 @@
     "dailyTrend": "Daily Trend",
     "themes": "Theme Distribution",
     "completed": "Sessions",
+    "sessions": "sessions",
+    "minutesAxis": "min",
+    "themeBreakdown": "Theme breakdown",
+    "dailyMini": "Daily trend",
     "perDay": "daily avg",
     "totalSessions": "Total Sessions",
     "viewDetails": "View Details",
