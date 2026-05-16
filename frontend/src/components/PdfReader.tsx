@@ -2740,10 +2740,10 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                         >
                             <PenLine size={16} className="md:w-[18px] md:h-[18px]" />
                         </button>
-                    </div>
 
-                    {isPenMode && (
-                        <div className="flex items-center gap-1 bg-[#f0eee9]/50 rounded-lg p-0.5 border border-[#e9e6da]">
+                        {isPenMode && (
+                            <>
+                            <div className="w-px h-5 bg-[#d9d5c8] mx-0.5" />
                             <button
                                 onClick={() => setPenTool('draw')}
                                 className={`p-1.5 rounded-md transition-all ${penTool === 'draw' ? 'bg-blue-100 text-blue-700' : 'hover:bg-white text-[#6b6654]'}`}
@@ -2828,8 +2828,9 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                                     </div>
                                 </>
                             )}
-                        </div>
-                    )}
+                            </>
+                        )}
+                    </div>
 
                     {/* Highlight color picker */}
                     <div className="flex items-center gap-1 bg-[#f0eee9]/50 rounded-lg p-1 border border-[#e9e6da]" title={t('reader.highlightColor', '高亮颜色')}>
