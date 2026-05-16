@@ -2241,39 +2241,26 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
         if (!container) return;
 
         let debounceId: number | undefined;
-        // 普通 resize（滚动条等）走防抖 + 阈值，防止 flicker。
-        const updateThrottled = () => {
+        // 用统一的 24px 阈值过滤滚动条等亚像素抖动；侧栏 288px / 笔记 520px 都能通过。
+        const update = () => {
             const next = container.clientWidth;
             setContainerWidth((prev) => (Math.abs(prev - next) >= 24 ? next : prev));
         };
-        // 状态切换 (sidebar/notebook) 强制更新，不走阈值——sidebar 288px / notebook 520px
-        // 是 UI 主动行为，必须让 PDF 立即 refit。
-        const updateForce = () => {
-            const next = container.clientWidth;
-            setContainerWidth((prev) => (prev === next ? prev : next));
-        };
-        const scheduleThrottled = () => {
+        const scheduleUpdate = () => {
             if (debounceId !== undefined) window.clearTimeout(debounceId);
-            debounceId = window.setTimeout(updateThrottled, 120);
+            debounceId = window.setTimeout(update, 120);
         };
 
-        updateForce();
-        const observer = new ResizeObserver(scheduleThrottled);
+        update();
+        const observer = new ResizeObserver(scheduleUpdate);
         observer.observe(container);
 
-        // 跨过 framer-motion 0.25s 进入动画窗口，多次 rAF 强制采样
-        const rafIds: number[] = [];
-        let frame = 0;
-        const tick = () => {
-            updateForce();
-            frame += 1;
-            if (frame < 30) rafIds.push(requestAnimationFrame(tick));
-        };
-        rafIds.push(requestAnimationFrame(tick));
+        // 状态切换后再延迟测一次，跨过 framer-motion 进入动画的最终落点
+        const settleId = window.setTimeout(update, 320);
 
         return () => {
             if (debounceId !== undefined) window.clearTimeout(debounceId);
-            rafIds.forEach((id) => cancelAnimationFrame(id));
+            window.clearTimeout(settleId);
             observer.disconnect();
         };
     }, [isNotebookOpen, isSidebarOpen, notePanelWidth]);
