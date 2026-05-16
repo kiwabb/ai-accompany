@@ -2241,30 +2241,33 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
         if (!container) return;
 
         let debounceId: number | undefined;
-        const update = () => {
+        // 普通 resize（滚动条等）走防抖 + 阈值，防止 flicker。
+        const updateThrottled = () => {
             const next = container.clientWidth;
-            // 阈值 ≥24px 才更新：滚动条出现/消失（~15px）等微小抖动不触发 PDF 重渲。
-            // 侧栏开/关（288px）、笔记面板等大幅度宽度变化会通过。
             setContainerWidth((prev) => (Math.abs(prev - next) >= 24 ? next : prev));
         };
-        const scheduleUpdate = () => {
+        // 状态切换 (sidebar/notebook) 强制更新，不走阈值——sidebar 288px / notebook 520px
+        // 是 UI 主动行为，必须让 PDF 立即 refit。
+        const updateForce = () => {
+            const next = container.clientWidth;
+            setContainerWidth((prev) => (prev === next ? prev : next));
+        };
+        const scheduleThrottled = () => {
             if (debounceId !== undefined) window.clearTimeout(debounceId);
-            debounceId = window.setTimeout(update, 120);
+            debounceId = window.setTimeout(updateThrottled, 120);
         };
 
-        update();
-        const observer = new ResizeObserver(scheduleUpdate);
+        updateForce();
+        const observer = new ResizeObserver(scheduleThrottled);
         observer.observe(container);
 
-        // 侧栏/笔记面板切换时：CSS 改 padding 是同步的，但 framer-motion
-        // 的 sticky 笔记面板有 0.25s 进入动画，期间 mainContainer 宽度逐帧变化。
-        // 用 rAF 在动画结束后再测一次，确保 PDF 用最终宽度。
+        // 跨过 framer-motion 0.25s 进入动画窗口，多次 rAF 强制采样
         const rafIds: number[] = [];
         let frame = 0;
         const tick = () => {
-            update();
+            updateForce();
             frame += 1;
-            if (frame < 24) rafIds.push(requestAnimationFrame(tick));
+            if (frame < 30) rafIds.push(requestAnimationFrame(tick));
         };
         rafIds.push(requestAnimationFrame(tick));
 
@@ -2273,13 +2276,13 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
             rafIds.forEach((id) => cancelAnimationFrame(id));
             observer.disconnect();
         };
-    }, [isNotebookOpen, isSidebarOpen]);
+    }, [isNotebookOpen, isSidebarOpen, notePanelWidth]);
 
     const pageRenderWidth = React.useMemo(() => {
-        const fitWidth = Math.max(340, Math.floor(containerWidth - 16));
+        // 100% = mainContainer 当前可用宽度（= 整窗宽 - 左侧栏 - 右侧栏 / 笔记面板 - CozyPal）
+        // 不留 padding，PDF 直接铺满可用区。
+        const fitWidth = Math.max(340, Math.floor(containerWidth));
         const zoom = isManualZoom ? scale : 1;
-        // 上限放宽到 2400，确保 200%+ 缩放时仍然有足够 CSS 像素，避免 react-pdf 被截断
-        // 真实 canvas 像素 = pageRenderWidth × devicePixelRatio，retina 显示器实际可达 4800px
         return Math.max(320, Math.min(2400, Math.floor(fitWidth * zoom)));
     }, [containerWidth, isManualZoom, scale]);
 
