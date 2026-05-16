@@ -120,7 +120,10 @@
     "shortcutRotate": "Rotate 90°",
     "shortcutFullscreen": "Fullscreen",
     "shortcutHelp": "This help",
-    "shortcutEsc": "Close popups / clear selection"
+    "shortcutEsc": "Close popups / clear selection",
+    "shortcutFind": "Find (Ctrl/Cmd+F)",
+    "shortcutSearchNav": "Search input: Enter for next / Shift+Enter for previous",
+    "highlightColor": "Highlight color"
   },
   "themes": {
     "english": "English",

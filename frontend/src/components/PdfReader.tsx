@@ -32,6 +32,8 @@ interface HighlightRect {
     height: number;
 }
 
+type HighlightColor = 'yellow' | 'green' | 'blue' | 'pink';
+
 interface HighlightItem {
     id: string;
     page: number;
@@ -39,7 +41,15 @@ interface HighlightItem {
     createdAt: string;
     text?: string;
     linkedBookmarkId?: string;
+    color?: HighlightColor;
 }
+
+const HIGHLIGHT_COLORS: Record<HighlightColor, { bg: string; border: string; swatch: string }> = {
+    yellow: { bg: 'rgba(250, 204, 21, 0.30)', border: 'rgba(202, 138, 4, 0.45)', swatch: '#facc15' },
+    green: { bg: 'rgba(74, 222, 128, 0.28)', border: 'rgba(22, 163, 74, 0.45)', swatch: '#4ade80' },
+    blue: { bg: 'rgba(96, 165, 250, 0.30)', border: 'rgba(37, 99, 235, 0.45)', swatch: '#60a5fa' },
+    pink: { bg: 'rgba(244, 114, 182, 0.28)', border: 'rgba(219, 39, 119, 0.45)', swatch: '#f472b6' },
+};
 
 interface PxRect {
     left: number;
@@ -124,9 +134,13 @@ interface PdfReaderProps {
     documentId?: string;
 }
 
+interface ColoredHighlightRect extends HighlightRect {
+    color: HighlightColor;
+}
+
 const HighlightInteractiveLayer: React.FC<{
     pageNumber: number;
-    highlightRects: HighlightRect[];
+    highlightRects: ColoredHighlightRect[];
     highlightActionAreas: HighlightActionArea[];
     onHighlightHover: (event: React.MouseEvent<HTMLButtonElement>, highlightId: string) => void;
     onHighlightLeave: () => void;
@@ -134,21 +148,24 @@ const HighlightInteractiveLayer: React.FC<{
     disabled?: boolean;
 }> = ({ pageNumber, highlightRects, highlightActionAreas, onHighlightHover, onHighlightLeave, actionTitle, disabled = false }) => (
     <>
-        {highlightRects.map((rect, idx) => (
-            <div
-                key={`${pageNumber}-${idx}`}
-                className="absolute rounded-[2px] pointer-events-none"
-                style={{
-                    left: `${rect.left}%`,
-                    top: `${rect.top}%`,
-                    width: `${rect.width}%`,
-                    height: `${rect.height}%`,
-                    backgroundColor: 'rgba(250, 204, 21, 0.24)',
-                    border: '1px solid rgba(217, 119, 6, 0.35)',
-                    mixBlendMode: 'multiply',
-                }}
-            />
-        ))}
+        {highlightRects.map((rect, idx) => {
+            const palette = HIGHLIGHT_COLORS[rect.color] ?? HIGHLIGHT_COLORS.yellow;
+            return (
+                <div
+                    key={`${pageNumber}-${idx}`}
+                    className="absolute rounded-[2px] pointer-events-none"
+                    style={{
+                        left: `${rect.left}%`,
+                        top: `${rect.top}%`,
+                        width: `${rect.width}%`,
+                        height: `${rect.height}%`,
+                        backgroundColor: palette.bg,
+                        border: `1px solid ${palette.border}`,
+                        mixBlendMode: 'multiply',
+                    }}
+                />
+            );
+        })}
         {!disabled && highlightActionAreas.map((area) => (
             <button
                 key={`hit-${pageNumber}-${area.id}`}
@@ -324,7 +341,7 @@ const LazyPage = React.memo(({
     rotation: 0 | 90 | 180 | 270;
     pageWidth: number;
     onVisible: (page: number) => void;
-    highlightRects: HighlightRect[];
+    highlightRects: ColoredHighlightRect[];
     highlightActionAreas: HighlightActionArea[];
     onHighlightHover: (event: React.MouseEvent<HTMLButtonElement>, highlightId: string) => void;
     onHighlightLeave: () => void;
@@ -527,6 +544,15 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
     const [isSearching, setIsSearching] = useState(false);
     const [searchCursor, setSearchCursor] = useState(0);
     const [showShortcuts, setShowShortcuts] = useState(false);
+    const [currentHighlightColor, setCurrentHighlightColor] = useState<HighlightColor>(() => {
+        const saved = typeof window !== 'undefined' ? localStorage.getItem('pdf_highlight_color') : null;
+        if (saved === 'yellow' || saved === 'green' || saved === 'blue' || saved === 'pink') return saved;
+        return 'yellow';
+    });
+
+    useEffect(() => {
+        try { localStorage.setItem('pdf_highlight_color', currentHighlightColor); } catch { /* ignore */ }
+    }, [currentHighlightColor]);
 
     useEffect(() => {
         try {
@@ -856,39 +882,44 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
     }, [highlights]);
 
     const mergedHighlightRectsByPage = React.useMemo(() => {
-        const result = new Map<number, HighlightRect[]>();
+        // 按颜色分组合并，避免跨颜色合并丢失视觉区分
+        const result = new Map<number, ColoredHighlightRect[]>();
         for (const [page, items] of highlightsByPage.entries()) {
-            const rawRects = items.flatMap((item) => item.rects);
-            const sorted = rawRects
-                .filter((r) => r.width > 0.2 && r.height > 0.2)
-                .sort((a, b) => (Math.abs(a.top - b.top) < 0.1 ? a.left - b.left : a.top - b.top));
-
-            const merged: HighlightRect[] = [];
-            const lineTolerance = 0.6;
-            const gapTolerance = 0.8;
-
-            for (const current of sorted) {
-                const prev = merged[merged.length - 1];
-                if (!prev) {
-                    merged.push({ ...current });
-                    continue;
-                }
-
-                const sameLine = Math.abs(prev.top - current.top) <= lineTolerance;
-                const closeEnough = current.left <= prev.left + prev.width + gapTolerance;
-
-                if (sameLine && closeEnough) {
-                    const right = Math.max(prev.left + prev.width, current.left + current.width);
-                    prev.left = Math.min(prev.left, current.left);
-                    prev.top = Math.min(prev.top, current.top);
-                    prev.height = Math.max(prev.height, current.height);
-                    prev.width = right - prev.left;
-                } else {
-                    merged.push({ ...current });
-                }
+            const byColor = new Map<HighlightColor, HighlightRect[]>();
+            for (const item of items) {
+                const color = (item.color ?? 'yellow') as HighlightColor;
+                if (!byColor.has(color)) byColor.set(color, []);
+                byColor.get(color)!.push(...item.rects);
             }
-
-            result.set(page, merged);
+            const allMerged: ColoredHighlightRect[] = [];
+            for (const [color, rawRects] of byColor.entries()) {
+                const sorted = rawRects
+                    .filter((r) => r.width > 0.2 && r.height > 0.2)
+                    .sort((a, b) => (Math.abs(a.top - b.top) < 0.1 ? a.left - b.left : a.top - b.top));
+                const merged: HighlightRect[] = [];
+                const lineTolerance = 0.6;
+                const gapTolerance = 0.8;
+                for (const current of sorted) {
+                    const prev = merged[merged.length - 1];
+                    if (!prev) {
+                        merged.push({ ...current });
+                        continue;
+                    }
+                    const sameLine = Math.abs(prev.top - current.top) <= lineTolerance;
+                    const closeEnough = current.left <= prev.left + prev.width + gapTolerance;
+                    if (sameLine && closeEnough) {
+                        const right = Math.max(prev.left + prev.width, current.left + current.width);
+                        prev.left = Math.min(prev.left, current.left);
+                        prev.top = Math.min(prev.top, current.top);
+                        prev.height = Math.max(prev.height, current.height);
+                        prev.width = right - prev.left;
+                    } else {
+                        merged.push({ ...current });
+                    }
+                }
+                for (const rect of merged) allMerged.push({ ...rect, color });
+            }
+            result.set(page, allMerged);
         }
         return result;
     }, [highlightsByPage]);
@@ -916,7 +947,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
         return result;
     }, [highlightsByPage]);
 
-    const getPageHighlights = React.useCallback((page: number): HighlightRect[] => {
+    const getPageHighlights = React.useCallback((page: number): ColoredHighlightRect[] => {
         return mergedHighlightRectsByPage.get(page) ?? [];
     }, [mergedHighlightRectsByPage]);
 
@@ -1622,6 +1653,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
             createdAt: new Date().toISOString(),
             text: selectedText || undefined,
             linkedBookmarkId: bookmarkId,
+            color: currentHighlightColor,
         };
 
         const nextHighlights = [...highlights, newHighlight];
@@ -1870,6 +1902,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
             rects: [selection.rect],
             createdAt: new Date().toISOString(),
             linkedBookmarkId: bookmarkId,
+            color: currentHighlightColor,
         };
 
         const nextHighlights = [...highlights, newHighlight];
@@ -2037,6 +2070,19 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
         };
 
         const onKeyDown = (e: KeyboardEvent) => {
+            // Ctrl/Cmd+F 总是拦截，打开搜索侧栏
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'f' || e.key === 'F')) {
+                e.preventDefault();
+                setSidebarTab('search');
+                setIsSidebarOpen(true);
+                setTimeout(() => {
+                    const input = document.querySelector<HTMLInputElement>('input[type="text"][placeholder*="搜索"], input[type="text"][placeholder*="Search"]');
+                    input?.focus();
+                    input?.select();
+                }, 100);
+                return;
+            }
+
             if (e.key === 'Alt') {
                 setIsAltPressed(true);
                 return;
@@ -2715,6 +2761,20 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                         </div>
                     )}
 
+                    {/* Highlight color picker */}
+                    <div className="flex items-center gap-1 bg-[#f0eee9]/50 rounded-lg p-1 border border-[#e9e6da]" title={t('reader.highlightColor', '高亮颜色')}>
+                        {(Object.keys(HIGHLIGHT_COLORS) as HighlightColor[]).map((c) => (
+                            <button
+                                key={c}
+                                onClick={() => setCurrentHighlightColor(c)}
+                                className={`w-5 h-5 rounded-full border-2 transition-all ${currentHighlightColor === c ? 'border-slate-700 ring-2 ring-offset-1 ring-slate-300' : 'border-white/80 hover:scale-110'}`}
+                                style={{ backgroundColor: HIGHLIGHT_COLORS[c].swatch }}
+                                title={c}
+                                aria-label={`highlight-${c}`}
+                            />
+                        ))}
+                    </div>
+
                     <div className="flex items-center gap-1 bg-[#f0eee9]/50 rounded-lg p-0.5 border border-[#e9e6da]">
                     <button
                         onClick={() => {
@@ -2984,10 +3044,29 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                                         <div className="relative">
                                             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                             <input
+                                                type="text"
                                                 value={searchQuery}
                                                 onChange={(e) => setSearchQuery(e.target.value)}
                                                 onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') performSearch(searchQuery);
+                                                    if (e.key === 'Enter') {
+                                                        if (e.shiftKey && searchResults.length > 0) {
+                                                            const prev = (searchCursor - 1 + searchResults.length) % searchResults.length;
+                                                            setSearchCursor(prev);
+                                                            goToPage(searchResults[prev].page);
+                                                        } else if (searchResults.length > 0 && !searchQuery.trim().length) {
+                                                            // empty query but have stale results
+                                                            performSearch(searchQuery);
+                                                        } else if (searchResults.length > 0) {
+                                                            // 已有结果 → 跳到下一条
+                                                            const next = (searchCursor + 1) % searchResults.length;
+                                                            setSearchCursor(next);
+                                                            goToPage(searchResults[next].page);
+                                                        } else {
+                                                            performSearch(searchQuery);
+                                                        }
+                                                    } else if (e.key === 'Escape') {
+                                                        (e.target as HTMLInputElement).blur();
+                                                    }
                                                 }}
                                                 placeholder={t('reader.searchPlaceholder', '搜索 PDF 全文...')}
                                                 className="w-full h-9 pl-9 pr-3 text-xs rounded-lg border border-[#e9e6da] bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
@@ -3410,6 +3489,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                                     { keys: ['B'], desc: t('reader.shortcutBookmark', '切换书签') },
                                     { keys: ['R'], desc: t('reader.shortcutRotate', '旋转 90°') },
                                     { keys: ['F'], desc: t('reader.shortcutFullscreen', '全屏') },
+                                    { keys: ['Ctrl/Cmd', 'F'], desc: t('reader.shortcutFind', '搜索') },
                                     { keys: ['?'], desc: t('reader.shortcutHelp', '本帮助') },
                                     { keys: ['Esc'], desc: t('reader.shortcutEsc', '关闭弹窗 / 清除选区') },
                                 ].map((row) => (

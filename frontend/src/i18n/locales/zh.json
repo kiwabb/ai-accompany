@@ -120,7 +120,10 @@
     "shortcutRotate": "旋转 90°",
     "shortcutFullscreen": "全屏",
     "shortcutHelp": "本帮助",
-    "shortcutEsc": "关闭弹窗 / 清除选区"
+    "shortcutEsc": "关闭弹窗 / 清除选区",
+    "shortcutFind": "搜索 (Ctrl/Cmd+F)",
+    "shortcutSearchNav": "搜索框 Enter 下一条 / Shift+Enter 上一条",
+    "highlightColor": "高亮颜色"
   },
   "themes": {
     "english": "英语",
