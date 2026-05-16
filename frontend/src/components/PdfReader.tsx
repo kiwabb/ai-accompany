@@ -2832,20 +2832,6 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                         )}
                     </div>
 
-                    {/* Highlight color picker */}
-                    <div className="flex items-center gap-1 bg-[#f0eee9]/50 rounded-lg p-1 border border-[#e9e6da]" title={t('reader.highlightColor', '高亮颜色')}>
-                        {(Object.keys(HIGHLIGHT_COLORS) as HighlightColor[]).map((c) => (
-                            <button
-                                key={c}
-                                onClick={() => setCurrentHighlightColor(c)}
-                                className={`w-5 h-5 rounded-full border-2 transition-all ${currentHighlightColor === c ? 'border-slate-700 ring-2 ring-offset-1 ring-slate-300' : 'border-white/80 hover:scale-110'}`}
-                                style={{ backgroundColor: HIGHLIGHT_COLORS[c].swatch }}
-                                title={c}
-                                aria-label={`highlight-${c}`}
-                            />
-                        ))}
-                    </div>
-
                     <div className="flex items-center gap-1 bg-[#f0eee9]/50 rounded-lg p-0.5 border border-[#e9e6da]">
                         <button
                             onClick={() => setReadingMode((prev) => prev === 'day' ? 'sepia' : prev === 'sepia' ? 'night' : 'day')}
@@ -3458,6 +3444,19 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                     >
                         {t('reader.highlightArea', '整体高亮（含OCR）')}
                     </button>
+                    <div className="flex items-center gap-1 px-1 border-l border-r border-slate-700 mx-0.5">
+                        {(Object.keys(HIGHLIGHT_COLORS) as HighlightColor[]).map((c) => (
+                            <button
+                                key={c}
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => setCurrentHighlightColor(c)}
+                                className={`w-4 h-4 rounded-full border-2 transition-transform hover:scale-110 ${currentHighlightColor === c ? 'border-white' : 'border-white/40'}`}
+                                style={{ backgroundColor: HIGHLIGHT_COLORS[c].swatch }}
+                                title={t('reader.highlightColor', '高亮颜色')}
+                                aria-label={`hl-color-${c}`}
+                            />
+                        ))}
+                    </div>
                     <button
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={copyAreaImageToClipboard}
