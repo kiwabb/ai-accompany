@@ -526,6 +526,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
     const [searchResults, setSearchResults] = useState<Array<{ page: number; snippet: string; offset: number }>>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [searchCursor, setSearchCursor] = useState(0);
+    const [showShortcuts, setShowShortcuts] = useState(false);
 
     useEffect(() => {
         try {
@@ -2109,6 +2110,11 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                     e.preventDefault();
                     void toggleFullscreen();
                     break;
+                case '?':
+                case '/':
+                    e.preventDefault();
+                    setShowShortcuts((prev) => !prev);
+                    break;
             }
         };
 
@@ -2792,6 +2798,13 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                                 <Maximize2 size={16} className="md:w-[18px] md:h-[18px]" />
                             )}
                         </button>
+                        <button
+                            onClick={() => setShowShortcuts(true)}
+                            className="px-2 h-7 text-[10px] font-semibold hover:bg-white rounded-md transition-all text-[#6b6654]"
+                            title={t('reader.shortcutsHelp', '快捷键 (?)')}
+                        >
+                            ?
+                        </button>
                     </div>
                 </div>
             </div>
@@ -3359,6 +3372,69 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                     border-radius: 0 !important;
                 }
             `}</style>
+
+            <AnimatePresence>
+                {showShortcuts && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-6"
+                        onClick={() => setShowShortcuts(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 10 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.95, y: 10 }}
+                            transition={{ type: 'spring', stiffness: 360, damping: 24 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-white rounded-3xl shadow-2xl border border-white w-full max-w-md p-8"
+                        >
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-lg font-bold text-slate-900">{t('reader.shortcutsTitle', '键盘快捷键')}</h3>
+                                <button
+                                    onClick={() => setShowShortcuts(false)}
+                                    className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
+                                    aria-label={t('common.close', '关闭')}
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+                            <ul className="space-y-2.5 text-sm">
+                                {[
+                                    { keys: ['←', '→'], desc: t('reader.shortcutPrevNext', '上一页 / 下一页') },
+                                    { keys: ['Space'], desc: t('reader.shortcutSpace', '下一页') },
+                                    { keys: ['Home', 'End'], desc: t('reader.shortcutHomeEnd', '首页 / 末页') },
+                                    { keys: ['+', '-'], desc: t('reader.shortcutZoom', '放大 / 缩小') },
+                                    { keys: ['0'], desc: t('reader.shortcutFit', '适应宽度') },
+                                    { keys: ['B'], desc: t('reader.shortcutBookmark', '切换书签') },
+                                    { keys: ['R'], desc: t('reader.shortcutRotate', '旋转 90°') },
+                                    { keys: ['F'], desc: t('reader.shortcutFullscreen', '全屏') },
+                                    { keys: ['?'], desc: t('reader.shortcutHelp', '本帮助') },
+                                    { keys: ['Esc'], desc: t('reader.shortcutEsc', '关闭弹窗 / 清除选区') },
+                                ].map((row) => (
+                                    <li key={row.desc} className="flex items-center justify-between gap-3 py-1">
+                                        <div className="flex items-center gap-1.5">
+                                            {row.keys.map((k) => (
+                                                <kbd
+                                                    key={k}
+                                                    className="px-2 py-0.5 text-[11px] font-bold font-mono bg-slate-100 border border-slate-200 rounded text-slate-700 shadow-sm"
+                                                >
+                                                    {k}
+                                                </kbd>
+                                            ))}
+                                        </div>
+                                        <span className="text-slate-600 font-medium text-right">{row.desc}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                            <p className="mt-6 text-[10px] font-bold uppercase tracking-widest text-slate-400 text-center">
+                                {t('reader.shortcutsHint', '按 ? 随时打开本面板')}
+                            </p>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

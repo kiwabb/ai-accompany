@@ -107,7 +107,20 @@
     "exportNotes": "Export bookmarks, highlights and notes to Markdown",
     "thumbnails": "Page thumbnails",
     "thumbnailsShort": "Pages",
-    "loadingThumbnails": "Loading thumbnails..."
+    "loadingThumbnails": "Loading thumbnails...",
+    "shortcutsTitle": "Keyboard shortcuts",
+    "shortcutsHelp": "Shortcuts (?)",
+    "shortcutsHint": "Press ? anytime to open this panel",
+    "shortcutPrevNext": "Previous / Next page",
+    "shortcutSpace": "Next page",
+    "shortcutHomeEnd": "First / Last page",
+    "shortcutZoom": "Zoom in / out",
+    "shortcutFit": "Fit width",
+    "shortcutBookmark": "Toggle bookmark",
+    "shortcutRotate": "Rotate 90°",
+    "shortcutFullscreen": "Fullscreen",
+    "shortcutHelp": "This help",
+    "shortcutEsc": "Close popups / clear selection"
   },
   "themes": {
     "english": "English",

@@ -107,7 +107,20 @@
     "exportNotes": "导出书签、高亮和笔记到 Markdown",
     "thumbnails": "页面缩略图",
     "thumbnailsShort": "页面",
-    "loadingThumbnails": "正在加载缩略图..."
+    "loadingThumbnails": "正在加载缩略图...",
+    "shortcutsTitle": "键盘快捷键",
+    "shortcutsHelp": "快捷键 (?)",
+    "shortcutsHint": "按 ? 随时打开本面板",
+    "shortcutPrevNext": "上一页 / 下一页",
+    "shortcutSpace": "下一页",
+    "shortcutHomeEnd": "首页 / 末页",
+    "shortcutZoom": "放大 / 缩小",
+    "shortcutFit": "适应宽度",
+    "shortcutBookmark": "切换书签",
+    "shortcutRotate": "旋转 90°",
+    "shortcutFullscreen": "全屏",
+    "shortcutHelp": "本帮助",
+    "shortcutEsc": "关闭弹窗 / 清除选区"
   },
   "themes": {
     "english": "英语",
