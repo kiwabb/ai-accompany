@@ -3356,7 +3356,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                                 : readingMode === 'night' ? 'invert(0.92) hue-rotate(180deg) saturate(0.95) brightness(0.92)'
                                     : undefined,
                     }}
-                    className={`flex-1 flex flex-col items-center pt-0 pb-4 transition-all duration-300 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-0'} ${(isPenMode && penTool === 'highlight' && !penDraftView) ? 'cursor-text' : isPenMode || penDraftView || areaDrag || isAltPressed ? 'cursor-crosshair' : cursorMode === 'text' ? 'cursor-text' : cursorMode === 'crosshair' ? 'cursor-crosshair' : 'cursor-auto'}`}
+                    className={`flex-1 min-w-0 overflow-hidden flex flex-col items-center pt-0 pb-4 transition-all duration-300 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-0'} ${(isPenMode && penTool === 'highlight' && !penDraftView) ? 'cursor-text' : isPenMode || penDraftView || areaDrag || isAltPressed ? 'cursor-crosshair' : cursorMode === 'text' ? 'cursor-text' : cursorMode === 'crosshair' ? 'cursor-crosshair' : 'cursor-auto'}`}
                     onMouseDown={handleAreaMouseDown}
                     onMouseMove={handleAreaMouseMove}
                     onMouseUp={handleAreaMouseUp}
