@@ -133,6 +133,7 @@
     "sessionTime": "本次阅读时长",
     "addToNote": "添加笔记",
     "penUndo": "撤销上一笔",
+    "penHighlighter": "荧光笔",
     "noteInsertFailed": "该高亮无文本"
   },
   "themes": {

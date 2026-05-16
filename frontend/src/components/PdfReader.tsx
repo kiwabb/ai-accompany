@@ -97,6 +97,7 @@ interface PenStroke {
     width: number;
     color: string;
     createdAt: string;
+    opacity?: number;
     bounds?: {
         left: number;
         top: number;
@@ -189,48 +190,38 @@ const HighlightInteractiveLayer: React.FC<{
     </>
 );
 
-const HandwritingLayer: React.FC<{ strokes: PenStroke[]; draftPath?: string }> = ({ strokes, draftPath }) => (
+const HandwritingLayer: React.FC<{
+    strokes: PenStroke[];
+    draftPath?: string;
+    draftColor?: string;
+    draftWidth?: number;
+}> = ({ strokes, draftPath, draftColor, draftWidth }) => (
     <svg
         className="absolute inset-0 w-full h-full pointer-events-none"
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
     >
         {strokes.map((stroke) => (
-            <g key={stroke.id}>
-                <path
-                    d={stroke.path}
-                    fill="none"
-                    stroke="rgba(15, 23, 42, 0.18)"
-                    strokeWidth={stroke.width + 0.22}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                />
-                <path
-                    d={stroke.path}
-                    fill="none"
-                    stroke={stroke.color}
-                    strokeWidth={stroke.width}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                />
-                <path
-                    d={stroke.path}
-                    fill="none"
-                    stroke="rgba(255,255,255,0.2)"
-                    strokeWidth={Math.max(0.12, stroke.width * 0.45)}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                />
-            </g>
+            <path
+                key={stroke.id}
+                d={stroke.path}
+                fill="none"
+                stroke={stroke.color}
+                strokeWidth={stroke.width}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity={stroke.opacity ?? 1}
+            />
         ))}
         {draftPath && (
             <path
                 d={draftPath}
                 fill="none"
-                stroke="rgba(59,130,246,0.8)"
-                strokeWidth={0.5}
+                stroke={draftColor || 'rgba(59,130,246,0.8)'}
+                strokeWidth={draftWidth ?? 0.5}
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                opacity={0.85}
             />
         )}
     </svg>
@@ -309,12 +300,12 @@ const PageThumbnail: React.FC<{
         <button
             ref={wrapRef}
             onClick={onClick}
-            style={{ borderRadius: 4 }}
-            className={`group w-full flex flex-col items-center gap-1 p-1.5 transition-all ${isActive ? 'bg-indigo-50 ring-2 ring-indigo-300' : 'hover:bg-slate-50'}`}
+            style={{ borderRadius: 0 }}
+            className={`group w-full flex flex-col items-center gap-1 p-1.5 transition-all ${isActive ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}
         >
             <div
-                className="w-full aspect-[3/4] bg-white border border-[#e9e6da] overflow-hidden flex items-center justify-center"
-                style={{ borderRadius: 2 }}
+                className={`w-full aspect-[3/4] bg-white overflow-hidden flex items-center justify-center ${isActive ? 'border-2 border-indigo-500' : 'border border-[#e9e6da]'}`}
+                style={{ borderRadius: 0 }}
             >
                 <canvas
                     ref={canvasRef}
@@ -341,6 +332,8 @@ const LazyPage = React.memo(({
     highlightActionsDisabled,
     penStrokes,
     draftPenPath,
+    draftPenColor,
+    draftPenWidth,
     areaDraftRect,
     areaSelectedRect,
 }: {
@@ -355,6 +348,8 @@ const LazyPage = React.memo(({
     highlightActionsDisabled?: boolean;
     penStrokes: PenStroke[];
     draftPenPath?: string;
+    draftPenColor?: string;
+    draftPenWidth?: number;
     areaDraftRect?: HighlightRect;
     areaSelectedRect?: HighlightRect;
 }) => {
@@ -412,7 +407,12 @@ const LazyPage = React.memo(({
                 actionTitle={t('reader.highlightActions', '高亮操作')}
                 disabled={highlightActionsDisabled}
             />
-            <HandwritingLayer strokes={penStrokes} draftPath={draftPenPath} />
+            <HandwritingLayer
+                strokes={penStrokes}
+                draftPath={draftPenPath}
+                draftColor={draftPenColor}
+                draftWidth={draftPenWidth}
+            />
             {areaDraftRect && (
                 <div
                     className="absolute border-2 border-amber-400 bg-amber-200/20 pointer-events-none"
@@ -523,13 +523,13 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
     const penDraftRef = useRef<PenDraftState | null>(null);
     const [penDraftView, setPenDraftView] = useState<{ page: number; path: string } | null>(null);
     const [penErase, setPenErase] = useState<PenEraseState | null>(null);
-    const [penTool, setPenTool] = useState<'draw' | 'erase'>('draw');
+    const [penTool, setPenTool] = useState<'draw' | 'highlight' | 'erase'>('draw');
     const [penColor, setPenColor] = useState<string>(PEN_COLORS[0]);
     const [penWidth, setPenWidth] = useState<number>(PEN_WIDTHS[1]);
     const [cursorMode, setCursorMode] = useState<CursorMode>('auto');
     const [isAltPressed, setIsAltPressed] = useState(false);
     const [notice, setNotice] = useState<ReaderNotice | null>(null);
-    const [isNotebookOpen, setIsNotebookOpen] = useState(true);
+    const [isNotebookOpen, setIsNotebookOpen] = useState(false);
     const [notePanelWidth, setNotePanelWidth] = useState(520);
     const [noteMarkdown, setNoteMarkdown] = useState('');
     const [noteDraft, setNoteDraft] = useState('');
@@ -1429,12 +1429,14 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
             bottom: Math.max(...beautified.map((p) => p.y)),
         };
 
+        const isHighlighter = penTool === 'highlight';
         const stroke: PenStroke = {
             id: `pen-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
             page: draft.page,
             path,
-            width: penWidth,
+            width: isHighlighter ? penWidth * 4 : penWidth,
             color: penColor,
+            opacity: isHighlighter ? 0.35 : 1,
             createdAt: new Date().toISOString(),
             bounds,
         };
@@ -2219,14 +2221,12 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                 case '+':
                 case '=':
                     e.preventDefault();
-                    setIsManualZoom(true);
-                    setScale(s => Math.min(2.0, s + 0.1));
+                    applyZoom(s => Math.min(2.0, Math.round((s + 0.1) * 10) / 10));
                     break;
                 case '-':
                 case '_':
                     e.preventDefault();
-                    setIsManualZoom(true);
-                    setScale(s => Math.max(0.6, s - 0.1));
+                    applyZoom(s => Math.max(0.6, Math.round((s - 0.1) * 10) / 10));
                     break;
                 case '0':
                     e.preventDefault();
@@ -2501,6 +2501,32 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
         }
     };
 
+    // 缩放时锚定当前页面：先记下相对位置，缩放生效后再恢复
+    const applyZoom = (next: number | ((s: number) => number)) => {
+        const scrollContainer = mainContainerRef.current?.closest('.overflow-y-auto') as HTMLElement | null;
+        const pageElement = mainContainerRef.current?.querySelector(`[data-page-number="${pageNumber}"]`) as HTMLElement | null;
+        let relativeOffset = 0;
+        if (scrollContainer && pageElement) {
+            const containerRect = scrollContainer.getBoundingClientRect();
+            const pageRect = pageElement.getBoundingClientRect();
+            relativeOffset = pageRect.top - containerRect.top;
+        }
+        setIsManualZoom(true);
+        setScale(next);
+        // 在下两个 frame 后页面已重新布局，把当前页滚回原相对位置。
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                if (!scrollContainer) return;
+                const newPage = mainContainerRef.current?.querySelector(`[data-page-number="${pageNumber}"]`) as HTMLElement | null;
+                if (!newPage) return;
+                const containerRect = scrollContainer.getBoundingClientRect();
+                const newRect = newPage.getBoundingClientRect();
+                const delta = newRect.top - containerRect.top - relativeOffset;
+                scrollContainer.scrollTop += delta;
+            });
+        });
+    };
+
     const submitJumpPage = () => {
         const target = parseInt(pageInputValue, 10);
         setIsEditingPage(false);
@@ -2714,16 +2740,6 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                         >
                             <PenLine size={16} className="md:w-[18px] md:h-[18px]" />
                         </button>
-                        <button
-                            onClick={() => {
-                                if (pageNumber <= 0) return;
-                                setPenStrokes((prev) => prev.filter((stroke) => stroke.page !== pageNumber));
-                            }}
-                            className="px-2 h-7 text-[10px] font-semibold rounded-md hover:bg-white text-[#6b6654]"
-                            title={t('reader.clearInkPage', '清空本页笔迹')}
-                        >
-                            {t('reader.clearInk', '清笔迹')}
-                        </button>
                     </div>
 
                     {isPenMode && (
@@ -2744,6 +2760,16 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                             >
                                 ↶
                             </button>
+                            <button
+                                onClick={() => {
+                                    if (pageNumber <= 0) return;
+                                    setPenStrokes((prev) => prev.filter((stroke) => stroke.page !== pageNumber));
+                                }}
+                                className="px-2 h-7 text-[10px] font-semibold rounded-md hover:bg-white text-[#6b6654]"
+                                title={t('reader.clearInkPage', '清空本页笔迹')}
+                            >
+                                {t('reader.clearInk', '清笔迹')}
+                            </button>
                             <div className="w-px h-5 bg-[#d9d5c8] mx-0.5" />
                             <button
                                 onClick={() => setPenTool('draw')}
@@ -2753,6 +2779,21 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                                 <PenLine size={16} className="md:w-[18px] md:h-[18px]" />
                             </button>
                             <button
+                                onClick={() => {
+                                    setPenTool('highlight');
+                                    // 切到荧光笔默认换成黄色
+                                    if (penColor === '#111827' || penColor === '#2563eb' || penColor === '#dc2626' || penColor === '#059669' || penColor === '#7c3aed') {
+                                        setPenColor('#facc15');
+                                    }
+                                }}
+                                className={`p-1.5 rounded-md transition-all ${penTool === 'highlight' ? 'bg-yellow-100 text-yellow-700' : 'hover:bg-white text-[#6b6654]'}`}
+                                title={t('reader.penHighlighter', '荧光笔')}
+                            >
+                                <span className="block w-4 h-4 md:w-[18px] md:h-[18px] relative">
+                                    <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-2 bg-current opacity-40 rounded-sm" />
+                                </span>
+                            </button>
+                            <button
                                 onClick={() => setPenTool('erase')}
                                 className={`p-1.5 rounded-md transition-all ${penTool === 'erase' ? 'bg-red-100 text-red-700' : 'hover:bg-white text-[#6b6654]'}`}
                                 title={t('reader.penEraser', '橡皮')}
@@ -2760,11 +2801,14 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                                 <Eraser size={16} className="md:w-[18px] md:h-[18px]" />
                             </button>
 
-                            {penTool === 'draw' && (
+                            {(penTool === 'draw' || penTool === 'highlight') && (
                                 <>
                                     <div className="w-px h-5 bg-[#d9d5c8] mx-0.5" />
                                     <div className="flex items-center gap-1 px-1">
-                                        {PEN_COLORS.map((color) => (
+                                        {(penTool === 'highlight'
+                                            ? ['#facc15', '#4ade80', '#60a5fa', '#f472b6', '#fb923c']
+                                            : PEN_COLORS
+                                        ).map((color) => (
                                             <button
                                                 key={color}
                                                 onClick={() => setPenColor(color)}
@@ -3219,7 +3263,14 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                                     actionTitle={t('reader.highlightActions', '高亮操作')}
                                     disabled={isPenMode}
                                 />
-                                <HandwritingLayer strokes={getPagePenStrokes(1)} draftPath={getPageDraftPenPath(1)} />
+                                <HandwritingLayer
+                                    strokes={getPagePenStrokes(1)}
+                                    draftPath={getPageDraftPenPath(1)}
+                                    draftColor={penTool === 'highlight'
+                                        ? `${penColor}`
+                                        : penColor}
+                                    draftWidth={penTool === 'highlight' ? penWidth * 4 : penWidth}
+                                />
                                 {areaDraft?.page === 1 && (
                                     <div
                                         className="absolute border-2 border-amber-400 bg-amber-200/20 pointer-events-none"
@@ -3262,6 +3313,8 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                                 highlightActionsDisabled={isPenMode}
                                 penStrokes={getPagePenStrokes(index + 2)}
                                 draftPenPath={getPageDraftPenPath(index + 2)}
+                                draftPenColor={penColor}
+                                draftPenWidth={penTool === 'highlight' ? penWidth * 4 : penWidth}
                                 areaDraftRect={areaDraft?.page === index + 2 ? areaDraft.rect : undefined}
                                 areaSelectedRect={areaSelection?.page === index + 2 ? areaSelection.rect : undefined}
                             />
@@ -3559,10 +3612,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                     {/* 缩放组 */}
                     <div className="flex items-center gap-1 px-1">
                         <button
-                            onClick={() => {
-                                setIsManualZoom(true);
-                                setScale(s => Math.max(0.6, s - 0.08));
-                            }}
+                            onClick={() => applyZoom(s => Math.max(0.6, Math.round((s - 0.1) * 10) / 10))}
                             className="p-1.5 hover:bg-slate-100 text-slate-700 transition-colors"
                             style={{ borderRadius: 8 }}
                             title={t('reader.zoomOut', '缩小 (-)')}
@@ -3581,10 +3631,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                             {!isManualZoom ? t('reader.fit', '适应') : `${Math.round(scale * 100)}%`}
                         </button>
                         <button
-                            onClick={() => {
-                                setIsManualZoom(true);
-                                setScale(s => Math.min(2.0, s + 0.08));
-                            }}
+                            onClick={() => applyZoom(s => Math.min(2.0, Math.round((s + 0.1) * 10) / 10))}
                             className="p-1.5 hover:bg-slate-100 text-slate-700 transition-colors"
                             style={{ borderRadius: 8 }}
                             title={t('reader.zoomIn', '放大 (+)')}

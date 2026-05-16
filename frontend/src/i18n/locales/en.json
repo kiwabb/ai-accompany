@@ -133,6 +133,7 @@
     "sessionTime": "Session reading time",
     "addToNote": "Add note",
     "penUndo": "Undo last stroke",
+    "penHighlighter": "Highlighter",
     "noteInsertFailed": "Highlight has no text"
   },
   "themes": {
