@@ -158,7 +158,7 @@ const HighlightInteractiveLayer: React.FC<{
             return (
                 <div
                     key={`${pageNumber}-${idx}`}
-                    className="absolute pointer-events-none"
+                    className="pdf-highlight-rect absolute pointer-events-none"
                     style={{
                         left: `${rect.left}%`,
                         top: `${rect.top}%`,
@@ -167,6 +167,10 @@ const HighlightInteractiveLayer: React.FC<{
                         backgroundColor: palette.bg,
                         mixBlendMode: 'multiply',
                         borderRadius: 0,
+                        // 强制独立合成层，避免被祖先 transform/opacity 把 blend 模式
+                        // 误合成成普通 alpha 叠加。
+                        willChange: 'transform',
+                        transform: 'translateZ(0)',
                     }}
                 />
             );
@@ -3554,8 +3558,8 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                     }
                 ` : ''}
 
-                /* 让 pdf-page-wrapper 创建独立堆叠上下文，
-                   把高亮 multiply 限定在 page 内部与 canvas 像素相乘。 */
+                /* 把 multiply 限定在每个 pdf-page-wrapper 内部，
+                   避免 blend 穿出去和其他元素相乘导致颜色被冲淡。 */
                 .pdf-page-wrapper { isolation: isolate; }
             `}</style>
 
