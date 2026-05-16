@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -2236,12 +2236,21 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
         }
     }, [pageNumber, documentId, numPages]);
 
+    // 侧栏 / 笔记面板状态变化时：useLayoutEffect 在浏览器下一次绘制之前
+    // 同步测量并更新 containerWidth，避免出现 "旧大宽度 PDF 渲染→溢出右侧" 的中间帧。
+    useLayoutEffect(() => {
+        const container = mainContainerRef.current;
+        if (!container) return;
+        const next = container.clientWidth;
+        setContainerWidth((prev) => (Math.abs(prev - next) >= 24 ? next : prev));
+    }, [isNotebookOpen, isSidebarOpen, notePanelWidth]);
+
+    // ResizeObserver 处理窗口 resize、CozyPal 宽度变化等异步场景。
     useEffect(() => {
         const container = mainContainerRef.current;
         if (!container) return;
 
         let debounceId: number | undefined;
-        // 用统一的 24px 阈值过滤滚动条等亚像素抖动；侧栏 288px / 笔记 520px 都能通过。
         const update = () => {
             const next = container.clientWidth;
             setContainerWidth((prev) => (Math.abs(prev - next) >= 24 ? next : prev));
@@ -2250,20 +2259,14 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
             if (debounceId !== undefined) window.clearTimeout(debounceId);
             debounceId = window.setTimeout(update, 120);
         };
-
         update();
         const observer = new ResizeObserver(scheduleUpdate);
         observer.observe(container);
-
-        // 状态切换后再延迟测一次，跨过 framer-motion 进入动画的最终落点
-        const settleId = window.setTimeout(update, 320);
-
         return () => {
             if (debounceId !== undefined) window.clearTimeout(debounceId);
-            window.clearTimeout(settleId);
             observer.disconnect();
         };
-    }, [isNotebookOpen, isSidebarOpen, notePanelWidth]);
+    }, []);
 
     const pageRenderWidth = React.useMemo(() => {
         // 100% = mainContainer 当前可用宽度（= 整窗宽 - 左侧栏 - 右侧栏 / 笔记面板 - CozyPal）
