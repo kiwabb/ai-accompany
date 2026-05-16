@@ -179,6 +179,8 @@ const HighlightInteractiveLayer: React.FC<{
                     top: `${area.top}%`,
                     width: `${area.width}%`,
                     height: `${area.height}%`,
+                    borderRadius: 0,
+                    outlineOffset: 0,
                 }}
                 aria-label="highlight-actions"
                 title={actionTitle}
