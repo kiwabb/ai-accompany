@@ -2745,14 +2745,6 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                     {isPenMode && (
                         <div className="flex items-center gap-1 bg-[#f0eee9]/50 rounded-lg p-0.5 border border-[#e9e6da]">
                             <button
-                                onClick={stopPenMode}
-                                className="px-2 h-7 text-[10px] font-semibold rounded-md hover:bg-white text-[#6b6654]"
-                                title={t('reader.exitPen', '退出手写')}
-                            >
-                                {t('reader.exitPen', '退出')}
-                            </button>
-                            <div className="w-px h-5 bg-[#d9d5c8] mx-0.5" />
-                            <button
                                 onClick={() => setPenTool('draw')}
                                 className={`p-1.5 rounded-md transition-all ${penTool === 'draw' ? 'bg-blue-100 text-blue-700' : 'hover:bg-white text-[#6b6654]'}`}
                                 title={t('reader.penDraw', '画笔')}
