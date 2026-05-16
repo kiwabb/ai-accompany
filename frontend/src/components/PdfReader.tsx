@@ -202,37 +202,85 @@ const HandwritingLayer: React.FC<{
     draftPath?: string;
     draftColor?: string;
     draftWidth?: number;
-}> = ({ strokes, draftPath, draftColor, draftWidth }) => (
-    <svg
-        className="absolute inset-0 w-full h-full pointer-events-none"
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-    >
-        {strokes.map((stroke) => (
-            <path
-                key={stroke.id}
-                d={stroke.path}
-                fill="none"
-                stroke={stroke.color}
-                strokeWidth={stroke.width}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                opacity={stroke.opacity ?? 1}
-            />
-        ))}
-        {draftPath && (
-            <path
-                d={draftPath}
-                fill="none"
-                stroke={draftColor || 'rgba(59,130,246,0.8)'}
-                strokeWidth={draftWidth ?? 0.5}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                opacity={0.85}
-            />
-        )}
-    </svg>
-);
+    /** 当前正在写的是荧光笔（true：用 multiply blend 而不是降低 opacity） */
+    draftIsHighlighter?: boolean;
+}> = ({ strokes, draftPath, draftColor, draftWidth, draftIsHighlighter }) => {
+    // 荧光笔笔触和普通画笔分到两个 SVG：荧光笔 SVG 整体 mix-blend-mode: multiply，
+    // 笔触保持全不透明饱和色，与 canvas 像素相乘 → 文字保留、底色饱满。
+    // translateZ 强制独立合成层避免被祖先 transform 把 blend mode 压平。
+    const highlighterStrokes = strokes.filter((s) => (s.opacity ?? 1) < 1);
+    const penStrokes = strokes.filter((s) => (s.opacity ?? 1) >= 1);
+
+    return (
+        <>
+            {/* 普通画笔层（不带 blend） */}
+            <svg
+                className="absolute inset-0 w-full h-full pointer-events-none"
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+            >
+                {penStrokes.map((stroke) => (
+                    <path
+                        key={stroke.id}
+                        d={stroke.path}
+                        fill="none"
+                        stroke={stroke.color}
+                        strokeWidth={stroke.width}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    />
+                ))}
+                {draftPath && !draftIsHighlighter && (
+                    <path
+                        d={draftPath}
+                        fill="none"
+                        stroke={draftColor || 'rgba(59,130,246,0.8)'}
+                        strokeWidth={draftWidth ?? 0.5}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        opacity={0.85}
+                    />
+                )}
+            </svg>
+
+            {/* 荧光笔层：mix-blend-mode multiply + 独立合成层 */}
+            {(highlighterStrokes.length > 0 || (draftPath && draftIsHighlighter)) && (
+                <svg
+                    className="absolute inset-0 w-full h-full pointer-events-none"
+                    viewBox="0 0 100 100"
+                    preserveAspectRatio="none"
+                    style={{
+                        mixBlendMode: 'multiply',
+                        willChange: 'transform',
+                        transform: 'translateZ(0)',
+                    }}
+                >
+                    {highlighterStrokes.map((stroke) => (
+                        <path
+                            key={stroke.id}
+                            d={stroke.path}
+                            fill="none"
+                            stroke={stroke.color}
+                            strokeWidth={stroke.width}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        />
+                    ))}
+                    {draftPath && draftIsHighlighter && (
+                        <path
+                            d={draftPath}
+                            fill="none"
+                            stroke={draftColor || 'rgb(255, 210, 0)'}
+                            strokeWidth={draftWidth ?? 0.5}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        />
+                    )}
+                </svg>
+            )}
+        </>
+    );
+};
 
 // Sub-component for Lazy Loading Individual Pages
 const PageThumbnail: React.FC<{
@@ -341,6 +389,7 @@ const LazyPage = React.memo(({
     draftPenPath,
     draftPenColor,
     draftPenWidth,
+    draftIsHighlighter,
     areaDraftRect,
     areaSelectedRect,
 }: {
@@ -357,6 +406,7 @@ const LazyPage = React.memo(({
     draftPenPath?: string;
     draftPenColor?: string;
     draftPenWidth?: number;
+    draftIsHighlighter?: boolean;
     areaDraftRect?: HighlightRect;
     areaSelectedRect?: HighlightRect;
 }) => {
@@ -419,6 +469,7 @@ const LazyPage = React.memo(({
                 draftPath={draftPenPath}
                 draftColor={draftPenColor}
                 draftWidth={draftPenWidth}
+                draftIsHighlighter={draftIsHighlighter}
             />
             {areaDraftRect && (
                 <div
@@ -3323,10 +3374,9 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                                 <HandwritingLayer
                                     strokes={getPagePenStrokes(1)}
                                     draftPath={getPageDraftPenPath(1)}
-                                    draftColor={penTool === 'highlight'
-                                        ? `${penColor}`
-                                        : penColor}
+                                    draftColor={penColor}
                                     draftWidth={penTool === 'highlight' ? penWidth * 4 : penWidth}
+                                    draftIsHighlighter={penTool === 'highlight'}
                                 />
                                 {areaDraft?.page === 1 && (
                                     <div
@@ -3372,6 +3422,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                                 draftPenPath={getPageDraftPenPath(index + 2)}
                                 draftPenColor={penColor}
                                 draftPenWidth={penTool === 'highlight' ? penWidth * 4 : penWidth}
+                                draftIsHighlighter={penTool === 'highlight'}
                                 areaDraftRect={areaDraft?.page === index + 2 ? areaDraft.rect : undefined}
                                 areaSelectedRect={areaSelection?.page === index + 2 ? areaSelection.rect : undefined}
                             />
