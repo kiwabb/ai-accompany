@@ -153,7 +153,7 @@ const HighlightInteractiveLayer: React.FC<{
             return (
                 <div
                     key={`${pageNumber}-${idx}`}
-                    className="absolute rounded-[2px] pointer-events-none"
+                    className="absolute pointer-events-none"
                     style={{
                         left: `${rect.left}%`,
                         top: `${rect.top}%`,
@@ -161,6 +161,7 @@ const HighlightInteractiveLayer: React.FC<{
                         height: `${rect.height}%`,
                         backgroundColor: palette.bg,
                         border: `1px solid ${palette.border}`,
+                        borderRadius: 2,
                         mixBlendMode: 'multiply',
                     }}
                 />
