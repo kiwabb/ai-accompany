@@ -544,6 +544,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
     const [isSearching, setIsSearching] = useState(false);
     const [searchCursor, setSearchCursor] = useState(0);
     const [showShortcuts, setShowShortcuts] = useState(false);
+    const [sessionSeconds, setSessionSeconds] = useState(0);
     const [currentHighlightColor, setCurrentHighlightColor] = useState<HighlightColor>(() => {
         const saved = typeof window !== 'undefined' ? localStorage.getItem('pdf_highlight_color') : null;
         if (saved === 'yellow' || saved === 'green' || saved === 'blue' || saved === 'pink') return saved;
@@ -553,6 +554,39 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
     useEffect(() => {
         try { localStorage.setItem('pdf_highlight_color', currentHighlightColor); } catch { /* ignore */ }
     }, [currentHighlightColor]);
+
+    // 阅读时长计时：仅在 tab 处于可见状态时累计
+    useEffect(() => {
+        let intervalId: number | undefined;
+        const start = () => {
+            if (intervalId !== undefined) return;
+            intervalId = window.setInterval(() => setSessionSeconds((s) => s + 1), 1000);
+        };
+        const stop = () => {
+            if (intervalId !== undefined) {
+                window.clearInterval(intervalId);
+                intervalId = undefined;
+            }
+        };
+        const handleVisibility = () => {
+            if (document.hidden) stop(); else start();
+        };
+        start();
+        document.addEventListener('visibilitychange', handleVisibility);
+        return () => {
+            stop();
+            document.removeEventListener('visibilitychange', handleVisibility);
+        };
+    }, []);
+
+    const formatReadingTime = (totalSec: number) => {
+        const h = Math.floor(totalSec / 3600);
+        const m = Math.floor((totalSec % 3600) / 60);
+        const s = totalSec % 60;
+        if (h > 0) return `${h}h${String(m).padStart(2, '0')}m`;
+        if (m > 0) return `${m}m${String(s).padStart(2, '0')}s`;
+        return `${s}s`;
+    };
 
     useEffect(() => {
         try {
@@ -1125,6 +1159,16 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
         const targetId = highlightMenu.highlightId;
         closeHighlightMenu();
         await deleteHighlightById(targetId);
+    };
+
+    const recolorHighlight = async (color: HighlightColor) => {
+        if (!highlightMenu.highlightId) return;
+        const targetId = highlightMenu.highlightId;
+        const nextHighlights = highlights.map((h) =>
+            h.id === targetId ? { ...h, color } : h
+        );
+        setHighlights(nextHighlights);
+        await saveReaderState(bookmarks, nextHighlights);
     };
 
     const mergeSelectionRects = (rangeRects: DOMRect[], pageRect: DOMRect): HighlightRect[] => {
@@ -2663,6 +2707,9 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                             style={{ width: `${numPages > 0 ? (pageNumber / numPages) * 100 : 0}%` }}
                         />
                     </div>
+                    <div className="text-[9px] font-bold text-slate-400 tabular-nums tracking-wider" title={t('reader.sessionTime', '本次阅读时长')}>
+                        ⏱ {formatReadingTime(sessionSeconds)}
+                    </div>
                 </div>
 
                 {/* Right: Pen + Zoom Controls */}
@@ -3351,6 +3398,19 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                     onMouseEnter={cancelHideHighlightMenu}
                     onMouseLeave={scheduleHideHighlightMenu}
                 >
+                    <div className="flex items-center gap-1 px-1 border-r border-slate-700 pr-2 mr-1">
+                        {(Object.keys(HIGHLIGHT_COLORS) as HighlightColor[]).map((c) => (
+                            <button
+                                key={c}
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => recolorHighlight(c)}
+                                className="w-4 h-4 rounded-full border-2 border-white/80 hover:scale-110 transition-transform"
+                                style={{ backgroundColor: HIGHLIGHT_COLORS[c].swatch }}
+                                title={t('reader.changeColor', '改色')}
+                                aria-label={`recolor-${c}`}
+                            />
+                        ))}
+                    </div>
                     <button
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={copyHighlightTextToClipboard}
