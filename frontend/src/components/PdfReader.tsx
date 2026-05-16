@@ -557,6 +557,8 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
     const [searchCursor, setSearchCursor] = useState(0);
     const [showShortcuts, setShowShortcuts] = useState(false);
     const [sessionSeconds, setSessionSeconds] = useState(0);
+    // 荧光笔拖动预览：选区改变时实时计算的临时高亮 rect
+    const [highlighterPreview, setHighlighterPreview] = useState<{ page: number; rects: HighlightRect[] } | null>(null);
     const [currentHighlightColor, setCurrentHighlightColor] = useState<HighlightColor>(() => {
         const saved = typeof window !== 'undefined' ? localStorage.getItem('pdf_highlight_color') : null;
         if (saved === 'yellow' || saved === 'green' || saved === 'blue' || saved === 'pink') return saved;
@@ -607,6 +609,50 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
             // ignore
         }
     }, [readingMode]);
+
+    // 荧光笔模式下监听文本选区变化，实时计算预览矩形。
+    // 通过画自己的 multiply-blend overlay，避免 ::selection 无法 multiply 导致拖动预览灰扑扑。
+    useEffect(() => {
+        if (!isPenMode || penTool !== 'highlight') {
+            setHighlighterPreview(null);
+            return;
+        }
+        const handler = () => {
+            const sel = window.getSelection();
+            if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
+                setHighlighterPreview(null);
+                return;
+            }
+            const range = sel.getRangeAt(0);
+            const commonParent = range.commonAncestorContainer.nodeType === Node.TEXT_NODE
+                ? range.commonAncestorContainer.parentElement
+                : (range.commonAncestorContainer as Element);
+            const pageWrapper = commonParent?.closest('[data-page-number]') as HTMLElement | null;
+            if (!pageWrapper || !mainContainerRef.current?.contains(pageWrapper)) {
+                setHighlighterPreview(null);
+                return;
+            }
+            const page = Number(pageWrapper.getAttribute('data-page-number'));
+            if (Number.isNaN(page)) {
+                setHighlighterPreview(null);
+                return;
+            }
+            const pageRect = pageWrapper.getBoundingClientRect();
+            const rangeRects = Array.from(range.getClientRects());
+            const rects = mergeSelectionRects(rangeRects, pageRect);
+            if (rects.length === 0) {
+                setHighlighterPreview(null);
+                return;
+            }
+            setHighlighterPreview({ page, rects });
+        };
+        document.addEventListener('selectionchange', handler);
+        return () => {
+            document.removeEventListener('selectionchange', handler);
+            setHighlighterPreview(null);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isPenMode, penTool]);
     const mainContainerRef = useRef<HTMLDivElement>(null);
     const selectedRangeRef = useRef<Range | null>(null);
     const ocrWorkerRef = useRef<{ recognize: (image: Blob) => Promise<{ data: { text: string } }>; terminate: () => Promise<void> } | null>(null);
@@ -994,8 +1040,15 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
     }, [highlightsByPage]);
 
     const getPageHighlights = React.useCallback((page: number): ColoredHighlightRect[] => {
-        return mergedHighlightRectsByPage.get(page) ?? [];
-    }, [mergedHighlightRectsByPage]);
+        const committed = mergedHighlightRectsByPage.get(page) ?? [];
+        // 荧光笔拖动时，把临时预览 rect 也以当前选中色加进来，复用同一渲染管线（multiply blend 等）
+        if (highlighterPreview && highlighterPreview.page === page) {
+            const previewColor = currentHighlightColor;
+            const previewRects: ColoredHighlightRect[] = highlighterPreview.rects.map((r) => ({ ...r, color: previewColor }));
+            return [...committed, ...previewRects];
+        }
+        return committed;
+    }, [mergedHighlightRectsByPage, highlighterPreview, currentHighlightColor]);
 
     const getPageHighlightActionAreas = React.useCallback((page: number): HighlightActionArea[] => {
         return highlightActionAreasByPage.get(page) ?? [];
@@ -3546,14 +3599,15 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId }) => {
                     border-radius: 0 !important;
                 }
 
-                /* 荧光笔模式下文字选区直接显示成高亮色（半透明，避免遮挡文字） */
+                /* 荧光笔模式下隐藏原生 ::selection 背景，由 highlighterPreview 自己画
+                   multiply blend overlay，效果与最终高亮一致。 */
                 ${isPenMode && penTool === 'highlight' ? `
                     .react-pdf__Page__textContent ::selection {
-                        background-color: ${HIGHLIGHT_COLORS[currentHighlightColor].dragBg} !important;
+                        background-color: transparent !important;
                         color: inherit !important;
                     }
                     .react-pdf__Page__textContent ::-moz-selection {
-                        background-color: ${HIGHLIGHT_COLORS[currentHighlightColor].dragBg} !important;
+                        background-color: transparent !important;
                         color: inherit !important;
                     }
                 ` : ''}
