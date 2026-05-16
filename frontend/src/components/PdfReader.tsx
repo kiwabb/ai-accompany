@@ -2243,22 +2243,34 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
         let debounceId: number | undefined;
         const update = () => {
             const next = container.clientWidth;
-            // 阈值 ≥24px 才更新：滚动条出现/消失（~15px）、UI padding 微调（几 px）
-            // 这些都不应该触发 PDF 重新渲染，否则会陷入"内容高→滚条→宽变→重渲→
-            // 内容高变→滚条变..."的视觉抖动循环。
+            // 阈值 ≥24px 才更新：滚动条出现/消失（~15px）等微小抖动不触发 PDF 重渲。
+            // 侧栏开/关（288px）、笔记面板等大幅度宽度变化会通过。
             setContainerWidth((prev) => (Math.abs(prev - next) >= 24 ? next : prev));
         };
         const scheduleUpdate = () => {
             if (debounceId !== undefined) window.clearTimeout(debounceId);
-            debounceId = window.setTimeout(update, 200);
+            debounceId = window.setTimeout(update, 120);
         };
 
         update();
         const observer = new ResizeObserver(scheduleUpdate);
         observer.observe(container);
 
+        // 侧栏/笔记面板切换时：CSS 改 padding 是同步的，但 framer-motion
+        // 的 sticky 笔记面板有 0.25s 进入动画，期间 mainContainer 宽度逐帧变化。
+        // 用 rAF 在动画结束后再测一次，确保 PDF 用最终宽度。
+        const rafIds: number[] = [];
+        let frame = 0;
+        const tick = () => {
+            update();
+            frame += 1;
+            if (frame < 24) rafIds.push(requestAnimationFrame(tick));
+        };
+        rafIds.push(requestAnimationFrame(tick));
+
         return () => {
             if (debounceId !== undefined) window.clearTimeout(debounceId);
+            rafIds.forEach((id) => cancelAnimationFrame(id));
             observer.disconnect();
         };
     }, [isNotebookOpen, isSidebarOpen]);
