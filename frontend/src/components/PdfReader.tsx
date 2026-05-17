@@ -201,7 +201,7 @@ const HighlightInteractiveLayer: React.FC<{
                 type="button"
                 onClick={(event) => onHighlightHover(event, area.id)}
                 onMouseLeave={onHighlightLeave}
-                className="absolute z-20 bg-transparent cursor-pointer hover:outline hover:outline-1 hover:outline-amber-500/70"
+                className="no-round absolute z-20 bg-transparent cursor-pointer hover:outline hover:outline-1 hover:outline-amber-500/70"
                 style={{
                     left: `${a.left}%`,
                     top: `${a.top}%`,
@@ -377,7 +377,7 @@ const PageThumbnail: React.FC<{
             ref={wrapRef}
             onClick={onClick}
             style={{ borderRadius: 0 }}
-            className={`group w-full flex flex-col items-center gap-1 p-1.5 transition-all ${isActive ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}
+            className={`no-round group w-full flex flex-col items-center gap-1 p-1.5 transition-all ${isActive ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}
         >
             <div
                 className={`w-full aspect-[3/4] bg-white overflow-hidden flex items-center justify-center ${isActive ? 'border-2 border-indigo-500' : 'border border-[#e9e6da]'}`}
@@ -433,6 +433,8 @@ const LazyPage = React.memo(({
 }) => {
     const { t } = useTranslation();
     const [isVisible, setIsVisible] = useState(false);
+    // 该页 canvas 是否已渲染完成 — 控制 overlay 显示，避免出现"白底+裸高亮"。
+    const [isRendered, setIsRendered] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -468,6 +470,7 @@ const LazyPage = React.memo(({
                     renderAnnotationLayer={true}
                     devicePixelRatio={Math.max(2, typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1)}
                     className="shadow-[0_4px_24px_rgba(0,0,0,0.06)] border border-[#e9e6da]"
+                    onRenderSuccess={() => setIsRendered(true)}
                     loading={null}
                 />
             ) : (
@@ -476,7 +479,7 @@ const LazyPage = React.memo(({
                     style={{ height: `${Math.round(pageWidth * 1.42)}px`, width: `${pageWidth}px` }}
                 />
             )}
-            <HighlightInteractiveLayer
+            {isRendered && <HighlightInteractiveLayer
                 pageNumber={pageNumber}
                 highlightRects={highlightRects}
                 highlightActionAreas={highlightActionAreas}
@@ -485,14 +488,14 @@ const LazyPage = React.memo(({
                 actionTitle={t('reader.highlightActions', '高亮操作')}
                 disabled={highlightActionsDisabled}
                 rotation={rotation}
-            />
-            <HandwritingLayer
+            />}
+            {isRendered && <HandwritingLayer
                 strokes={penStrokes}
                 draftPath={draftPenPath}
                 draftColor={draftPenColor}
                 draftWidth={draftPenWidth}
                 draftIsHighlighter={draftIsHighlighter}
-            />
+            />}
             {areaDraftRect && (
                 <div
                     className="absolute border-2 border-amber-400 bg-amber-200/20 pointer-events-none"
@@ -2625,8 +2628,8 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
     const toggleFullscreen = async () => {
         try {
             if (!document.fullscreenElement) {
-                const el = mainContainerRef.current?.parentElement || document.documentElement;
-                await el.requestFullscreen?.();
+                // 全屏整个根元素，确保顶部工具栏跟着进入全屏
+                await document.documentElement.requestFullscreen?.();
             } else {
                 await document.exitFullscreen?.();
             }
@@ -3499,7 +3502,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                                     onRenderSuccess={onFirstPageRenderSuccess}
                                     loading={null}
                                 />
-                                <HighlightInteractiveLayer
+                                {firstPageRendered && <HighlightInteractiveLayer
                                     pageNumber={1}
                                     highlightRects={getPageHighlights(1)}
                                     highlightActionAreas={getPageHighlightActionAreas(1)}
@@ -3508,14 +3511,14 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                                     actionTitle={t('reader.highlightActions', '高亮操作')}
                                     disabled={isPenMode}
                                     rotation={rotation}
-                                />
-                                <HandwritingLayer
+                                />}
+                                {firstPageRendered && <HandwritingLayer
                                     strokes={getPagePenStrokes(1)}
                                     draftPath={getPageDraftPenPath(1)}
                                     draftColor={penColor}
                                     draftWidth={penTool === 'highlight' ? penWidth * 4 : penWidth}
                                     draftIsHighlighter={penTool === 'highlight'}
-                                />
+                                />}
                                 {areaDraft?.page === 1 && (
                                     <div
                                         className="absolute border-2 border-amber-400 bg-amber-200/20 pointer-events-none"

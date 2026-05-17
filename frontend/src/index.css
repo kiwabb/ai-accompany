@@ -530,8 +530,8 @@ body.theme-chiikawa [class*="bg-white/"] {
   border-radius: 3rem;
 }
 
-/* Chiikawa buttons - pill shaped and cute */
-body.theme-chiikawa button:not([class*="rounded-full"]) {
+/* Chiikawa buttons - pill shaped and cute（加 .no-round 例外给 PDF 高亮/缩略图等需要直角的按钮） */
+body.theme-chiikawa button:not([class*="rounded-full"]):not(.no-round) {
   border-radius: 2rem !important;
 }
 
@@ -769,8 +769,8 @@ body.theme-shinchan .glass-surface:hover {
   border-color: rgba(255, 255, 255, 0.9);
 }
 
-/* Fresh Soft Buttons */
-body.theme-shinchan button:not([class*="rounded-full"]) {
+/* Fresh Soft Buttons（同样加 .no-round 例外） */
+body.theme-shinchan button:not([class*="rounded-full"]):not(.no-round) {
   border-radius: 1.5rem !important;
   border: 1px solid rgba(255, 255, 255, 0.6);
   font-weight: 700;
