@@ -2276,17 +2276,17 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
         };
     }, []);
 
+    // canvas 始终按 fit 宽度渲染（不带缩放系数）—— 容器宽度才是 React-pdf 实际重画
+    // 的触发条件。zoom 仅通过 CSS 缩放视觉尺寸，避免每次 +/- 都重画 canvas。
     const pageRenderWidth = React.useMemo(() => {
-        // 100% = mainContainer 当前可用宽度（= 整窗宽 - 左侧栏 - 右侧栏 / 笔记面板 - CozyPal）
-        // 不留 padding，PDF 直接铺满可用区。
-        const fitWidth = Math.max(340, Math.floor(containerWidth));
-        const zoom = isManualZoom ? scale : 1;
-        return Math.max(320, Math.min(2000, Math.floor(fitWidth * zoom)));
-    }, [containerWidth, isManualZoom, scale]);
+        return Math.max(340, Math.min(2000, Math.floor(containerWidth)));
+    }, [containerWidth]);
 
-    // 把传给 react-pdf 的 width 设为 deferred —— 缩放/容器宽度改变时 React 不立刻
-    // 重画 canvas，旧 canvas 继续显示到新值准备好再切换，消除中间空白帧。
+    // 容器宽度变化（如侧栏开合）仍然 deferred，旧 canvas 留到新一帧 ready。
     const deferredPageRenderWidth = useDeferredValue(pageRenderWidth);
+
+    // 视觉缩放系数：手动缩放走 scale；fit 模式恒为 1。
+    const visualZoom = isManualZoom ? scale : 1;
 
     useEffect(() => {
         const hideMenu = () => {
@@ -3498,6 +3498,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                         </div>
                     )}
 
+                    <div style={{ zoom: visualZoom }} className="w-full flex flex-col items-center">
                     <Document
                         file={fileUrl}
                         onLoadSuccess={onDocumentLoadSuccess}
@@ -3591,6 +3592,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                             />
                         ))}
                     </Document>
+                    </div>
                 </div>
 
                 <AnimatePresence>
