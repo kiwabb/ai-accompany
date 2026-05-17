@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useDeferredValue, startTransition } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -473,7 +473,7 @@ const LazyPage = React.memo(({
                     rotate={rotation}
                     renderTextLayer={true}
                     renderAnnotationLayer={true}
-                    devicePixelRatio={Math.max(2, typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1)}
+                    devicePixelRatio={typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1}
                     className="shadow-[0_4px_24px_rgba(0,0,0,0.06)] border border-[#e9e6da]"
                     onRenderSuccess={() => setIsRendered(true)}
                     loading={null}
@@ -2281,8 +2281,12 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
         // 不留 padding，PDF 直接铺满可用区。
         const fitWidth = Math.max(340, Math.floor(containerWidth));
         const zoom = isManualZoom ? scale : 1;
-        return Math.max(320, Math.min(2400, Math.floor(fitWidth * zoom)));
+        return Math.max(320, Math.min(2000, Math.floor(fitWidth * zoom)));
     }, [containerWidth, isManualZoom, scale]);
+
+    // 把传给 react-pdf 的 width 设为 deferred —— 缩放/容器宽度改变时 React 不立刻
+    // 重画 canvas，旧 canvas 继续显示到新值准备好再切换，消除中间空白帧。
+    const deferredPageRenderWidth = useDeferredValue(pageRenderWidth);
 
     useEffect(() => {
         const hideMenu = () => {
@@ -2771,7 +2775,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
         const scrollContainer = mainContainerRef.current?.closest('.overflow-y-auto') as HTMLElement | null;
         if (!scrollContainer) {
             setIsManualZoom(true);
-            setScale(next);
+            startTransition(() => setScale(next));
             return;
         }
         const oldScrollTop = scrollContainer.scrollTop;
@@ -2779,7 +2783,9 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
         const viewportCenterRatio = (oldScrollTop + scrollContainer.clientHeight / 2) / oldScrollHeight;
 
         setIsManualZoom(true);
-        setScale(next);
+        // 标记为非紧急更新：让 React 在 deferredPageRenderWidth 完成新一帧渲染前
+        // 继续显示旧 PDF canvas，避免缩放时 PDF 空白。
+        startTransition(() => setScale(next));
 
         // 等到 React 渲染完成 + 布局 reflow（占位 minHeight 立即生效），再用比例反推新位置。
         // 多次 rAF 让 PDF.js 已渲染页面的实际高度也参与，最终落点更准。
@@ -3509,11 +3515,11 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                             <div className="pdf-page-wrapper relative w-full flex justify-center py-2 mb-2" data-page-number={1}>
                                 <Page
                                     pageNumber={1}
-                                    width={pageRenderWidth}
+                                    width={deferredPageRenderWidth}
                                     rotate={rotation}
                                     renderTextLayer={true}
                                     renderAnnotationLayer={true}
-                                    devicePixelRatio={Math.max(2, typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1)}
+                                    devicePixelRatio={typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1}
                                     className="shadow-[0_4px_24px_rgba(0,0,0,0.06)] border border-[#e9e6da]"
                                     onRenderSuccess={onFirstPageRenderSuccess}
                                     loading={null}
@@ -3567,7 +3573,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                             <LazyPage
                                 key={`page_${index + 2}`}
                                 pageNumber={index + 2}
-                                pageWidth={pageRenderWidth}
+                                pageWidth={deferredPageRenderWidth}
                                 rotation={rotation}
                                 onVisible={handlePageVisible}
                                 highlightRects={getPageHighlights(index + 2)}
