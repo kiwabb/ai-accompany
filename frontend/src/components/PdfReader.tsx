@@ -2759,29 +2759,35 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
     };
 
     // 缩放时锚定当前页面：先记下相对位置，缩放生效后再恢复
+    // 缩放时按 scrollHeight 比例缩放 scrollTop —— 比起锚定单页 top 更鲁棒，
+    // 因为 react-pdf 各页是异步渲染，单页 rect 在多次 rAF 内还可能漂移，
+    // 但总高度 scrollHeight 在 setScale 立刻反映到 LazyPage 占位的 minHeight 上。
     const applyZoom = (next: number | ((s: number) => number)) => {
         const scrollContainer = mainContainerRef.current?.closest('.overflow-y-auto') as HTMLElement | null;
-        const pageElement = mainContainerRef.current?.querySelector(`[data-page-number="${pageNumber}"]`) as HTMLElement | null;
-        let relativeOffset = 0;
-        if (scrollContainer && pageElement) {
-            const containerRect = scrollContainer.getBoundingClientRect();
-            const pageRect = pageElement.getBoundingClientRect();
-            relativeOffset = pageRect.top - containerRect.top;
+        if (!scrollContainer) {
+            setIsManualZoom(true);
+            setScale(next);
+            return;
         }
+        const oldScrollTop = scrollContainer.scrollTop;
+        const oldScrollHeight = scrollContainer.scrollHeight || 1;
+        const viewportCenterRatio = (oldScrollTop + scrollContainer.clientHeight / 2) / oldScrollHeight;
+
         setIsManualZoom(true);
         setScale(next);
-        // 在下两个 frame 后页面已重新布局，把当前页滚回原相对位置。
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                if (!scrollContainer) return;
-                const newPage = mainContainerRef.current?.querySelector(`[data-page-number="${pageNumber}"]`) as HTMLElement | null;
-                if (!newPage) return;
-                const containerRect = scrollContainer.getBoundingClientRect();
-                const newRect = newPage.getBoundingClientRect();
-                const delta = newRect.top - containerRect.top - relativeOffset;
-                scrollContainer.scrollTop += delta;
-            });
-        });
+
+        // 等到 React 渲染完成 + 布局 reflow（占位 minHeight 立即生效），再用比例反推新位置。
+        // 多次 rAF 让 PDF.js 已渲染页面的实际高度也参与，最终落点更准。
+        let frames = 0;
+        const settle = () => {
+            const newScrollHeight = scrollContainer.scrollHeight || 1;
+            const newClientHeight = scrollContainer.clientHeight;
+            const targetScrollTop = viewportCenterRatio * newScrollHeight - newClientHeight / 2;
+            scrollContainer.scrollTop = Math.max(0, targetScrollTop);
+            frames += 1;
+            if (frames < 4) requestAnimationFrame(settle);
+        };
+        requestAnimationFrame(settle);
     };
 
     const submitJumpPage = () => {
