@@ -454,6 +454,11 @@ const LazyPage = React.memo(({
         return () => obs.disconnect();
     }, [pageNumber, onVisible]);
 
+    // 缩放/旋转：canvas 要重画，先收起 overlay 防止裸高亮；onRenderSuccess 回写 true。
+    useEffect(() => {
+        setIsRendered(false);
+    }, [pageWidth, rotation]);
+
     return (
         <div
             ref={containerRef}
@@ -2893,13 +2898,18 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
         setPageNumber(pg);
     }, []);
 
-    // Callback when the first page finishes rendering
+    // Callback when the first page finishes rendering (or re-renders after zoom/rotate)
     const onFirstPageRenderSuccess = () => {
-        if (!firstPageRendered) {
-            setFirstPageRendered(true);
+        setFirstPageRendered(true);
+        if (!isLoaded) {
             setTimeout(() => setIsLoaded(true), 100); // Small buffer to ensure visual readiness
         }
     };
+
+    // Page 1 缩放/旋转重画前先收起 overlay，等 onRenderSuccess 再回写。
+    useEffect(() => {
+        setFirstPageRendered(false);
+    }, [pageRenderWidth, rotation]);
 
     return (
         <div className="flex flex-col items-center w-full transition-all duration-500">
