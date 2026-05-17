@@ -2647,7 +2647,84 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
             const headers = (await import('../api/client')).getAuthHeaders();
             const resp = await fetch(`/api/documents/${documentId}/file`, { headers });
             if (!resp.ok) throw new Error(`status ${resp.status}`);
-            const blob = await resp.blob();
+            const arrayBuffer = await resp.arrayBuffer();
+
+            const { PDFDocument, rgb, BlendMode } = await import('pdf-lib');
+            const pdfDoc = await PDFDocument.load(arrayBuffer);
+            const pages = pdfDoc.getPages();
+
+            // 把存储 0-100% 坐标系映射到当前页面的 PDF 点坐标系，再用 multiply blend
+            // 矢量绘制高亮矩形 — 与屏幕渲染管线（透明色 + multiply）一致。
+            const swatchToRgb = (hex: string) => {
+                const m = hex.replace('#', '');
+                const r = parseInt(m.slice(0, 2), 16) / 255;
+                const g = parseInt(m.slice(2, 4), 16) / 255;
+                const b = parseInt(m.slice(4, 6), 16) / 255;
+                return rgb(r, g, b);
+            };
+
+            for (const h of highlights) {
+                const page = pages[h.page - 1];
+                if (!page) continue;
+                const { width: W, height: H } = page.getSize();
+                const palette = HIGHLIGHT_COLORS[h.color || 'yellow'];
+                const color = swatchToRgb(palette.swatch);
+                for (const rect of h.rects) {
+                    const x = (rect.left / 100) * W;
+                    const w = (rect.width / 100) * W;
+                    const ht = (rect.height / 100) * H;
+                    const yPdf = H - (rect.top / 100) * H - ht;
+                    page.drawRectangle({
+                        x, y: yPdf, width: w, height: ht,
+                        color,
+                        blendMode: BlendMode.Multiply,
+                    });
+                }
+            }
+
+            // 手写笔触：把 0-100 viewBox 坐标手动变换到 PDF 点坐标，再用 drawSvgPath。
+            // 数字 token 按顺序代表 (x, y) 对（M/L/Q/T/C/S/A 都满足此规则；Z 无参数）。
+            const transformPath = (path: string, W: number, H: number): string => {
+                let idx = 0;
+                return path.replace(/-?\d+(?:\.\d+)?/g, (numStr) => {
+                    const n = parseFloat(numStr);
+                    const transformed = idx % 2 === 0 ? (n / 100) * W : H - (n / 100) * H;
+                    idx += 1;
+                    return transformed.toFixed(3);
+                });
+            };
+
+            for (const s of penStrokes) {
+                const page = pages[s.page - 1];
+                if (!page) continue;
+                const { width: W, height: H } = page.getSize();
+                const isHighlighter = (s.opacity ?? 1) < 1;
+                // s.color 可能是 'rgb(...)' 或 '#xxx'，统一转 hex 取 RGB
+                let r = 0, g = 0, b = 0;
+                const mHex = s.color.match(/^#([\da-f]{6})$/i);
+                const mRgb = s.color.match(/rgb\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)\)/);
+                if (mHex) {
+                    const v = mHex[1];
+                    r = parseInt(v.slice(0, 2), 16) / 255;
+                    g = parseInt(v.slice(2, 4), 16) / 255;
+                    b = parseInt(v.slice(4, 6), 16) / 255;
+                } else if (mRgb) {
+                    r = parseInt(mRgb[1]) / 255;
+                    g = parseInt(mRgb[2]) / 255;
+                    b = parseInt(mRgb[3]) / 255;
+                }
+                const transformed = transformPath(s.path, W, H);
+                // viewBox 单位 0-100 在页宽上的真实笔宽（取宽边近似）
+                const widthPt = s.width * (W / 100);
+                page.drawSvgPath(transformed, {
+                    borderColor: rgb(r, g, b),
+                    borderWidth: isHighlighter ? widthPt * 4 : widthPt,
+                    blendMode: isHighlighter ? BlendMode.Multiply : BlendMode.Normal,
+                });
+            }
+
+            const newPdfBytes = await pdfDoc.save();
+            const blob = new Blob([new Uint8Array(newPdfBytes)], { type: 'application/pdf' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -2658,6 +2735,23 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
             setTimeout(() => URL.revokeObjectURL(url), 1000);
         } catch (err) {
             console.error('Failed to download PDF', err);
+            showNotice(t('reader.downloadFailed', '下载失败，已回退到原文件'), 'error');
+            // 失败时回退到原始 PDF
+            try {
+                const headers = (await import('../api/client')).getAuthHeaders();
+                const resp = await fetch(`/api/documents/${documentId}/file`, { headers });
+                const blob = await resp.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `document_${documentId}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            } catch (e2) {
+                console.error('Fallback download also failed', e2);
+            }
         }
     };
 

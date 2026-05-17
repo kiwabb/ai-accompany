@@ -110,6 +110,7 @@
     "matches": "matches",
     "noMatches": "No matches",
     "exportNotes": "Export bookmarks, highlights and notes to Markdown",
+    "downloadFailed": "Download failed, falling back to original file",
     "thumbnails": "Page thumbnails",
     "thumbnailsShort": "Pages",
     "loadingThumbnails": "Loading thumbnails...",

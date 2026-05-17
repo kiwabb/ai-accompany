@@ -110,6 +110,7 @@
     "matches": "项",
     "noMatches": "无匹配结果",
     "exportNotes": "导出书签、高亮和笔记到 Markdown",
+    "downloadFailed": "下载失败，已回退到原文件",
     "thumbnails": "页面缩略图",
     "thumbnailsShort": "页面",
     "loadingThumbnails": "正在加载缩略图...",
