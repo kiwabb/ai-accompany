@@ -2285,19 +2285,29 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
         };
     }, []);
 
-    // canvas 锁定按 scrollContainer 全宽渲染 —— 侧栏开合不会改变 scrollContainer，
-    // 所以不触发 canvas 重画。fallback 到 containerWidth 以兼容初始加载（侧栏关）。
-    const baseWidth = scrollContainerWidth > 0 ? scrollContainerWidth : containerWidth;
-    const pageRenderWidth = React.useMemo(() => {
-        return Math.max(340, Math.min(2000, Math.floor(baseWidth)));
-    }, [baseWidth]);
+    // canvas 渲染基线宽度：只在初次测量 + 窗口显著变大（>30%）时更新，
+    // 其它情况一律保持不变；侧栏/窗口拉伸纯靠 CSS zoom 调整视觉，零 canvas 重画。
+    const [canvasBaseWidth, setCanvasBaseWidth] = useState(0);
+    useEffect(() => {
+        const src = scrollContainerWidth > 0 ? scrollContainerWidth : containerWidth;
+        if (src <= 0) return;
+        if (canvasBaseWidth === 0) {
+            setCanvasBaseWidth(src);
+        } else if (src > canvasBaseWidth * 1.3) {
+            // 窗口显著拉大才重渲，避免长期模糊
+            setCanvasBaseWidth(src);
+        }
+    }, [scrollContainerWidth, containerWidth, canvasBaseWidth]);
 
-    // 窗口/CozyPal 真正改宽度时 deferred，旧 canvas 留到新一帧 ready。
+    const pageRenderWidth = React.useMemo(() => {
+        return Math.max(340, Math.min(2000, Math.floor(canvasBaseWidth || 1200)));
+    }, [canvasBaseWidth]);
+
+    // 真正发生 canvas 重渲时（首次 / 窗口大幅扩张）仍 deferred，旧 canvas 留到新一帧 ready
     const deferredPageRenderWidth = useDeferredValue(pageRenderWidth);
 
-    // 视觉缩放：基础 fit 系数（侧栏挤压后的实际可用宽度 / canvas 渲染宽度）
-    // × 用户手动缩放系数。CSS zoom 实时生效，零 canvas 参与。
-    const fitScale = baseWidth > 0 ? containerWidth / baseWidth : 1;
+    // 视觉缩放 = 实际可用宽度 / canvas 基线 × 用户缩放系数。CSS zoom 实时生效。
+    const fitScale = canvasBaseWidth > 0 ? containerWidth / canvasBaseWidth : 1;
     const visualZoom = (isManualZoom ? scale : 1) * fitScale;
 
     useEffect(() => {
