@@ -2244,8 +2244,12 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
         }
     }, [pageNumber, documentId, numPages]);
 
-    // 侧栏 / 笔记面板状态变化时：useLayoutEffect 在浏览器下一次绘制之前
-    // 同步测量并更新 containerWidth，避免出现 "旧大宽度 PDF 渲染→溢出右侧" 的中间帧。
+    // scrollContainer 是 ReaderPage 的 motion.div，宽度只随窗口/CozyPal 变化，
+    // 不随侧栏开合变化 —— 用它作为 canvas 渲染的基线 (baseWidth)。
+    // mainContainer 才是当前实际可用宽度，被侧栏/笔记面板挤压。
+    // 二者之比作为 CSS zoom 系数，让侧栏开合也走纯 CSS 缩放，零 canvas 重渲。
+    const [scrollContainerWidth, setScrollContainerWidth] = useState(0);
+
     useLayoutEffect(() => {
         const container = mainContainerRef.current;
         if (!container) return;
@@ -2253,15 +2257,19 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
         setContainerWidth((prev) => (Math.abs(prev - next) >= 24 ? next : prev));
     }, [isNotebookOpen, isSidebarOpen, notePanelWidth]);
 
-    // ResizeObserver 处理窗口 resize、CozyPal 宽度变化等异步场景。
     useEffect(() => {
         const container = mainContainerRef.current;
         if (!container) return;
+        const scrollContainer = container.closest('.overflow-y-auto') as HTMLElement | null;
 
         let debounceId: number | undefined;
         const update = () => {
             const next = container.clientWidth;
             setContainerWidth((prev) => (Math.abs(prev - next) >= 24 ? next : prev));
+            if (scrollContainer) {
+                const sw = scrollContainer.clientWidth;
+                setScrollContainerWidth((prev) => (Math.abs(prev - sw) >= 24 ? sw : prev));
+            }
         };
         const scheduleUpdate = () => {
             if (debounceId !== undefined) window.clearTimeout(debounceId);
@@ -2270,23 +2278,27 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
         update();
         const observer = new ResizeObserver(scheduleUpdate);
         observer.observe(container);
+        if (scrollContainer) observer.observe(scrollContainer);
         return () => {
             if (debounceId !== undefined) window.clearTimeout(debounceId);
             observer.disconnect();
         };
     }, []);
 
-    // canvas 始终按 fit 宽度渲染（不带缩放系数）—— 容器宽度才是 React-pdf 实际重画
-    // 的触发条件。zoom 仅通过 CSS 缩放视觉尺寸，避免每次 +/- 都重画 canvas。
+    // canvas 锁定按 scrollContainer 全宽渲染 —— 侧栏开合不会改变 scrollContainer，
+    // 所以不触发 canvas 重画。fallback 到 containerWidth 以兼容初始加载（侧栏关）。
+    const baseWidth = scrollContainerWidth > 0 ? scrollContainerWidth : containerWidth;
     const pageRenderWidth = React.useMemo(() => {
-        return Math.max(340, Math.min(2000, Math.floor(containerWidth)));
-    }, [containerWidth]);
+        return Math.max(340, Math.min(2000, Math.floor(baseWidth)));
+    }, [baseWidth]);
 
-    // 容器宽度变化（如侧栏开合）仍然 deferred，旧 canvas 留到新一帧 ready。
+    // 窗口/CozyPal 真正改宽度时 deferred，旧 canvas 留到新一帧 ready。
     const deferredPageRenderWidth = useDeferredValue(pageRenderWidth);
 
-    // 视觉缩放系数：手动缩放走 scale；fit 模式恒为 1。
-    const visualZoom = isManualZoom ? scale : 1;
+    // 视觉缩放：基础 fit 系数（侧栏挤压后的实际可用宽度 / canvas 渲染宽度）
+    // × 用户手动缩放系数。CSS zoom 实时生效，零 canvas 参与。
+    const fitScale = baseWidth > 0 ? containerWidth / baseWidth : 1;
+    const visualZoom = (isManualZoom ? scale : 1) * fitScale;
 
     useEffect(() => {
         const hideMenu = () => {
