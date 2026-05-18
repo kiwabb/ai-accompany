@@ -7,7 +7,7 @@ import '@blocknote/mantine/style.css';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { Loader2, ZoomIn, ZoomOut, ListTree, Bookmark, Trash2, Pencil, Check, X, Search, Copy, PenLine, Eraser, NotebookPen, RotateCw, Download, Maximize2, Minimize2, ChevronLeft, ChevronRight, Sun, Moon, Coffee, LayoutGrid } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { createWorker } from 'tesseract.js';
@@ -569,6 +569,11 @@ const OutlineItem: React.FC<{ item: any; onClick: (item: any) => void; level: nu
 
 const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const backToLibrary = () => {
+        const theme = searchParams.get('theme');
+        navigate(theme ? `/library?theme=${encodeURIComponent(theme)}` : '/library');
+    };
     const { t } = useTranslation();
     const [numPages, setNumPages] = useState<number>(0);
     const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
@@ -2945,7 +2950,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
             <div className="w-full bg-[#faf9f6]/95 backdrop-blur-md border-b border-[#e9e6da] px-3 md:px-5 py-1 flex items-center sticky top-0 z-50">
                 {/* 返回 + 标题，与原 ReaderPage header 合并到这一行 */}
                 <button
-                    onClick={() => navigate('/library')}
+                    onClick={backToLibrary}
                     className="shrink-0 mr-2 p-1.5 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-white transition-colors"
                     title={t('common.back', '返回')}
                 >

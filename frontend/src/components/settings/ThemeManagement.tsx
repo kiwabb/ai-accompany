@@ -1,9 +1,10 @@
-import React, { useState, useCallback } from 'react';
-import { Trash2 } from 'lucide-react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { Trash2, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { v4 as uuidv4 } from 'uuid';
-import { createUserTheme, deleteUserTheme } from '../../api/client';
+import { createUserTheme, deleteUserTheme, getAchievements } from '../../api/client';
 import type { FocusTheme } from '../../types/pomodoro';
+import { ACHIEVEMENT_ICONS, FREE_ICONS, ICON_BY_KEY } from '../../constants/achievementIcons';
 
 interface ThemeManagementProps {
   themes: FocusTheme[];
@@ -19,30 +20,51 @@ const ThemeManagement: React.FC<ThemeManagementProps> = ({
   const { t } = useTranslation();
   const [newThemeName, setNewThemeName] = useState('');
   const [newThemeDuration, setNewThemeDuration] = useState(25);
-  const [selectedIcon, setSelectedIcon] = useState('chiikawa');
+  const [selectedIcon, setSelectedIcon] = useState('nene');
+  const [unlockedAchievements, setUnlockedAchievements] = useState<Set<string>>(new Set());
 
-  const chiikawaIcons = [
-    { id: 'chiikawa', img: '/assets/chiikawa/sticker-0.png' },
-    { id: 'hachiware', img: '/assets/chiikawa/sticker-1.png' },
-    { id: 'usagi', img: '/assets/chiikawa/sticker-2.png' },
-    { id: 'momonga', img: '/assets/chiikawa/sticker-5.png' },
-    { id: 'shisa', img: '/assets/chiikawa/sticker-6.png' },
-    { id: 'kurimanju', img: '/assets/chiikawa/sticker-10.png' },
-    { id: 'rakko', img: '/assets/chiikawa/sticker-11.png' },
-  ];
+  useEffect(() => {
+    let cancelled = false;
+    getAchievements()
+      .then((data) => {
+        if (cancelled) return;
+        const keys = new Set(
+          data
+            .filter((ua) => ua.status === 'unlocked' && ua.achievement?.key)
+            .map((ua) => ua.achievement!.key)
+        );
+        setUnlockedAchievements(keys);
+      })
+      .catch((err) => console.error('Failed to fetch achievements for icon gating', err));
+    return () => { cancelled = true; };
+  }, []);
 
-  const shinchanIcons = [
-    { id: 'shinchan', img: '/assets/shinchan/shinchan.png' },
-    { id: 'kazama', img: '/assets/shinchan/kazama.png' },
-    { id: 'bo-chan', img: '/assets/shinchan/bo-chan.png' },
-    { id: 'masao', img: '/assets/shinchan/masao.png' },
-    { id: 'nene', img: '/assets/shinchan/nene.png' },
-    { id: 'shiro', img: '/assets/shinchan/shiro-animated.gif' },
-    { id: 'action-mask', img: '/assets/shinchan/action-mask.png' },
-  ];
+  const isIconLocked = useCallback(
+    (iconKey: string) => {
+      const def = ICON_BY_KEY[iconKey];
+      if (!def || !('achievementKey' in def)) return false;
+      return !unlockedAchievements.has(def.achievementKey);
+    },
+    [unlockedAchievements]
+  );
 
-  const findIconImg = (key?: string) =>
-    key ? [...chiikawaIcons, ...shinchanIcons].find((i) => i.id === key)?.img : undefined;
+  const chiikawaIcons = useMemo(
+    () => [
+      ...ACHIEVEMENT_ICONS.filter((i) => i.set === 'chiikawa').map((i) => ({ id: i.iconKey, img: i.img, achievementKey: i.achievementKey })),
+      ...FREE_ICONS.filter((i) => i.set === 'chiikawa').map((i) => ({ id: i.iconKey, img: i.img, achievementKey: undefined as string | undefined })),
+    ],
+    []
+  );
+
+  const shinchanIcons = useMemo(
+    () => [
+      ...ACHIEVEMENT_ICONS.filter((i) => i.set === 'shinchan').map((i) => ({ id: i.iconKey, img: i.img, achievementKey: i.achievementKey })),
+      ...FREE_ICONS.filter((i) => i.set === 'shinchan').map((i) => ({ id: i.iconKey, img: i.img, achievementKey: undefined as string | undefined })),
+    ],
+    []
+  );
+
+  const findIconImg = (key?: string) => (key ? ICON_BY_KEY[key]?.img : undefined);
 
   const getThemeIconImg = (theme: FocusTheme) =>
     findIconImg(theme.iconType) || findIconImg(theme.id);
@@ -138,45 +160,85 @@ const ThemeManagement: React.FC<ThemeManagementProps> = ({
             <div className="space-y-3">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-4">选择图标主题 (Chiikawa / Shin-chan)</label>
               <div className="flex flex-wrap gap-3">
-                {chiikawaIcons.map((icon) => (
-                  <button
-                    key={icon.id}
-                    onClick={() => setSelectedIcon(icon.id)}
-                    className={`
-                      relative w-14 h-14 rounded-2xl border-2 transition-all p-2
-                      ${selectedIcon === icon.id
-                        ? 'border-rose-400 bg-rose-50 ring-4 ring-rose-400/10'
-                        : 'border-white bg-white/50 hover:border-slate-300'}
-                    `}
-                  >
-                    <img src={icon.img} alt={icon.id} className="w-full h-full object-contain" />
-                    {selectedIcon === icon.id && (
-                      <div className="absolute -top-2 -right-2 w-5 h-5 bg-rose-400 rounded-full flex items-center justify-center shadow-md">
-                        <div className="w-2 h-2 bg-white rounded-full" />
-                      </div>
-                    )}
-                  </button>
-                ))}
+                {chiikawaIcons.map((icon) => {
+                  const locked = isIconLocked(icon.id);
+                  const lockTitle = locked
+                    ? t('settings.iconLockedHint', { defaultValue: '解锁成就 "{{key}}" 后可用', key: icon.achievementKey || '' })
+                    : icon.id;
+                  return (
+                    <button
+                      key={icon.id}
+                      type="button"
+                      disabled={locked}
+                      onClick={() => !locked && setSelectedIcon(icon.id)}
+                      title={lockTitle}
+                      aria-disabled={locked}
+                      className={`
+                        relative w-14 h-14 rounded-2xl border-2 transition-all p-2
+                        ${locked ? 'border-slate-200 bg-slate-50 cursor-not-allowed' :
+                          selectedIcon === icon.id
+                          ? 'border-rose-400 bg-rose-50 ring-4 ring-rose-400/10'
+                          : 'border-white bg-white/50 hover:border-slate-300'}
+                      `}
+                    >
+                      <img
+                        src={icon.img}
+                        alt={icon.id}
+                        className={`w-full h-full object-contain ${locked ? 'grayscale opacity-40' : ''}`}
+                      />
+                      {locked && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/30 backdrop-blur-[1px] rounded-2xl">
+                          <Lock size={14} className="text-slate-400" />
+                        </div>
+                      )}
+                      {!locked && selectedIcon === icon.id && (
+                        <div className="absolute -top-2 -right-2 w-5 h-5 bg-rose-400 rounded-full flex items-center justify-center shadow-md">
+                          <div className="w-2 h-2 bg-white rounded-full" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
                 <div className="w-px h-10 bg-slate-200 mx-2 self-center" />
-                {shinchanIcons.map((icon) => (
-                  <button
-                    key={icon.id}
-                    onClick={() => setSelectedIcon(icon.id)}
-                    className={`
-                      relative w-14 h-14 rounded-2xl border-2 transition-all p-2
-                      ${selectedIcon === icon.id
-                        ? 'border-yellow-400 bg-yellow-50 ring-4 ring-yellow-400/10'
-                        : 'border-white bg-white/50 hover:border-slate-300'}
-                    `}
-                  >
-                    <img src={icon.img} alt={icon.id} className="w-full h-full object-contain" />
-                    {selectedIcon === icon.id && (
-                      <div className="absolute -top-2 -right-2 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center shadow-md">
-                        <div className="w-2 h-2 bg-white rounded-full" />
-                      </div>
-                    )}
-                  </button>
-                ))}
+                {shinchanIcons.map((icon) => {
+                  const locked = isIconLocked(icon.id);
+                  const lockTitle = locked
+                    ? t('settings.iconLockedHint', { defaultValue: '解锁成就 "{{key}}" 后可用', key: icon.achievementKey || '' })
+                    : icon.id;
+                  return (
+                    <button
+                      key={icon.id}
+                      type="button"
+                      disabled={locked}
+                      onClick={() => !locked && setSelectedIcon(icon.id)}
+                      title={lockTitle}
+                      aria-disabled={locked}
+                      className={`
+                        relative w-14 h-14 rounded-2xl border-2 transition-all p-2
+                        ${locked ? 'border-slate-200 bg-slate-50 cursor-not-allowed' :
+                          selectedIcon === icon.id
+                          ? 'border-yellow-400 bg-yellow-50 ring-4 ring-yellow-400/10'
+                          : 'border-white bg-white/50 hover:border-slate-300'}
+                      `}
+                    >
+                      <img
+                        src={icon.img}
+                        alt={icon.id}
+                        className={`w-full h-full object-contain ${locked ? 'grayscale opacity-40' : ''}`}
+                      />
+                      {locked && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/30 backdrop-blur-[1px] rounded-2xl">
+                          <Lock size={14} className="text-slate-400" />
+                        </div>
+                      )}
+                      {!locked && selectedIcon === icon.id && (
+                        <div className="absolute -top-2 -right-2 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center shadow-md">
+                          <div className="w-2 h-2 bg-white rounded-full" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>

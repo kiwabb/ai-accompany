@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2, ArrowLeft } from 'lucide-react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getAuthHeaders } from '../api/client';
 import PdfReader from '../components/PdfReader';
@@ -12,6 +12,11 @@ const ReaderPage: React.FC = () => {
     const { t } = useTranslation();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const backToLibrary = () => {
+        const theme = searchParams.get('theme');
+        navigate(theme ? `/library?theme=${encodeURIComponent(theme)}` : '/library');
+    };
     const { setDocumentContext } = useTimerContext();
 
     const [content, setContent] = useState<string>('');
@@ -110,7 +115,7 @@ const ReaderPage: React.FC = () => {
                     <motion.button
                         whileHover={{ x: -2 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => navigate('/library')}
+                        onClick={backToLibrary}
                         className="flex items-center gap-2 group text-slate-400 hover:text-slate-900 transition-colors font-bold uppercase tracking-widest text-[10px]"
                     >
                         <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />

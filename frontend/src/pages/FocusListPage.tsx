@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useTimerContext } from '../contexts/TimerContext';
-import { Book as BookIcon, Settings as SettingsIcon, Rocket as RocketIcon, Brain as BrainIcon, Coffee as CoffeeIcon, Sparkles as SparklesIcon, Trophy as TrophyIcon, BarChart3 as BarChartIcon, LogIn as LogInIcon, UserPlus as UserPlusIcon, CheckCircle2 } from 'lucide-react';
+import { Book as BookIcon, Settings as SettingsIcon, Rocket as RocketIcon, Brain as BrainIcon, Coffee as CoffeeIcon, Sparkles as SparklesIcon, Trophy as TrophyIcon, BarChart3 as BarChartIcon, LogIn as LogInIcon, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getStatsRange } from '../api/client';
 import type { FocusTheme } from '../types/pomodoro';
@@ -404,20 +404,6 @@ const FocusListPage: React.FC = () => {
                     <div className="hidden md:block w-px h-8 bg-[#E6E2DE] self-center mx-2" />
 
                     <motion.button
-                        whileHover={{ scale: 1.05, backgroundColor: 'rgba(249, 115, 22, 0.05)' }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => navigate('/settings')}
-                        className="flex flex-col md:flex-row items-center gap-1 md:gap-2.5 px-6 md:px-8 py-3 md:py-4 rounded-2xl text-orange-500 transition-all group"
-                    >
-                        <div className="p-2 md:p-0 bg-white/80 md:bg-transparent rounded-xl md:rounded-none shadow-sm md:shadow-none border border-white md:border-none">
-                            <SettingsIcon size={20} strokeWidth={2.5} className="group-hover:rotate-3" />
-                        </div>
-                        <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest">{t('common.settings')}</span>
-                    </motion.button>
-
-                    <div className="hidden md:block w-px h-8 bg-[#E6E2DE] self-center mx-2" />
-
-                    <motion.button
                         whileHover={{ scale: 1.05, backgroundColor: 'rgba(16, 185, 129, 0.05)' }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => navigate('/stats')}
@@ -446,6 +432,20 @@ const FocusListPage: React.FC = () => {
                     <div className="hidden md:block w-px h-8 bg-[#E6E2DE] self-center mx-2" />
 
                     <motion.button
+                        whileHover={{ scale: 1.05, backgroundColor: 'rgba(249, 115, 22, 0.05)' }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => navigate('/settings')}
+                        className="flex flex-col md:flex-row items-center gap-1 md:gap-2.5 px-6 md:px-8 py-3 md:py-4 rounded-2xl text-orange-500 transition-all group"
+                    >
+                        <div className="p-2 md:p-0 bg-white/80 md:bg-transparent rounded-xl md:rounded-none shadow-sm md:shadow-none border border-white md:border-none">
+                            <SettingsIcon size={20} strokeWidth={2.5} className="group-hover:rotate-3" />
+                        </div>
+                        <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest">{t('common.settings')}</span>
+                    </motion.button>
+
+                    <div className="hidden md:block w-px h-8 bg-[#E6E2DE] self-center mx-2" />
+
+                    <motion.button
                         whileHover={{ scale: 1.05, backgroundColor: 'rgba(255, 183, 102, 0.05)' }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => navigate(isAuthenticated ? '/profile' : '/login')}
@@ -465,22 +465,6 @@ const FocusListPage: React.FC = () => {
                         </span>
                     </motion.button>
 
-                    {!isAuthenticated && (
-                        <>
-                            <div className="hidden md:block w-px h-8 bg-[#E6E2DE] self-center mx-2" />
-                            <motion.button
-                                whileHover={{ scale: 1.05, backgroundColor: 'rgba(212, 237, 218, 0.1)' }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => navigate('/signup')}
-                                className="flex flex-col md:flex-row items-center gap-1 md:gap-2.5 px-6 md:px-8 py-3 md:py-4 rounded-2xl text-emerald-500 transition-all group"
-                            >
-                                <div className="p-2 md:p-0 bg-white/80 md:bg-transparent rounded-xl md:rounded-none shadow-sm md:shadow-none border border-white md:border-none">
-                                    <UserPlusIcon size={20} strokeWidth={2.5} className="group-hover:rotate-3" />
-                                </div>
-                                <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest">{t('common.signup', '注册')}</span>
-                            </motion.button>
-                        </>
-                    )}
                 </motion.div>
             </div>
 

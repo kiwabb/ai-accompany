@@ -276,7 +276,7 @@ const LibraryPage: React.FC = () => {
                                     key={doc.id}
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
-                                    onClick={() => navigate(`/read/${doc.id}`)}
+                                    onClick={() => navigate(`/read/${doc.id}${themeFilter ? `?theme=${encodeURIComponent(themeFilter)}` : ''}`)}
                                     className={`
                                         group relative bg-white/60 hover:bg-white border border-white/80 
                                         transition-all duration-300 cursor-pointer overflow-hidden
@@ -289,20 +289,20 @@ const LibraryPage: React.FC = () => {
                                         <div className={`p-5 bg-indigo-50 text-indigo-500 rounded-3xl shadow-inner border border-white transition-transform group-hover:scale-110 duration-500`}>
                                             <FileText size={viewMode === 'grid' ? 32 : 24} />
                                         </div>
-                                            <div className="min-w-0 flex-1">
-                                                <h3 className="text-xl font-bold text-slate-800 truncate mb-1" title={doc.title}>
+                                            <div className="min-w-0 flex-1 w-full">
+                                                <h3 className={`text-xl font-bold text-slate-800 mb-1 ${viewMode === 'grid' ? 'line-clamp-2 break-words' : 'truncate'}`} title={doc.title}>
                                                     {doc.title}
                                                 </h3>
                                                 {/* Progress Bar (Only for PDFs with progress) */}
                                                  {doc.file_type === 'pdf' && progressMap[doc.id] !== undefined && (
-                                                     <div className="w-full max-w-[120px] h-1.5 bg-slate-100 rounded-full mb-2 overflow-hidden">
-                                                         <div 
+                                                     <div className={`h-1.5 bg-slate-100 rounded-full mb-2 overflow-hidden ${viewMode === 'grid' ? 'w-full max-w-[160px] mx-auto' : 'w-full max-w-[120px]'}`}>
+                                                         <div
                                                              className="h-full bg-indigo-500 rounded-full transition-all duration-500"
                                                              style={{ width: `${progressMap[doc.id]}%` }}
                                                          />
                                                      </div>
                                                  )}
-                                                 <div className={`flex items-center gap-3 ${viewMode === 'grid' ? 'justify-center' : ''}`}>
+                                                 <div className={`flex items-center gap-x-3 gap-y-1.5 ${viewMode === 'grid' ? 'justify-center flex-wrap' : ''}`}>
                                                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{doc.file_type}</span>
                                                      {progressMap[doc.id] !== undefined && (
                                                          <>
@@ -339,26 +339,18 @@ const LibraryPage: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-2">
+                                    <div className={`flex items-center gap-2 ${viewMode === 'grid' ? 'absolute top-3 right-3' : ''}`}>
                                         <button
                                             onClick={(e) => handleEditClick(e, doc)}
-                                            className="
-                                                p-3 text-slate-300 hover:text-indigo-500 hover:bg-indigo-50 
-                                                rounded-2xl transition-all opacity-0 group-hover:opacity-100
-                                                active:scale-90
-                                            "
+                                            className={`text-slate-300 hover:text-indigo-500 hover:bg-indigo-50 rounded-2xl transition-all opacity-0 group-hover:opacity-100 active:scale-90 ${viewMode === 'grid' ? 'p-2 bg-white/80 backdrop-blur-sm' : 'p-3'}`}
                                         >
-                                            <Edit2 size={20} />
+                                            <Edit2 size={viewMode === 'grid' ? 16 : 20} />
                                         </button>
                                         <button
                                             onClick={(e) => handleDeleteClick(e, doc)}
-                                            className="
-                                                p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 
-                                                rounded-2xl transition-all opacity-0 group-hover:opacity-100
-                                                active:scale-90
-                                            "
+                                            className={`text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all opacity-0 group-hover:opacity-100 active:scale-90 ${viewMode === 'grid' ? 'p-2 bg-white/80 backdrop-blur-sm' : 'p-3'}`}
                                         >
-                                            <Trash2 size={20} />
+                                            <Trash2 size={viewMode === 'grid' ? 16 : 20} />
                                         </button>
                                     </div>
                                 </motion.div>

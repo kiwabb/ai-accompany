@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { getAchievements } from '../api/client';
 import type { UserAchievementBackend } from '../api/client';
 import AmbientBackground from '../components/AmbientBackground';
+import { ACHIEVEMENT_TO_ICON } from '../constants/achievementIcons';
 
 type Filter = 'all' | 'unlocked' | 'in_progress';
 
@@ -255,14 +256,35 @@ const AchievementWall: React.FC = () => {
                                                     <div className="flex items-start gap-5">
                                                         <div
                                                             className={`
-                                                                w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 transition-all
+                                                                w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 transition-all p-2 relative
                                                                 ${isUnlocked
-                                                                    ? 'bg-gradient-to-br from-amber-200 to-amber-100 text-amber-500 shadow-md shadow-amber-200/50'
-                                                                    : 'bg-slate-100 text-slate-400'
+                                                                    ? 'bg-gradient-to-br from-amber-200/60 to-amber-100/60 shadow-md shadow-amber-200/50'
+                                                                    : 'bg-slate-100'
                                                                 }
                                                             `}
                                                         >
-                                                            {isHidden ? <Lock size={28} /> : <Trophy size={28} />}
+                                                            {(() => {
+                                                                const iconDef = ua.achievement ? ACHIEVEMENT_TO_ICON[ua.achievement.key] : undefined;
+                                                                if (isHidden || !iconDef) {
+                                                                    return isHidden
+                                                                        ? <Lock size={28} className="text-slate-400" />
+                                                                        : <Trophy size={28} className={isUnlocked ? 'text-amber-500' : 'text-slate-400'} />;
+                                                                }
+                                                                return (
+                                                                    <>
+                                                                        <img
+                                                                            src={iconDef.img}
+                                                                            alt={iconDef.iconKey}
+                                                                            className={`w-full h-full object-contain transition-all ${isUnlocked ? '' : 'grayscale opacity-40'}`}
+                                                                        />
+                                                                        {!isUnlocked && (
+                                                                            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center shadow-sm">
+                                                                                <Lock size={10} className="text-slate-500" />
+                                                                            </div>
+                                                                        )}
+                                                                    </>
+                                                                );
+                                                            })()}
                                                         </div>
 
                                                         <div className="flex-1 min-w-0">
