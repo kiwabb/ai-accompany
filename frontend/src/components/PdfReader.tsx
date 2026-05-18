@@ -170,7 +170,8 @@ const HighlightInteractiveLayer: React.FC<{
     actionTitle: string;
     disabled?: boolean;
     rotation: 0 | 90 | 180 | 270;
-}> = ({ pageNumber, highlightRects, highlightActionAreas, onHighlightHover, onHighlightLeave, actionTitle, disabled = false, rotation }) => (
+    flashHighlightId?: string | null;
+}> = ({ pageNumber, highlightRects, highlightActionAreas, onHighlightHover, onHighlightLeave, actionTitle, disabled = false, rotation, flashHighlightId }) => (
     <>
         {highlightRects.map((rect, idx) => {
             const palette = HIGHLIGHT_COLORS[rect.color] ?? HIGHLIGHT_COLORS.yellow;
@@ -213,6 +214,22 @@ const HighlightInteractiveLayer: React.FC<{
                 aria-label="highlight-actions"
                 title={actionTitle}
             />
+            );
+        })}
+        {/* 定位闪烁：当 flashHighlightId 命中本页某个 highlight，叠一层虚线描边覆盖该 area */}
+        {flashHighlightId && highlightActionAreas.filter(a => a.id === flashHighlightId).map(area => {
+            const a = rotateHighlightRect(area, rotation);
+            return (
+                <div
+                    key={`flash-${pageNumber}-${area.id}`}
+                    className="pdf-highlight-flash absolute z-30 pointer-events-none"
+                    style={{
+                        left: `${a.left}%`,
+                        top: `${a.top}%`,
+                        width: `${a.width}%`,
+                        height: `${a.height}%`,
+                    }}
+                />
             );
         })}
     </>
@@ -413,6 +430,8 @@ const LazyPage = React.memo(({
     draftIsHighlighter,
     areaDraftRect,
     areaSelectedRect,
+    flashHighlightId,
+    flashBookmark,
 }: {
     pageNumber: number;
     rotation: 0 | 90 | 180 | 270;
@@ -430,6 +449,8 @@ const LazyPage = React.memo(({
     draftIsHighlighter?: boolean;
     areaDraftRect?: HighlightRect;
     areaSelectedRect?: HighlightRect;
+    flashHighlightId?: string | null;
+    flashBookmark?: boolean;
 }) => {
     const { t } = useTranslation();
     const [isVisible, setIsVisible] = useState(false);
@@ -462,7 +483,7 @@ const LazyPage = React.memo(({
     return (
         <div
             ref={containerRef}
-            className="pdf-page-wrapper relative w-full flex justify-center py-2"
+            className={`pdf-page-wrapper relative w-full flex justify-center py-2 ${flashBookmark ? 'pdf-bookmark-flash' : ''}`}
             style={{ minHeight: isVisible ? 'auto' : `${Math.round(pageWidth * 1.35)}px` }}
             data-page-number={pageNumber}
         >
@@ -493,6 +514,7 @@ const LazyPage = React.memo(({
                 actionTitle={t('reader.highlightActions', '高亮操作')}
                 disabled={highlightActionsDisabled}
                 rotation={rotation}
+                flashHighlightId={flashHighlightId}
             />}
             {isRendered && <HandwritingLayer
                 strokes={penStrokes}
@@ -642,6 +664,12 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
     const [searchResults, setSearchResults] = useState<Array<{ page: number; snippet: string; offset: number }>>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [searchCursor, setSearchCursor] = useState(0);
+    // 搜索高亮：当前正在被高亮的关键词 + 当前 active match 触发的 token（用于 useEffect 重新执行）
+    const [searchHighlight, setSearchHighlight] = useState<string>('');
+    const [searchHighlightToken, setSearchHighlightToken] = useState(0);
+    // 定位闪烁：跳到书签/高光时短暂的虚线描边
+    const [flashHighlightId, setFlashHighlightId] = useState<string | null>(null);
+    const [flashBookmarkPage, setFlashBookmarkPage] = useState<number | null>(null);
     const [showShortcuts, setShowShortcuts] = useState(false);
     const [sessionSeconds, setSessionSeconds] = useState(0);
     // 荧光笔拖动预览：选区改变时实时计算的临时高亮 rect
@@ -2030,6 +2058,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
             const top = Number(url.searchParams.get('top') || '0');
             if (!Number.isFinite(page) || page <= 0) return;
             scrollPdfToReference(page, Number.isFinite(top) ? top : 0);
+            flashBookmark(page);
         } catch {
             // ignore malformed links
         }
@@ -2867,6 +2896,57 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
         }
     };
 
+    // 跳到书签或高光时短暂闪烁：1500ms 后自动清掉
+    const flashHighlight = (id: string) => {
+        setFlashHighlightId(id);
+        window.setTimeout(() => {
+            setFlashHighlightId(prev => (prev === id ? null : prev));
+        }, 1500);
+    };
+    const flashBookmark = (page: number) => {
+        setFlashBookmarkPage(page);
+        window.setTimeout(() => {
+            setFlashBookmarkPage(prev => (prev === page ? null : prev));
+        }, 1500);
+    };
+
+    // 搜索高亮：在当前 active page 的 textLayer 上给匹配 span 加 .pdf-search-match 类，
+    // 然后把第一个匹配 scrollIntoView。token 改变就重跑（点不同结果时复用同一 term）。
+    useEffect(() => {
+        const term = searchHighlight.trim().toLowerCase();
+        // 清掉旧 highlight
+        document
+            .querySelectorAll('.pdf-search-match')
+            .forEach(el => el.classList.remove('pdf-search-match', 'pdf-search-match-active'));
+        if (!term) return;
+
+        const container = mainContainerRef.current;
+        if (!container) return;
+
+        const apply = (attempts = 0) => {
+            const activePageEl = container.querySelector(`[data-page-number="${pageNumber}"]`);
+            const textLayer = activePageEl?.querySelector('.react-pdf__Page__textContent');
+            if (!textLayer) {
+                if (attempts < 25) window.setTimeout(() => apply(attempts + 1), 100);
+                return;
+            }
+            let first: HTMLElement | null = null;
+            textLayer.querySelectorAll('span').forEach(span => {
+                const text = (span.textContent || '').toLowerCase();
+                if (text && text.includes(term)) {
+                    span.classList.add('pdf-search-match');
+                    if (!first) first = span as HTMLElement;
+                }
+            });
+            if (first) {
+                (first as HTMLElement).classList.add('pdf-search-match-active');
+                (first as HTMLElement).scrollIntoView({ block: 'center', behavior: 'smooth' });
+            }
+        };
+        const timer = window.setTimeout(() => apply(), 250);
+        return () => window.clearTimeout(timer);
+    }, [searchHighlight, searchHighlightToken, pageNumber]);
+
     const scrollToPdfCoordinate = async (pageNumber: number, pdfY: number) => {
         if (!pdf) return;
         
@@ -3286,11 +3366,16 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                                             </div>
                                         ) : (
                                             filteredBookmarks.map((bookmark) => (
-                                                <div 
+                                                <div
                                                     key={bookmark.id}
                                                     onClick={() => {
                                                         if (editingBookmarkId !== bookmark.id) {
                                                             goToPage(bookmark.page);
+                                                            if (bookmark.linkedHighlightId) {
+                                                                flashHighlight(bookmark.linkedHighlightId);
+                                                            } else {
+                                                                flashBookmark(bookmark.page);
+                                                            }
                                                         }
                                                     }}
                                                     className={`group relative p-3 rounded-xl bg-white border transition-all cursor-pointer ${editingBookmarkId === bookmark.id ? 'border-indigo-400 ring-2 ring-indigo-100 shadow-md z-10' : 'border-[#e9e6da] hover:border-indigo-200 hover:shadow-md'}`}
@@ -3388,22 +3473,28 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                                                 onChange={(e) => setSearchQuery(e.target.value)}
                                                 onKeyDown={(e) => {
                                                     if (e.key === 'Enter') {
+                                                        const term = searchQuery.trim();
+                                                        // 输入变化时清旧结果，让 Enter 总是触发新搜索
                                                         if (e.shiftKey && searchResults.length > 0) {
                                                             const prev = (searchCursor - 1 + searchResults.length) % searchResults.length;
                                                             setSearchCursor(prev);
+                                                            setSearchHighlight(term);
+                                                            setSearchHighlightToken(v => v + 1);
                                                             goToPage(searchResults[prev].page);
-                                                        } else if (searchResults.length > 0 && !searchQuery.trim().length) {
-                                                            // empty query but have stale results
-                                                            performSearch(searchQuery);
-                                                        } else if (searchResults.length > 0) {
-                                                            // 已有结果 → 跳到下一条
+                                                        } else if (searchResults.length > 0 && term.length > 0) {
+                                                            // 已有结果 → 跳到下一条 + 高亮
                                                             const next = (searchCursor + 1) % searchResults.length;
                                                             setSearchCursor(next);
+                                                            setSearchHighlight(term);
+                                                            setSearchHighlightToken(v => v + 1);
                                                             goToPage(searchResults[next].page);
                                                         } else {
-                                                            performSearch(searchQuery);
+                                                            performSearch(term);
+                                                            setSearchHighlight(term);
+                                                            setSearchHighlightToken(v => v + 1);
                                                         }
                                                     } else if (e.key === 'Escape') {
+                                                        setSearchHighlight('');
                                                         (e.target as HTMLInputElement).blur();
                                                     }
                                                 }}
@@ -3414,7 +3505,12 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
 
                                         <div className="flex items-center justify-between gap-2">
                                             <button
-                                                onClick={() => performSearch(searchQuery)}
+                                                onClick={() => {
+                                                    const term = searchQuery.trim();
+                                                    performSearch(term);
+                                                    setSearchHighlight(term);
+                                                    setSearchHighlightToken(v => v + 1);
+                                                }}
                                                 disabled={!searchQuery.trim() || isSearching || !pdf}
                                                 className="flex-1 py-2 bg-indigo-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-indigo-600 transition-colors"
                                             >
@@ -3447,6 +3543,8 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                                                         key={`${result.page}-${result.offset}-${idx}`}
                                                         onClick={() => {
                                                             setSearchCursor(idx);
+                                                            setSearchHighlight(searchQuery.trim());
+                                                            setSearchHighlightToken(v => v + 1);
                                                             goToPage(result.page);
                                                         }}
                                                         className={`w-full text-left p-3 rounded-lg border transition-all ${isActive ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-[#e9e6da] hover:bg-slate-50 hover:border-slate-200'}`}
@@ -3540,7 +3638,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                     >
                         {numPages > 0 && (
                             /* First Page - Critical for initial load */
-                            <div className="pdf-page-wrapper relative w-full flex justify-center py-2 mb-2" data-page-number={1}>
+                            <div className={`pdf-page-wrapper relative w-full flex justify-center py-2 mb-2 ${flashBookmarkPage === 1 ? 'pdf-bookmark-flash' : ''}`} data-page-number={1}>
                                 <Page
                                     pageNumber={1}
                                     width={deferredPageRenderWidth}
@@ -3561,6 +3659,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                                     actionTitle={t('reader.highlightActions', '高亮操作')}
                                     disabled={isPenMode}
                                     rotation={rotation}
+                                    flashHighlightId={flashHighlightId}
                                 />}
                                 {firstPageRendered && <HandwritingLayer
                                     strokes={getPagePenStrokes(1)}
@@ -3616,6 +3715,8 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                                 draftIsHighlighter={penTool === 'highlight'}
                                 areaDraftRect={areaDraft?.page === index + 2 ? areaDraft.rect : undefined}
                                 areaSelectedRect={areaSelection?.page === index + 2 ? areaSelection.rect : undefined}
+                                flashHighlightId={flashHighlightId}
+                                flashBookmark={flashBookmarkPage === index + 2}
                             />
                         ))}
                     </Document>
