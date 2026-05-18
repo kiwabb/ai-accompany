@@ -1,14 +1,15 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTimerContext } from '../contexts/TimerContext';
 import PomodoroTimer from '../components/PomodoroTimer';
-import { motion } from 'framer-motion';
-import { ChevronLeft as ChevronLeftIcon, BookOpen as BookOpenIcon } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft as ChevronLeftIcon, BookOpen as BookOpenIcon, Calendar, X } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 import { useTranslation } from 'react-i18next';
 import AmbientBackground from '../components/AmbientBackground';
 import { useVisualTheme } from '../hooks/useVisualTheme';
 import TodoWidget from '../components/TodoWidget';
+import CountdownWidget from '../components/CountdownWidget';
 
 const TimerPage: React.FC = () => {
     const { themeId } = useParams<{ themeId: string }>();
@@ -23,6 +24,19 @@ const TimerPage: React.FC = () => {
     const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
     const [pendingThemeId, setPendingThemeId] = React.useState<string | null>(null);
     const lastHandledThemeIdRef = React.useRef<string | null>(null);
+    const [countdownOpen, setCountdownOpen] = useState(false);
+    const countdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!countdownOpen) return;
+        const handler = (e: MouseEvent) => {
+            if (countdownRef.current && !countdownRef.current.contains(e.target as Node)) {
+                setCountdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [countdownOpen]);
 
     const isOngoing = isActive || (timeLeft > 0 && timeLeft < totalTimeValue);
 
@@ -83,6 +97,51 @@ const TimerPage: React.FC = () => {
             </motion.button>
 
             <div className="fixed top-8 right-8 z-50 flex items-center gap-3">
+                {/* Countdown toggle */}
+                <div ref={countdownRef} className="relative">
+                    <motion.button
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        whileHover={{ x: 2 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setCountdownOpen(prev => !prev)}
+                        className={`py-3 px-5 bg-white/60 backdrop-blur-2xl shadow-xl rounded-2xl flex items-center gap-2 group transition-colors font-bold uppercase tracking-widest text-[10px] ${isShinchanTheme
+                                ? 'border border-[#FF6B6B]/20 text-[#8D6E63] hover:text-[#5D4037] hover:bg-[#FF6B6B]/10'
+                                : 'border border-white text-slate-400 hover:text-slate-900'
+                            }`}
+                        aria-label={t('countdown.title', '倒数日')}
+                    >
+                        <Calendar size={16} className="group-hover:scale-110 transition-transform" />
+                        <span>{t('countdown.title', '倒数日')}</span>
+                    </motion.button>
+
+                    <AnimatePresence>
+                        {countdownOpen && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                                className="absolute top-full right-0 mt-3 w-[320px] bg-white/90 backdrop-blur-2xl rounded-3xl border border-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.18)] p-4"
+                            >
+                                <div className="flex items-center justify-between mb-3 px-1">
+                                    <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500 flex items-center gap-2">
+                                        <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+                                        {t('countdown.title', '倒数日')}
+                                    </h3>
+                                    <button
+                                        onClick={() => setCountdownOpen(false)}
+                                        className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                                <CountdownWidget />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+
                 <TodoWidget isShinchanTheme={isShinchanTheme} />
                 {activeTheme && (
                     <motion.button

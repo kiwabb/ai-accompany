@@ -8,16 +8,19 @@ load_dotenv()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .database import Base, engine
+from .database import Base, engine, AsyncSessionLocal
 from . import models  # 确保导入模型，以便Base.metadata知道它们
+from . import crud
 from .routers import sessions, users, topics, diagnostics, countdowns, documents, achievements, auth
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 启动时：创建数据库表
+    # 启动时：创建数据库表 + 成就目录首次种子
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    async with AsyncSessionLocal() as session:
+        await crud.seed_achievements_if_empty(session)
     yield
     # 关闭时：可以在这里添加清理逻辑
 

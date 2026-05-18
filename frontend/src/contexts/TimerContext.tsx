@@ -38,12 +38,13 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const { todayStats, setTodayStats, initialLoaded, saveLearningSession } = usePomodoroData(dispatch);
 
     const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
-    const isAutoStartPending = useRef(false);
-    const isSkipPending = useRef(false);
+    // Ref to pause() so handleTimerComplete can pause when autoStartNext is disabled.
+    // pause is defined by useTimer below (after handleTimerComplete) — break the cycle via ref.
+    const pauseRef = useRef<() => void>(() => {});
 
     const { settings, phase } = state;
 
-    const { playEndSound, stopBackgroundMusic } = useAudio({
+    const { playStartSound, playEndSound, stopBackgroundMusic } = useAudio({
         enableSounds: settings.enableSounds !== false,
         enableBackgroundMusic: settings.enableBackgroundMusic !== false,
         volume: settings.soundVolume || 0.5,
@@ -57,16 +58,29 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         if (sessionStartTime) {
             saveLearningSession(activeTheme, phase, settings, 'completed', totalTimeValue, sessionStartTime, new Date());
+        }
+
+        // Dispatch NEXT_PHASE first — useTimer's [initialSeconds] effect will reset timeLeft
+        // to the new phase's duration via microtask. With isActive left untouched, the running
+        // interval seamlessly carries over and the next tick decrements from the new value.
+        dispatch({ type: 'NEXT_PHASE' });
+
+        if (settings.autoStartNext) {
+            // Seamless transition: timer stays active, refresh sessionStartTime for new phase
+            setSessionStartTime(new Date());
+        } else {
+            // Stop and wait for the user to start the next phase manually
+            pauseRef.current();
             setSessionStartTime(null);
         }
-        isAutoStartPending.current = true;
-        dispatch({ type: 'NEXT_PHASE' });
     }, [sessionStartTime, saveLearningSession, totalTimeValue, phase, playEndSound, stopBackgroundMusic, activeTheme, settings, dispatch]);
 
     const { timeLeft, isActive, start, pause, reset } = useTimer({
         initialSeconds: totalTimeValue,
         onComplete: handleTimerComplete,
     });
+
+    useEffect(() => { pauseRef.current = pause; }, [pause]);
 
     // 乐观更新当日学习时长：focus 阶段每过 60 秒就增加当前主题 1 分钟；会话结束后由 fetchDailyStats 重新校准。
     const lastAccumulatedSecondsRef = useRef(totalTimeValue);
@@ -103,7 +117,8 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isActive, timeLeft, sessionStartTime, totalTimeValue,
         activeTheme, phase, settings, dispatch,
         start, pause, reset, saveLearningSession,
-        setSessionStartTime, isAutoStartPending, isSkipPending,
+        setSessionStartTime,
+        playStartSound,
     });
 
     const sessionHandlers = useSessionHandlers({
@@ -112,27 +127,6 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         reset, saveLearningSession,
         setSessionStartTime,
     });
-
-    // Stable ref to avoid re-running auto-start effect when timerActions identity changes
-    const timerActionsRef = useRef(timerActions);
-    useEffect(() => { timerActionsRef.current = timerActions; }, [timerActions]);
-
-    // Handle auto-start next phase (after timer complete with autoStartNext, OR after explicit skip)
-    useEffect(() => {
-        if (initialLoaded && !isActive && isAutoStartPending.current) {
-            const shouldAutoStart = settings.autoStartNext || isSkipPending.current;
-            if (!shouldAutoStart) return;
-            const isAtStart = Math.abs(timeLeft - totalTimeValue) < 2;
-            if (isAtStart) {
-                isAutoStartPending.current = false;
-                isSkipPending.current = false;
-                const timer = setTimeout(() => {
-                    timerActionsRef.current.handleStart();
-                }, 1000);
-                return () => clearTimeout(timer);
-            }
-        }
-    }, [phase, settings.autoStartNext, initialLoaded, isActive, timeLeft, totalTimeValue]);
 
     const handleVisualThemeChange = useCallback((themeId: string) => {
         dispatch({ type: 'SET_VISUAL_THEME', themeId });

@@ -63,6 +63,7 @@ export interface UserSettingsBackend {
   short_break_duration: number;
   long_break_duration: number;
   long_break_interval: number;
+  target_rounds?: number;
   ai_proactivity?: boolean;
   ai_actionable?: boolean;
   auto_start_next?: boolean;
@@ -88,6 +89,12 @@ export interface ThemeCreate {
   name: string;
   focus_duration: number;
   is_default: boolean;
+  icon_type?: string | null;
+}
+
+export interface ThemeUpdate {
+  name?: string;
+  focus_duration?: number;
   icon_type?: string | null;
 }
 

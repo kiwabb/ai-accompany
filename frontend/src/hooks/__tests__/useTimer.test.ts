@@ -28,20 +28,24 @@ describe('useTimer', () => {
     expect(result.current.isActive).toBe(true);
   });
 
-  it('should call onComplete and stop when time reaches 0', () => {
+  it('should call onComplete when time reaches 0 (caller controls pausing)', async () => {
     const onComplete = vi.fn();
     const { result } = renderHook(() => useTimer({ initialSeconds: 2, onComplete }));
-    
+
     act(() => {
       result.current.start();
     });
-    
-    act(() => {
+
+    await act(async () => {
       vi.advanceTimersByTime(2000);
+      // Drain the queueMicrotask scheduled inside the interval tick's updater
+      await Promise.resolve();
     });
-    
+
     expect(result.current.timeLeft).toBe(0);
-    expect(result.current.isActive).toBe(false);
+    // useTimer no longer auto-pauses on completion — caller decides via onComplete
+    // (TimerContext keeps it running for seamless phase transitions when autoStartNext is on).
+    expect(result.current.isActive).toBe(true);
     expect(onComplete).toHaveBeenCalledTimes(1);
   });
 

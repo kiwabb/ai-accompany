@@ -87,17 +87,22 @@ export const DailyTrendChart: React.FC<DailyTrendChartProps> = ({
         return m;
     }, [themeOrder]);
 
-    // 趋势图配套迷你饼图数据：同周期总专注次数按主题划分
+    // 趋势图配套饼图：同周期内每个主题的「专注时间」占比（分钟）
     const trendPieData = useMemo(() => {
-        const countByTheme = new Map<string, number>();
         const minutesByTheme = new Map<string, number>();
         (stats?.sessions_details || []).forEach(s => {
-            countByTheme.set(s.theme_name, (countByTheme.get(s.theme_name) || 0) + 1);
             minutesByTheme.set(s.theme_name, (minutesByTheme.get(s.theme_name) || 0) + s.duration_minutes);
         });
-        // 兜底用 minutes
-        const source = countByTheme.size > 0 ? countByTheme : minutesByTheme;
-        return Array.from(source.entries())
+        // 兜底：sessions_details 为空时用 daily_stats.sessions_by_theme 汇总
+        if (minutesByTheme.size === 0) {
+            (stats?.daily_stats || []).forEach(d => {
+                Object.entries(d.sessions_by_theme).forEach(([theme, mins]) => {
+                    minutesByTheme.set(theme, (minutesByTheme.get(theme) || 0) + mins);
+                });
+            });
+        }
+        return Array.from(minutesByTheme.entries())
+            .filter(([, v]) => v > 0)
             .sort(([, a], [, b]) => b - a)
             .map(([name, value]) => ({ name, value }));
     }, [stats]);
@@ -368,22 +373,22 @@ export const DailyTrendChart: React.FC<DailyTrendChartProps> = ({
                 </div>
             </div>
 
-            {/* 配套迷你饼图：同周期主题分布 */}
+            {/* 配套饼图：同周期专注时间比例 */}
             {trendPieData.length > 0 && (
-                <div className="mt-8 pt-6 border-t border-theme-text-muted/10 flex items-center gap-6">
+                <div className="mt-8 pt-6 border-t border-theme-text-muted/10 flex items-center gap-8 flex-wrap justify-center sm:justify-start">
                     <MiniDonut
                         data={trendPieData}
                         getColor={(name) => {
                             const idx = themeIndex.get(name) ?? 0;
                             return getChartColorForTheme(name, idx);
                         }}
-                        size={80}
-                        thickness={14}
-                        label={t('stats.sessions', '次')}
+                        size={180}
+                        thickness={22}
+                        label={t('stats.minutesAxis', '分钟')}
                     />
                     <div className="flex-1 min-w-0">
                         <div className="text-[10px] font-bold uppercase tracking-widest text-theme-text-muted/70 mb-2">
-                            {t('stats.themeBreakdown', '主题分布（同周期）')}
+                            {t('stats.trendTimeShare', '专注时间占比（同周期）')}
                         </div>
                         <div className="grid grid-cols-2 gap-x-3 gap-y-1">
                             {trendPieData.slice(0, 6).map((d) => {

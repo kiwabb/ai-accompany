@@ -24,8 +24,7 @@ export interface TimerActionDeps {
         end: Date
     ) => Promise<void>;
     setSessionStartTime: (time: Date | null) => void;
-    isAutoStartPending: React.MutableRefObject<boolean>;
-    isSkipPending: React.MutableRefObject<boolean>;
+    playStartSound?: () => void;
 }
 
 export const useTimerActions = (deps: TimerActionDeps) => {
@@ -43,19 +42,21 @@ export const useTimerActions = (deps: TimerActionDeps) => {
         reset,
         saveLearningSession,
         setSessionStartTime,
-        isAutoStartPending,
-        isSkipPending,
+        playStartSound,
     } = deps;
 
     const handleStart = useCallback(() => {
+        // Play start sound when entering a fresh phase (full duration) or after completion (timeLeft=0).
+        if (timeLeft === totalTimeValue || timeLeft <= 0) {
+            playStartSound?.();
+        }
         setSessionStartTime(new Date());
         start();
-    }, [start, setSessionStartTime]);
+    }, [start, setSessionStartTime, timeLeft, totalTimeValue, playStartSound]);
 
     const handlePause = useCallback(() => {
-        isAutoStartPending.current = false;
         pause();
-    }, [pause, isAutoStartPending]);
+    }, [pause]);
 
     const handleReset = useCallback(() => {
         if (isActive && sessionStartTime) {
@@ -63,33 +64,32 @@ export const useTimerActions = (deps: TimerActionDeps) => {
             saveLearningSession(activeTheme, phase, settings, 'interrupted', duration, sessionStartTime, new Date());
         }
         setSessionStartTime(null);
-        isAutoStartPending.current = false;
         reset();
-    }, [isActive, sessionStartTime, totalTimeValue, timeLeft, saveLearningSession, reset, activeTheme, phase, settings, setSessionStartTime, isAutoStartPending]);
+    }, [isActive, sessionStartTime, totalTimeValue, timeLeft, saveLearningSession, reset, activeTheme, phase, settings, setSessionStartTime]);
 
     const handleSkip = useCallback(() => {
         if (sessionStartTime) {
             const duration = totalTimeValue - timeLeft;
             saveLearningSession(activeTheme, phase, settings, 'skipped', duration, sessionStartTime, new Date());
         }
-        setSessionStartTime(null);
-        isAutoStartPending.current = true;
-        isSkipPending.current = true;
-        reset();
+        // Just dispatch — useTimer's [initialSeconds] effect will reset timeLeft to the new
+        // duration. isActive carries over: if running, the new phase keeps ticking; if paused,
+        // it stays paused at the new duration and the user can start manually.
         dispatch({ type: 'NEXT_PHASE' });
-    }, [sessionStartTime, totalTimeValue, timeLeft, saveLearningSession, reset, activeTheme, phase, settings, dispatch, setSessionStartTime, isAutoStartPending, isSkipPending]);
+        if (isActive) {
+            setSessionStartTime(new Date());
+        } else {
+            setSessionStartTime(null);
+        }
+    }, [isActive, sessionStartTime, totalTimeValue, timeLeft, saveLearningSession, activeTheme, phase, settings, dispatch, setSessionStartTime]);
 
     const handleToggle = useCallback(() => {
         if (isActive) {
             handlePause();
         } else {
-            if (timeLeft <= 0) {
-                handleSkip();
-            } else {
-                handleStart();
-            }
+            handleStart();
         }
-    }, [isActive, timeLeft, handlePause, handleStart, handleSkip]);
+    }, [isActive, handlePause, handleStart]);
 
     return {
         handleStart,

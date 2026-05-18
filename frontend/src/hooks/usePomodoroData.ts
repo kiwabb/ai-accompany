@@ -53,12 +53,12 @@ export const usePomodoroData = (dispatch: React.Dispatch<PomodoroAction>) => {
                     getUserThemes()
                 ]);
 
-                const combinedThemes = [...DEFAULT_THEMES];
-                fetchedThemes.forEach(theme => {
-                    if (!combinedThemes.find(t => t.id === theme.id)) {
-                        combinedThemes.push(theme);
-                    }
-                });
+                // 后端用户主题覆盖前端默认；不在默认列表的用户主题追加在末尾
+                const overrideMap = new Map(fetchedThemes.map(t => [t.id, t]));
+                const combinedThemes = [
+                    ...DEFAULT_THEMES.map(t => overrideMap.get(t.id) ?? t),
+                    ...fetchedThemes.filter(t => !DEFAULT_THEMES.find(d => d.id === t.id)),
+                ];
 
                 dispatch({
                     type: 'SAVE_SETTINGS',

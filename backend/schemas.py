@@ -41,6 +41,7 @@ class UserSettingsBase(BaseModel):
     short_break_duration: Optional[int] = 5
     long_break_duration: Optional[int] = 15
     long_break_interval: Optional[int] = 4
+    target_rounds: Optional[int] = 4
     ai_proactivity: Optional[bool] = True
     ai_actionable: Optional[bool] = False
     auto_start_next: Optional[bool] = False
@@ -76,6 +77,14 @@ class ThemeCreate(ThemeBase):
     """Schema for creating a theme."""
 
     pass
+
+
+class ThemeUpdate(BaseModel):
+    """Schema for partially updating a theme (name / focus_duration / icon_type)."""
+
+    name: Optional[str] = None
+    focus_duration: Optional[int] = None
+    icon_type: Optional[str] = None
 
 
 class ThemeResponse(ThemeBase):

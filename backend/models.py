@@ -41,6 +41,7 @@ class UserSettings(Base):
     short_break_duration = Column(Integer, default=5)
     long_break_duration = Column(Integer, default=15)
     long_break_interval = Column(Integer, default=4)
+    target_rounds = Column(Integer, default=4)
     ai_proactivity = Column(Boolean, default=True)
     ai_actionable = Column(Boolean, default=False)
     auto_start_next = Column(Boolean, default=False)

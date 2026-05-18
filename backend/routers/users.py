@@ -82,6 +82,16 @@ async def create_user_theme(
     return await crud.create_user_theme(db, current_user_id, theme_in)
 
 
+@router.put("/themes/{theme_id}", response_model=schemas.ThemeResponse)
+async def update_user_theme(
+    theme_id: str,
+    theme_in: schemas.ThemeUpdate,
+    current_user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    return await crud.upsert_user_theme(db, current_user_id, theme_id, theme_in)
+
+
 @router.delete("/themes/{theme_id}")
 async def delete_user_theme(
     theme_id: str,

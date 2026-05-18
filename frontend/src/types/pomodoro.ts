@@ -10,6 +10,7 @@ export interface TimerSettings {
   shortBreakDuration: number;
   longBreakDuration: number;
   longBreakInterval: number;
+  targetRounds: number;
   autoStartNext: boolean;
   googleApiKey?: string;
   openaiApiKey?: string;

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useTimerContext } from '../contexts/TimerContext';
+import { updateUserTheme } from '../api/client';
 import type { TimerSettings, FocusTheme } from '../types/pomodoro';
 
 export const useSettingsPageLogic = () => {
@@ -26,11 +27,42 @@ export const useSettingsPageLogic = () => {
 
   const handleSave = useCallback(async () => {
     await handleSaveSettings(settings);
+
+    // Persist changed themes (name / focusDuration / iconType) to backend
+    if (draftThemes) {
+      const initialMap = new Map(initialThemes.map((t) => [t.id, t]));
+      const changedThemes = draftThemes.filter((t) => {
+        const orig = initialMap.get(t.id);
+        return (
+          !orig ||
+          orig.name !== t.name ||
+          orig.focusDuration !== t.focusDuration ||
+          orig.iconType !== t.iconType
+        );
+      });
+      if (changedThemes.length > 0) {
+        try {
+          await Promise.all(
+            changedThemes.map((t) =>
+              updateUserTheme(t.id, {
+                name: t.name,
+                focus_duration: t.focusDuration,
+                icon_type: t.iconType ?? null,
+              })
+            )
+          );
+          handleThemesChange(draftThemes);
+        } catch (error) {
+          console.error('Failed to save theme edits:', error);
+        }
+      }
+    }
+
     setShowSavedToast(true);
     setDraftSettings(null);
     setDraftThemes(null);
     setTimeout(() => setShowSavedToast(false), 3000);
-  }, [handleSaveSettings, settings]);
+  }, [handleSaveSettings, settings, draftThemes, initialThemes, handleThemesChange]);
 
   return {
     settings,

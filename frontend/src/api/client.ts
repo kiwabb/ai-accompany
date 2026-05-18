@@ -158,6 +158,25 @@ export const createUserTheme = async (theme: FocusTheme): Promise<void> => {
   await handleResponse<UserThemeBackend>(response);
 };
 
+export const updateUserTheme = async (
+  themeId: string,
+  patch: { name?: string; focus_duration?: number; icon_type?: string | null }
+): Promise<FocusTheme> => {
+  const response = await fetch(`${API_BASE_URL}/themes/${themeId}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(patch),
+  });
+  const backend = await handleResponse<UserThemeBackend>(response);
+  return {
+    id: backend.theme_id,
+    name: backend.name,
+    focusDuration: backend.focus_duration,
+    isDefault: backend.is_default,
+    iconType: backend.icon_type ?? undefined,
+  };
+};
+
 export const deleteUserTheme = async (themeId: string): Promise<void> => {
   const response = await fetch(`${API_BASE_URL}/themes/${themeId}`, {
     method: 'DELETE',

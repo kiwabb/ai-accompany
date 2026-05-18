@@ -42,7 +42,7 @@
   "timer": {
     "focusCompanion": "专注伴侣",
     "studyBuddy": "学习搭子",
-    "cycle": "周期",
+    "cycle": "循环",
     "todayFocus": "今日专注",
     "totalSessions": "总会话数",
     "minutes": "分钟"
@@ -242,17 +242,49 @@
         "name": "第一步",
         "description": "完成第一次专注会话"
       },
+      "session_10": {
+        "name": "渐入佳境",
+        "description": "累计完成 10 次专注"
+      },
+      "session_50": {
+        "name": "半百达成",
+        "description": "累计完成 50 次专注"
+      },
+      "session_100": {
+        "name": "百战不殆",
+        "description": "累计完成 100 次专注"
+      },
       "focus_10h": {
         "name": "专注学徒",
         "description": "累计专注时长达到 10 小时"
       },
-      "night_owl": {
-        "name": "熬夜冠军",
-        "description": "在凌晨 0:00 到 4:00 之间完成一次专注"
+      "focus_25h": {
+        "name": "深耕者",
+        "description": "累计专注时长达到 25 小时"
+      },
+      "focus_100h": {
+        "name": "专注大师",
+        "description": "累计专注时长达到 100 小时"
+      },
+      "streak_3d": {
+        "name": "连续三天",
+        "description": "连续 3 天保持专注记录"
       },
       "streak_7d": {
         "name": "坚持就是胜利",
         "description": "连续 7 天保持专注记录"
+      },
+      "streak_14d": {
+        "name": "习惯成自然",
+        "description": "连续 14 天保持专注记录"
+      },
+      "streak_30d": {
+        "name": "钢铁意志",
+        "description": "连续 30 天保持专注记录"
+      },
+      "night_owl": {
+        "name": "熬夜冠军",
+        "description": "在凌晨 0:00 到 4:00 之间完成一次专注"
       }
     }
   },
@@ -264,8 +296,7 @@
     "completed": "次专注",
     "sessions": "次",
     "minutesAxis": "分钟",
-    "themeBreakdown": "主题分布（同周期）",
-    "dailyMini": "每日趋势（同周期）",
+    "trendTimeShare": "专注时间占比（同周期）",
     "perDay": "每日平均",
     "totalSessions": "总专注次数",
     "viewDetails": "查看详情",

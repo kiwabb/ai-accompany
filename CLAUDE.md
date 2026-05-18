@@ -56,6 +56,16 @@ Frontend (:5173) → Vite proxy → Backend (:8000) → PostgreSQL (:5432, Docke
 - Timer state persists to localStorage; sessions persist to PostgreSQL
 - CozyPal chat module is self-contained in `src/components/cozypal/`
 
+## Workflow: Reading Requirements from Google Sheets
+
+需求从 Google 表格管理。开始新功能或 bug 修复前，先从表格读取待办需求：
+
+1. 用 `/google-sheets` 技能（或直接用 WebFetch）读取需求表格
+2. 找到状态为「待开发」或未勾选的行，确认优先级和描述
+3. 实现完成后将该行状态更新为「已完成」
+
+表格地址和列结构由用户在对话中提供；Claude 不应猜测或伪造表格 URL。
+
 ## Project Conventions
 - Bilingual codebase: comments in Chinese, UI text via i18n keys
 - Database URL defaults to `postgresql+asyncpg://myuser:mypassword@localhost:5432/mydatabase` (configurable via `DATABASE_URL` env var)

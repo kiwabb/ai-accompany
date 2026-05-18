@@ -147,11 +147,10 @@ const CountdownWidget: React.FC<CountdownWidgetProps> = ({ variant = 'full', tex
                                     </span>
                                 </div>
                                 <motion.button
-                                    initial={{ opacity: 0 }}
                                     whileHover={{ scale: 1.1, backgroundColor: '#fef2f2', color: '#ef4444' }}
                                     whileTap={{ scale: 0.9 }}
                                     onClick={() => handleDelete(c.id)}
-                                    className="shrink-0 opacity-0 group-hover:opacity-100 p-2 rounded-xl text-slate-300 transition-all border border-transparent hover:border-red-100"
+                                    className="shrink-0 p-2 rounded-xl text-slate-300 hover:text-red-500 transition-all border border-transparent hover:border-red-100"
                                     aria-label={`Delete ${c.title}`}
                                 >
                                     <Trash2 className="w-4 h-4" />

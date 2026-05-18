@@ -242,17 +242,49 @@
         "name": "First Step",
         "description": "Complete your first focus session"
       },
+      "session_10": {
+        "name": "Getting Warmed Up",
+        "description": "Complete 10 focus sessions"
+      },
+      "session_50": {
+        "name": "Half Century",
+        "description": "Complete 50 focus sessions"
+      },
+      "session_100": {
+        "name": "Centurion",
+        "description": "Complete 100 focus sessions"
+      },
       "focus_10h": {
         "name": "Deep Focus Apprentice",
         "description": "Focus for 10 hours in total"
       },
-      "night_owl": {
-        "name": "Night Owl",
-        "description": "Complete a focus session between 00:00 and 04:00"
+      "focus_25h": {
+        "name": "Deep Worker",
+        "description": "Focus for 25 hours in total"
+      },
+      "focus_100h": {
+        "name": "Focus Master",
+        "description": "Focus for 100 hours in total"
+      },
+      "streak_3d": {
+        "name": "Three in a Row",
+        "description": "Maintain a focus streak for 3 days"
       },
       "streak_7d": {
         "name": "Consistency King",
         "description": "Maintain a focus streak for 7 days"
+      },
+      "streak_14d": {
+        "name": "Habit Formed",
+        "description": "Maintain a focus streak for 14 days"
+      },
+      "streak_30d": {
+        "name": "Iron Will",
+        "description": "Maintain a focus streak for 30 days"
+      },
+      "night_owl": {
+        "name": "Night Owl",
+        "description": "Complete a focus session between 00:00 and 04:00"
       }
     }
   },
@@ -264,8 +296,7 @@
     "completed": "Sessions",
     "sessions": "sessions",
     "minutesAxis": "min",
-    "themeBreakdown": "Theme breakdown",
-    "dailyMini": "Daily trend",
+    "trendTimeShare": "Focus time share",
     "perDay": "daily avg",
     "totalSessions": "Total Sessions",
     "viewDetails": "View Details",

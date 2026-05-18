@@ -4,7 +4,6 @@ import { PieChart, Activity } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { StatsRangeResponse } from '../../api/client';
 import type { TimeRange } from '../../hooks/useFocusStats';
-import MiniBars from './MiniBars';
 
 interface ThemeDistributionChartProps {
     pieStats: StatsRangeResponse | null;
@@ -223,19 +222,6 @@ export const ThemeDistributionChart: React.FC<ThemeDistributionChartProps> = ({
                 </div>
             </div>
 
-            {/* 配套迷你柱状图：同周期每日趋势 */}
-            {(pieStats?.daily_stats?.length ?? 0) > 0 && (
-                <div className="mt-8 pt-6 border-t border-theme-text-muted/10">
-                    <div className="text-[10px] font-bold uppercase tracking-widest text-theme-text-muted/70 mb-2">
-                        {t('stats.dailyMini', '每日趋势（同周期）')}
-                    </div>
-                    <MiniBars
-                        dailyStats={pieStats!.daily_stats}
-                        getColor={getChartColorForTheme}
-                        height={64}
-                    />
-                </div>
-            )}
         </motion.div>
     );
 };

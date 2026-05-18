@@ -68,6 +68,13 @@ export function useTimer({ initialSeconds, onComplete }: UseTimerProps) {
   // Ref to track previous initialSeconds to avoid reset on refresh
   const prevInitialSeconds = useRef(initialSeconds);
   const initialSecondsRef = useRef(initialSeconds);
+  // Ref to track latest timeLeft so start/pause/reset are stable (no closure staleness)
+  const timeLeftRef = useRef(timeLeft);
+  // Ref to track latest isActive so phase-transition writes to localStorage stay consistent
+  const isActiveRef = useRef(isActive);
+  // Guard prevents completion side-effects from firing twice in React Strict Mode
+  // (Strict Mode double-invokes functional updaters, but NOT queueMicrotask callbacks)
+  const completionFiredRef = useRef(false);
 
   // Update refs
   useEffect(() => {
@@ -80,12 +87,31 @@ export function useTimer({ initialSeconds, onComplete }: UseTimerProps) {
   }, [initialSeconds]);
 
   useEffect(() => {
+    timeLeftRef.current = timeLeft;
+  }, [timeLeft]);
+
+  useEffect(() => {
+    isActiveRef.current = isActive;
+  }, [isActive]);
+
+  // Phase transition: when initialSeconds changes (e.g. focus → break),
+  // reset timeLeft to the new duration but keep isActive unchanged. This lets
+  // the running interval seamlessly continue counting down from the new value.
+  // The caller (TimerContext) decides whether to pause via pause() based on autoStartNext.
+  useEffect(() => {
     if (prevInitialSeconds.current === initialSeconds) return;
     prevInitialSeconds.current = initialSeconds;
+    completionFiredRef.current = false; // allow next completion to fire
     queueMicrotask(() => {
       setTimeLeft(initialSeconds);
-      setIsActive(false);
-      localStorage.removeItem(STORAGE_KEY);
+      // Sync localStorage with new timeLeft, preserving isActive
+      const state: TimerState = {
+        timeLeft: initialSeconds,
+        isActive: isActiveRef.current,
+        lastUpdated: Date.now(),
+        initialSeconds,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     });
   }, [initialSeconds]);
 
@@ -109,16 +135,27 @@ export function useTimer({ initialSeconds, onComplete }: UseTimerProps) {
     }
   }, [isActive, timeLeft, saveState]);
 
-  // Trusted interval implementation
+  useEffect(() => {
+    // Reset guard whenever timer activates/deactivates
+    completionFiredRef.current = false;
+  }, [isActive]);
+
   useEffect(() => {
     if (!isActive) return;
     const id = setInterval(() => {
       setTimeLeft(t => {
         const newVal = t - 1;
         if (newVal <= 0) {
-          setIsActive(false);
-          localStorage.removeItem(STORAGE_KEY);
-          onCompleteRef.current();
+          // Guard: only fire completion once even if updater runs twice (Strict Mode)
+          if (!completionFiredRef.current) {
+            completionFiredRef.current = true;
+            // Run side-effects outside the updater via microtask — NOT double-invoked by Strict Mode.
+            // Do NOT auto-pause here: the caller (via onComplete) decides whether to pause
+            // (when autoStartNext is false) or to continue seamlessly into the next phase.
+            queueMicrotask(() => {
+              onCompleteRef.current();
+            });
+          }
           return 0;
         }
         // Save state during tick
@@ -133,7 +170,6 @@ export function useTimer({ initialSeconds, onComplete }: UseTimerProps) {
       });
     }, 1000);
 
-
     return () => clearInterval(id);
   }, [isActive]);
 
@@ -143,14 +179,20 @@ export function useTimer({ initialSeconds, onComplete }: UseTimerProps) {
 
 
   const start = useCallback(() => {
+    // Guard: if timeLeft is 0 (e.g., called right after completion before reset settles),
+    // reset to initialSeconds before starting so we don't immediately re-fire completion.
+    const tl = timeLeftRef.current > 0 ? timeLeftRef.current : initialSecondsRef.current;
+    if (timeLeftRef.current <= 0) {
+      setTimeLeft(initialSecondsRef.current);
+    }
     setIsActive(true);
-    saveState(timeLeft, true, initialSecondsRef.current);
-  }, [timeLeft, saveState]);
+    saveState(tl, true, initialSecondsRef.current);
+  }, [saveState]);
 
   const pause = useCallback(() => {
     setIsActive(false);
-    saveState(timeLeft, false, initialSecondsRef.current);
-  }, [timeLeft, saveState]);
+    saveState(timeLeftRef.current, false, initialSecondsRef.current);
+  }, [saveState]);
 
   const reset = useCallback(() => {
     setIsActive(false);

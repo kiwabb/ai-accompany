@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { Play, Pause, RotateCcw, SkipForward } from 'lucide-react';
+import { Play, Pause, Square, SkipForward } from 'lucide-react';
 import { useTimerContext } from '../contexts/TimerContext';
 
 interface TimerControlsProps {
@@ -49,17 +49,17 @@ const TimerControls: React.FC<TimerControlsProps> = ({
   return (
     <div className="flex items-center space-x-6 md:space-x-10 lg:space-x-12" role="group" aria-label="Timer controls">
       <motion.button
-        whileHover={{ scale: 1.15, rotate: -15, y: -4 }}
+        whileHover={{ scale: 1.15, y: -4 }}
         whileTap={{ scale: 0.9, y: 0 }}
         onClick={onReset}
         className={`p-4 md:p-5 lg:p-6 rounded-3xl md:rounded-[2rem] transition-all duration-300 flex items-center justify-center group ${isChiikawaTheme ? chiikawaResetStyle :
             isShinchanTheme ? `bg-[#4FC3F7] text-white ${shinchanBaseStyle.replace('rgba(33,150,243,0.3)', 'rgba(79,195,247,0.4)')} ${shinchanActiveStyle}` :
               'glass-surface text-cozy-text-light hover:text-cozy-red shadow-sm'
           }`}
-        aria-label={`${t('common.reset')} (Ctrl+R)`}
+        aria-label={`${t('common.stop', '结束')} (Ctrl+R)`}
         title="Ctrl+R"
       >
-        <RotateCcw className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8" strokeWidth={isChiikawaTheme || isShinchanTheme ? 3 : 2.5} />
+        <Square className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8" fill="currentColor" strokeWidth={0} />
       </motion.button>
 
       <motion.button

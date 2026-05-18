@@ -12,6 +12,7 @@ export const DEFAULT_SETTINGS: TimerSettings = {
   shortBreakDuration: 5,
   longBreakDuration: 15,
   longBreakInterval: 4,
+  targetRounds: 4,
   autoStartNext: false,
   googleApiKey: '',
   aiPersona: 'gentle_encourager',
