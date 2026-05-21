@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Upload, Check, AlertCircle, Loader2 } from 'lucide-react';
 import axios from 'axios';
-import { getAuthHeaders, getUserThemes } from '../../api/client';
+import { getAuthHeaders } from '../../api/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { FocusTheme } from '../../types/pomodoro';
 import CustomSelect from '../ui/CustomSelect';
 import { useTimerContext } from '../../contexts/TimerContext';
 
@@ -26,7 +25,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   const { t } = useTranslation();
   const { state } = useTimerContext();
   const fallbackTopicId = defaultTopicId ?? state.activeThemeId ?? null;
-  const [themes, setThemes] = useState<FocusTheme[]>([]);
+  const themes = state.themes;
 
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
@@ -77,18 +76,8 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
     e.stopPropagation();
   };
 
-  const fetchThemes = async () => {
-    try {
-      const fetchedThemes = await getUserThemes();
-      setThemes(fetchedThemes);
-    } catch (err) {
-      console.error('Failed to fetch themes', err);
-    }
-  };
-
   useEffect(() => {
     if (isOpen) {
-      fetchThemes();
       setStep('info');
       setFile(null);
       setTitle('');
