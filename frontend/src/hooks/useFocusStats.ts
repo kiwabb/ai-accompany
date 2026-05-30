@@ -85,6 +85,42 @@ export const useTrendStats = (timeRange: TimeRange) => {
     return { stats, trendLoading, initialLoading };
 };
 
+/** 热力图：默认从当年 1 月 1 日开始取到今天，方便按自然年回顾。 */
+export const useHeatmapStats = () => {
+    const [heatmapStats, setHeatmapStats] = useState<StatsRangeResponse | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchHeatmap = async () => {
+            try {
+                const endDate = new Date();
+                endDate.setHours(0, 0, 0, 0);
+                const startDate = new Date(endDate.getFullYear(), 0, 1);
+
+                const days = Math.floor((endDate.getTime() - startDate.getTime()) / 86400000) + 1;
+                const expected: string[] = [];
+                for (let i = 0; i < days; i++) {
+                    const d = new Date(startDate);
+                    d.setDate(startDate.getDate() + i);
+                    expected.push(formatDate(d));
+                }
+
+                const data = await getStatsRange(startDate, endDate);
+                data.daily_stats = fillDailyStats(data.daily_stats, expected);
+                setHeatmapStats(data);
+            } catch (error) {
+                console.error('Failed to fetch heatmap stats:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchHeatmap();
+    }, []);
+
+    return { heatmapStats, heatmapLoading: loading };
+};
+
 export const usePieStats = (pieRange: TimeRange) => {
     const [pieStats, setPieStats] = useState<StatsRangeResponse | null>(null);
 

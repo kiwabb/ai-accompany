@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useTimerContext } from '../contexts/TimerContext';
-import { Book as BookIcon, Settings as SettingsIcon, Rocket as RocketIcon, Brain as BrainIcon, Coffee as CoffeeIcon, Sparkles as SparklesIcon, Trophy as TrophyIcon, BarChart3 as BarChartIcon, LogIn as LogInIcon, CheckCircle2 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { Book as BookIcon, Rocket as RocketIcon, Brain as BrainIcon, Coffee as CoffeeIcon, Sparkles as SparklesIcon, CheckCircle2 } from 'lucide-react';
+import BottomNav from '../components/BottomNav';
 import { getStatsRange } from '../api/client';
 import type { FocusTheme } from '../types/pomodoro';
 
@@ -16,7 +16,6 @@ const FocusListPage: React.FC = () => {
     const navigate = useNavigate();
     const { state, isActive, timeLeft, totalTimeValue, reset } = useTimerContext();
     const { themes } = state;
-    const { isAuthenticated, username } = useAuth();
 
     const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
     const [pendingThemeId, setPendingThemeId] = React.useState<string | null>(null);
@@ -279,7 +278,7 @@ const FocusListPage: React.FC = () => {
     };
 
     return (
-        <main className="min-h-screen w-full bg-[#FCFAF7] flex flex-col items-center justify-center p-6 pb-32 md:pb-36 selection:bg-cozy-orange/30 relative overflow-hidden">
+        <main className="min-h-screen w-full bg-[#FCFAF7] flex flex-col items-center md:justify-center p-3 pt-8 md:p-6 pb-28 md:pb-36 selection:bg-cozy-orange/30 relative overflow-hidden">
             <AmbientBackground />
 
             <div className="relative z-10 w-full max-w-[1100px] flex flex-col items-center">
@@ -287,28 +286,28 @@ const FocusListPage: React.FC = () => {
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-                    className="text-center mb-20"
+                    className="text-center mb-6 md:mb-20"
                 >
                     <motion.div
                         initial={{ scale: 0.9, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ delay: 0.2, duration: 0.8 }}
-                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cozy-orange/10 text-cozy-orange text-[10px] font-bold uppercase tracking-widest mb-6 border border-cozy-orange/20"
+                        className="inline-flex items-center gap-2 px-3 md:px-4 py-1 md:py-1.5 rounded-full bg-cozy-orange/10 text-cozy-orange text-[9px] md:text-[10px] font-bold uppercase tracking-widest mb-3 md:mb-6 border border-cozy-orange/20"
                     >
                         <SparklesIcon size={12} strokeWidth={3} />
                         {t('timer.focusCompanion')}
                     </motion.div>
 
-                    <h1 className="text-6xl md:text-8xl font-bold tracking-normal text-slate-900 mb-8 font-heading leading-tight">
+                    <h1 className="text-4xl md:text-8xl font-bold tracking-normal text-slate-900 mb-3 md:mb-8 font-heading leading-tight">
                         {t('timer.studyBuddy')}
                     </h1>
-                    <p className="text-slate-500 text-lg font-medium max-w-lg mx-auto leading-relaxed">
+                    <p className="hidden md:block text-slate-500 text-lg font-medium max-w-lg mx-auto leading-relaxed">
                         开启沉浸式学习体验，选择一个您想要深入探索的领域
                     </p>
                 </motion.div>
 
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10 w-full px-4">
+                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-10 w-full px-1 md:px-4">
                     {themes.map((theme, index) => {
                         const style = getCardTheme(theme.id);
                         return (
@@ -326,8 +325,8 @@ const FocusListPage: React.FC = () => {
                                 onTouchMove={cancelLongPress}
                                 onTouchCancel={cancelLongPress}
                                 className={`
-                                    group relative flex flex-row md:flex-col items-center p-6 md:p-12
-                                    rounded-[40px] md:rounded-[64px] bg-white/70 backdrop-blur-2xl
+                                    group relative flex flex-col items-center p-4 md:p-12
+                                    rounded-2xl md:rounded-[64px] bg-white/70 backdrop-blur-2xl
                                     border ${style.border} shadow-[0_20px_50px_-20px_rgba(0,0,0,0.08)]
                                     transition-all duration-500 overflow-hidden cursor-pointer
                                     hover:bg-white/90 ${style.glow}
@@ -363,16 +362,16 @@ const FocusListPage: React.FC = () => {
                                 {/* Icon Wrapper - Animation on hover only */}
                                 <motion.div
                                     whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
-                                    className={`relative z-10 p-5 md:p-8 rounded-[24px] md:rounded-[40px] ${style.icon} flex-shrink-0 mr-5 md:mr-0 md:mb-10 shadow-inner border border-white/60 transition-all duration-300`}
+                                    className={`relative z-10 p-3 md:p-8 rounded-xl md:rounded-[40px] ${style.icon} flex-shrink-0 mb-3 md:mb-10 shadow-inner border border-white/60 transition-all duration-300`}
                                 >
                                     {getIcon(theme)}
                                 </motion.div>
 
-                                <div className="relative z-10 text-left md:text-center flex-grow">
-                                    <h3 className="text-xl md:text-3xl font-bold text-slate-800 mb-2 md:mb-4 group-hover:text-black transition-colors">{theme.name}</h3>
-                                    <div className="inline-flex items-center gap-2.5 px-4 md:px-6 py-1.5 md:py-2.5 rounded-full bg-white/50 border border-white/80 shadow-sm backdrop-blur-md">
-                                        <div className={`w-1.5 h-1.5 rounded-full ${style.icon.split(' ')[0]} animate-pulse`} />
-                                        <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-slate-500">
+                                <div className="relative z-10 text-center flex-grow w-full min-w-0">
+                                    <h3 className="text-sm md:text-3xl font-bold text-slate-800 mb-2 md:mb-4 group-hover:text-black transition-colors truncate">{theme.name}</h3>
+                                    <div className="inline-flex items-center gap-1.5 md:gap-2.5 px-2.5 md:px-6 py-1 md:py-2.5 rounded-full bg-white/50 border border-white/80 shadow-sm backdrop-blur-md">
+                                        <div className={`w-1 h-1 md:w-1.5 md:h-1.5 rounded-full ${style.icon.split(' ')[0]} animate-pulse`} />
+                                        <span className="text-[9px] md:text-xs font-bold uppercase tracking-widest text-slate-500">
                                             {theme.focusDuration} {t('timer.minutes')}
                                         </span>
                                     </div>
@@ -382,90 +381,7 @@ const FocusListPage: React.FC = () => {
                     })}
                 </div>
 
-                {/* Premium Floating Nav */}
-                <motion.div
-                    initial={{ opacity: 0, y: 50 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.8, duration: 0.6 }}
-                    className="fixed bottom-6 md:bottom-10 flex w-full md:w-auto px-6 md:p-2 bg-transparent md:bg-white/60 md:backdrop-blur-2xl md:border md:border-white/80 md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.1)] z-50 overflow-hidden justify-around md:justify-center rounded-[32px]"
-                >
-                    <motion.button
-                        whileHover={{ scale: 1.05, backgroundColor: 'rgba(99, 102, 241, 0.05)' }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => navigate('/library')}
-                        className="flex flex-col md:flex-row items-center gap-1 md:gap-2.5 px-6 md:px-8 py-3 md:py-4 rounded-2xl text-indigo-500 transition-all group"
-                    >
-                        <div className="p-2 md:p-0 bg-white/80 md:bg-transparent rounded-xl md:rounded-none shadow-sm md:shadow-none border border-white md:border-none">
-                            <BookIcon size={20} strokeWidth={2.5} className="group-hover:rotate-3" />
-                        </div>
-                        <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest">{t('common.library')}</span>
-                    </motion.button>
-
-                    <div className="hidden md:block w-px h-8 bg-[#E6E2DE] self-center mx-2" />
-
-                    <motion.button
-                        whileHover={{ scale: 1.05, backgroundColor: 'rgba(16, 185, 129, 0.05)' }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => navigate('/stats')}
-                        className="flex flex-col md:flex-row items-center gap-1 md:gap-2.5 px-6 md:px-8 py-3 md:py-4 rounded-2xl text-emerald-500 transition-all group"
-                    >
-                        <div className="p-2 md:p-0 bg-white/80 md:bg-transparent rounded-xl md:rounded-none shadow-sm md:shadow-none border border-white md:border-none">
-                            <BarChartIcon size={20} strokeWidth={2.5} className="group-hover:rotate-3" />
-                        </div>
-                        <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest">{t('common.stats', '专注分析')}</span>
-                    </motion.button>
-
-                    <div className="hidden md:block w-px h-8 bg-[#E6E2DE] self-center mx-2" />
-
-                    <motion.button
-                        whileHover={{ scale: 1.05, backgroundColor: 'rgba(234, 179, 8, 0.05)' }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => navigate('/achievements')}
-                        className="flex flex-col md:flex-row items-center gap-1 md:gap-2.5 px-6 md:px-8 py-3 md:py-4 rounded-2xl text-yellow-500 transition-all group"
-                    >
-                        <div className="p-2 md:p-0 bg-white/80 md:bg-transparent rounded-xl md:rounded-none shadow-sm md:shadow-none border border-white md:border-none">
-                            <TrophyIcon size={20} strokeWidth={2.5} className="group-hover:rotate-3" />
-                        </div>
-                        <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest">{t('common.achievements', '成就墙')}</span>
-                    </motion.button>
-
-                    <div className="hidden md:block w-px h-8 bg-[#E6E2DE] self-center mx-2" />
-
-                    <motion.button
-                        whileHover={{ scale: 1.05, backgroundColor: 'rgba(249, 115, 22, 0.05)' }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => navigate('/settings')}
-                        className="flex flex-col md:flex-row items-center gap-1 md:gap-2.5 px-6 md:px-8 py-3 md:py-4 rounded-2xl text-orange-500 transition-all group"
-                    >
-                        <div className="p-2 md:p-0 bg-white/80 md:bg-transparent rounded-xl md:rounded-none shadow-sm md:shadow-none border border-white md:border-none">
-                            <SettingsIcon size={20} strokeWidth={2.5} className="group-hover:rotate-3" />
-                        </div>
-                        <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest">{t('common.settings')}</span>
-                    </motion.button>
-
-                    <div className="hidden md:block w-px h-8 bg-[#E6E2DE] self-center mx-2" />
-
-                    <motion.button
-                        whileHover={{ scale: 1.05, backgroundColor: 'rgba(255, 183, 102, 0.05)' }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => navigate(isAuthenticated ? '/profile' : '/login')}
-                        className="flex flex-col md:flex-row items-center gap-1 md:gap-2.5 px-6 md:px-8 py-3 md:py-4 rounded-2xl text-cozy-warmOrange transition-all group"
-                    >
-                        <div className="p-2 md:p-0 bg-white/80 md:bg-transparent rounded-xl md:rounded-none shadow-sm md:shadow-none border border-white md:border-none">
-                            {isAuthenticated ? (
-                                <div className="w-5 h-5 rounded-full bg-cozy-pastelGreen flex items-center justify-center text-cozy-text font-bold text-[10px]">
-                                    {username?.charAt(0).toUpperCase()}
-                                </div>
-                            ) : (
-                                <LogInIcon size={20} strokeWidth={2.5} className="group-hover:rotate-3" />
-                            )}
-                        </div>
-                        <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest">
-                            {isAuthenticated ? username : t('common.login', '登录')}
-                        </span>
-                    </motion.button>
-
-                </motion.div>
+                <BottomNav />
             </div>
 
             <ConfirmModal

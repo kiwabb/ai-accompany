@@ -91,9 +91,20 @@
     @apply text-cozy-text font-sans antialiased;
     margin: 0;
     overflow-x: hidden;
+    overscroll-behavior-y: contain;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* 移动端避免 iOS Safari 在 focus 输入框时自动放大 */
+  @media (max-width: 767px) {
+
+    input,
+    textarea,
+    select {
+      font-size: 16px;
+    }
   }
 
   h1,
@@ -119,6 +130,15 @@
 
 .custom-scrollbar::-webkit-scrollbar-track {
   background-color: transparent;
+}
+
+/* 热力图横向滚动：保留可滚动行为，但隐藏滚动条样式（仍可手势/触控滑动） */
+.heatmap-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.heatmap-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 /* Smooth scroll behavior */
@@ -521,6 +541,11 @@ body.theme-chiikawa [class*="Drawer"] {
 
 body.theme-chiikawa [class*="rounded-full"] {
   border-radius: 9999px !important;
+}
+
+/* 成就墙顶部三张窄卡：Chiikawa 主题下保持 16px 圆角，避免全局 2.5rem 强制覆盖把窄卡变得过圆。 */
+body.theme-chiikawa .ach-summary-card {
+  border-radius: 16px !important;
 }
 
 /* Extra rounded corners for main containers */

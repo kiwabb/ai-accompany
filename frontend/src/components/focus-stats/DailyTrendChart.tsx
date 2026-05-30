@@ -18,6 +18,8 @@ interface DailyTrendChartProps {
     getChartColorForTheme: (themeName: string, index: number) => string;
     formatDuration: (minutes: number) => string;
     activeVisualTheme: { colors: { primary: string } };
+    /** 卡片底部追加节点（嵌入主题分布等附加图表） */
+    footer?: React.ReactNode;
 }
 
 const buildYAxisTicks = (maxValue: number): number[] => {
@@ -56,6 +58,7 @@ export const DailyTrendChart: React.FC<DailyTrendChartProps> = ({
     onTimeRangeChange,
     getChartColorForTheme,
     formatDuration,
+    footer,
 }) => {
     const { t, i18n } = useTranslation();
     const [hoverIdx, setHoverIdx] = useState<number | null>(null);
@@ -412,6 +415,8 @@ export const DailyTrendChart: React.FC<DailyTrendChartProps> = ({
                     </div>
                 </div>
             )}
+
+            {footer}
         </motion.div>
     );
 };

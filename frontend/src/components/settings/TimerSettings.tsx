@@ -14,14 +14,14 @@ const TimerSettingsComponent: React.FC<TimerSettingsProps> = ({
   const { t } = useTranslation();
 
   return (
-    <section className="space-y-6">
-      <header className="flex items-center gap-4">
+    <section className="space-y-4 md:space-y-6">
+      <header className="flex items-center gap-3 md:gap-4 px-1">
         <div className="h-[2px] w-8 bg-cozy-orange rounded-full" />
         <h2 className="text-xs font-bold uppercase tracking-[0.3em] text-slate-400">
           {t('settings.durations')}
         </h2>
       </header>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-4">
         {[
           { key: 'shortBreakDuration', label: t('common.shortBreak'), color: 'bg-emerald-50 text-emerald-600', unit: t('timer.minutes') },
           { key: 'longBreakDuration', label: t('common.longBreak'), color: 'bg-indigo-50 text-indigo-600', unit: t('timer.minutes') },
@@ -29,16 +29,16 @@ const TimerSettingsComponent: React.FC<TimerSettingsProps> = ({
         ].map(({ key, label, color, unit }) => (
           <div
             key={key}
-            className="bg-white/60 backdrop-blur-xl rounded-[32px] p-8 border border-white shadow-sm group hover:shadow-xl transition-all duration-500 flex flex-col items-center text-center gap-4"
+            className="bg-white/60 backdrop-blur-xl rounded-xl md:rounded-[32px] p-3 md:p-8 border border-white shadow-sm group hover:shadow-xl transition-all duration-500 flex flex-col items-center text-center gap-2 md:gap-4"
           >
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</label>
-            <div className="flex items-center gap-4">
+            <label className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate w-full">{label}</label>
+            <div className="flex items-center gap-2 md:gap-4">
               <input
                 type="number"
                 min={1}
                 value={settings[key as keyof TimerSettingsType] as number}
                 onChange={(e) => handleSettingChange(key as keyof TimerSettingsType, parseInt(e.target.value))}
-                className={`w-24 text-4xl font-bold bg-transparent text-center focus:outline-none focus:scale-110 transition-transform ${color.split(' ')[1]}`}
+                className={`w-full md:w-24 text-2xl md:text-4xl font-bold bg-transparent text-center focus:outline-none focus:scale-110 transition-transform ${color.split(' ')[1]}`}
               />
             </div>
             <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">{unit}</span>
@@ -46,7 +46,7 @@ const TimerSettingsComponent: React.FC<TimerSettingsProps> = ({
         ))}
       </div>
 
-      <div className="bg-white/60 backdrop-blur-xl rounded-[32px] p-6 border border-white shadow-sm flex flex-col md:flex-row items-center gap-6 group hover:shadow-xl transition-all duration-500">
+      <div className="bg-white/60 backdrop-blur-xl rounded-2xl md:rounded-[32px] p-4 md:p-6 border border-white shadow-sm flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-6 group hover:shadow-xl transition-all duration-500">
         <div className="w-full md:w-1/3">
           <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">{t('settings.autoStart')}</label>
           <p className="text-sm text-slate-400 font-medium">专注或休息结束，无缝进入下一段旅程</p>

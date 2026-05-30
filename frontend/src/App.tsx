@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { AuthProvider } from './contexts/AuthContext';
 import { TimerProvider, useTimerContext } from './contexts/TimerContext';
 import { useVisualTheme } from './hooks/useVisualTheme';
+import { useIsMobile } from './hooks/useIsMobile';
 import FocusListPage from './pages/FocusListPage';
 import TimerPage from './pages/TimerPage';
 import LibraryPage from './pages/LibraryPage';
@@ -14,6 +15,7 @@ import FocusStatsPage from './pages/FocusStatsPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import ProfilePage from './pages/ProfilePage';
+import TasksPage from './pages/TasksPage';
 import FloatingTimer from './components/FloatingTimer';
 import CozyPal from './components/CozyPal';
 import AchievementToast from './components/AchievementToast';
@@ -34,14 +36,30 @@ const AppContent: React.FC = () => {
 
   const hideCozyPal = ['/login', '/signup'].includes(location.pathname);
   const [cozyPalWidth, setCozyPalWidth] = useState(0);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const root = document.documentElement;
-    root.style.setProperty('--cozypal-offset', `${Math.max(0, cozyPalWidth)}px`);
+    const offsetPx = isMobile ? 0 : Math.max(0, cozyPalWidth);
+    root.style.setProperty('--cozypal-offset', `${offsetPx}px`);
     return () => {
       root.style.setProperty('--cozypal-offset', '0px');
     };
-  }, [cozyPalWidth]);
+  }, [cozyPalWidth, isMobile]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const updateVh = () => {
+      document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+    };
+    updateVh();
+    window.addEventListener('resize', updateVh);
+    window.addEventListener('orientationchange', updateVh);
+    return () => {
+      window.removeEventListener('resize', updateVh);
+      window.removeEventListener('orientationchange', updateVh);
+    };
+  }, []);
 
   useEffect(() => {
     const checkAchievements = async () => {
@@ -82,6 +100,7 @@ const AppContent: React.FC = () => {
         <Route path="/achievements" element={<AchievementWall />} />
         <Route path="/stats" element={<FocusStatsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/tasks" element={<TasksPage />} />
       </Routes>
 
       {!hideCozyPal && (

@@ -21,6 +21,8 @@ interface Document {
 
 import AmbientBackground from '../components/AmbientBackground';
 import ConfirmModal from '../components/ConfirmModal';
+import { useIsMobile } from '../hooks/useIsMobile';
+import BottomNav from '../components/BottomNav';
 
 const LibraryPage: React.FC = () => {
     const { t } = useTranslation();
@@ -33,6 +35,7 @@ const LibraryPage: React.FC = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [docToDelete, setDocToDelete] = useState<Document | null>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+    const isMobile = useIsMobile();
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [docToEdit, setDocToEdit] = useState<Document | null>(null);
@@ -174,7 +177,7 @@ const LibraryPage: React.FC = () => {
 
     return (
         <div
-            className="min-h-screen bg-[#FCFAF7] relative overflow-hidden flex flex-col items-center py-12 px-6"
+            className="min-h-screen bg-[#FCFAF7] relative overflow-hidden flex flex-col items-center py-16 md:py-12 px-3 md:px-6 pb-32"
             onDragEnter={handlePageDragEnter}
             onDragLeave={handlePageDragLeave}
             onDragOver={handlePageDragOver}
@@ -198,14 +201,14 @@ const LibraryPage: React.FC = () => {
                 whileHover={{ x: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => navigate('/')}
-                className="fixed top-8 left-8 py-3 px-6 bg-white/60 backdrop-blur-2xl shadow-xl rounded-2xl flex items-center gap-2 group z-50 transition-colors font-bold uppercase tracking-widest text-[10px] border border-white text-slate-400 hover:text-slate-900"
+                className="fixed top-3 left-3 md:top-8 md:left-8 py-2 px-3 md:py-3 md:px-6 bg-white/60 backdrop-blur-2xl shadow-xl rounded-2xl flex items-center gap-2 group z-50 transition-colors font-bold uppercase tracking-widest text-[10px] border border-white text-slate-400 hover:text-slate-900"
             >
                 <ChevronLeftIcon size={16} className="group-hover:-translate-x-1 transition-transform" />
-                <span>{t('common.backToTimer')}</span>
+                <span className="hidden md:inline">{t('common.backToTimer')}</span>
             </motion.button>
 
             <div className="w-full max-w-5xl relative z-10">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 mb-8 md:mb-12">
                     <div className="space-y-2">
                         <h1 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight flex items-center gap-4 font-heading">
                             <BookOpen className="text-indigo-500" size={32} />
@@ -227,7 +230,7 @@ const LibraryPage: React.FC = () => {
                         )}
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 md:gap-4">
                         <div className="flex bg-slate-100/50 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200/50">
                             <button
                                 onClick={() => setViewMode('grid')}
@@ -245,19 +248,19 @@ const LibraryPage: React.FC = () => {
                         <button
                             onClick={() => setIsUploadModalOpen(true)}
                             className="
-                                flex items-center gap-3 px-8 py-4 bg-slate-900 text-white 
-                                rounded-3xl font-bold uppercase tracking-widest text-xs 
-                                shadow-xl hover:shadow-indigo-200/50 hover:bg-slate-800 
+                                flex items-center gap-2 md:gap-3 px-4 py-3 md:px-8 md:py-4 bg-slate-900 text-white
+                                rounded-2xl md:rounded-3xl font-bold uppercase tracking-widest text-[10px] md:text-xs
+                                shadow-xl hover:shadow-indigo-200/50 hover:bg-slate-800
                                 transition-all active:scale-95
                             "
                         >
                             <Upload className="w-4 h-4" />
-                            {t('common.uploadNew')}
+                            <span className="hidden sm:inline">{t('common.uploadNew')}</span>
                         </button>
                     </div>
                 </div>
 
-                <div className="bg-white/40 backdrop-blur-3xl rounded-[40px] md:rounded-[56px] p-8 md:p-12 border border-white shadow-[0_30px_100px_-30px_rgba(0,0,0,0.1)]">
+                <div className="bg-white/40 backdrop-blur-3xl rounded-[24px] md:rounded-[56px] p-4 md:p-12 border border-white shadow-[0_30px_100px_-30px_rgba(0,0,0,0.1)]">
                     {isLoading ? (
                         <div className="flex justify-center items-center h-64">
                             <Loader2 className="animate-spin text-indigo-500 w-10 h-10" />
@@ -270,7 +273,7 @@ const LibraryPage: React.FC = () => {
                             <p className="text-slate-400 font-bold uppercase tracking-widest text-sm">{t('common.noDocuments')}</p>
                         </div>
                     ) : (
-                        <div className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" : "flex flex-col gap-4"}>
+                        <div className={viewMode === 'grid' ? "grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6" : "grid grid-cols-2 md:flex md:flex-col gap-3 md:gap-4"}>
                             {(themeFilter ? documents.filter(d => d.topic_id === themeFilter) : documents).map((doc) => (
                                 <motion.div
                                     key={doc.id}
@@ -278,19 +281,19 @@ const LibraryPage: React.FC = () => {
                                     animate={{ opacity: 1, scale: 1 }}
                                     onClick={() => navigate(`/read/${doc.id}${themeFilter ? `?theme=${encodeURIComponent(themeFilter)}` : ''}`)}
                                     className={`
-                                        group relative bg-white/60 hover:bg-white border border-white/80 
+                                        group relative bg-white/60 hover:bg-white border border-white/80
                                         transition-all duration-300 cursor-pointer overflow-hidden
                                         ${viewMode === 'grid'
-                                            ? 'p-8 rounded-[40px] shadow-sm hover:shadow-2xl hover:-translate-y-2'
-                                            : 'p-6 rounded-[32px] flex items-center justify-between gap-6 hover:shadow-xl'}
+                                            ? 'p-4 md:p-8 rounded-[28px] md:rounded-[40px] shadow-sm hover:shadow-2xl hover:-translate-y-2'
+                                            : 'p-3 pr-14 md:p-6 md:pr-6 rounded-2xl md:rounded-[32px] flex items-center md:justify-between gap-2 md:gap-6 hover:shadow-xl'}
                                     `}
                                 >
-                                    <div className={`flex items-center gap-6 min-w-0 ${viewMode === 'grid' ? 'flex-col text-center' : 'flex-row'}`}>
-                                        <div className={`p-5 bg-indigo-50 text-indigo-500 rounded-3xl shadow-inner border border-white transition-transform group-hover:scale-110 duration-500`}>
-                                            <FileText size={viewMode === 'grid' ? 32 : 24} />
+                                    <div className={`flex items-center gap-2 md:gap-6 min-w-0 ${viewMode === 'list' ? 'w-full' : ''} ${viewMode === 'grid' ? 'flex-col text-center' : 'flex-row'}`}>
+                                        <div className={`p-2 md:p-5 bg-indigo-50 text-indigo-500 rounded-xl md:rounded-3xl shadow-inner border border-white transition-transform group-hover:scale-110 duration-500 shrink-0`}>
+                                            <FileText size={viewMode === 'grid' ? 28 : 18} />
                                         </div>
-                                            <div className="min-w-0 flex-1 w-full">
-                                                <h3 className={`text-xl font-bold text-slate-800 mb-1 ${viewMode === 'grid' ? 'line-clamp-2 break-words' : 'truncate'}`} title={doc.title}>
+                                            <div className="min-w-0 flex-1">
+                                                <h3 className={`text-base md:text-xl font-bold text-slate-800 mb-1 ${viewMode === 'grid' ? 'line-clamp-2 break-words' : 'truncate'}`} title={doc.title}>
                                                     {doc.title}
                                                 </h3>
                                                 {/* Progress Bar (Only for PDFs with progress) */}
@@ -302,11 +305,11 @@ const LibraryPage: React.FC = () => {
                                                          />
                                                      </div>
                                                  )}
-                                                 <div className={`flex items-center gap-x-3 gap-y-1.5 ${viewMode === 'grid' ? 'justify-center flex-wrap' : ''}`}>
+                                                 <div className={`flex items-center gap-x-2 md:gap-x-3 gap-y-1.5 flex-wrap ${viewMode === 'grid' ? 'justify-center' : ''}`}>
                                                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{doc.file_type}</span>
                                                      {progressMap[doc.id] !== undefined && (
                                                          <>
-                                                             <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+                                                             <div className="w-1.5 h-1.5 rounded-full bg-slate-200 hidden md:block" />
                                                              <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">
                                                                  {progressMap[doc.id]}%
                                                              </span>
@@ -314,23 +317,23 @@ const LibraryPage: React.FC = () => {
                                                      )}
                                                      {doc.topic_id && (
                                                     <>
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
-                                                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-50 text-indigo-500 rounded-lg">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200 hidden md:block" />
+                                                        <div className={`items-center gap-1.5 px-2 py-0.5 bg-indigo-50 text-indigo-500 rounded-lg ${viewMode === 'list' ? 'hidden md:inline-flex' : 'inline-flex'}`}>
                                                             <Tag size={10} />
-                                                            <span className="text-[10px] font-bold uppercase tracking-widest">
+                                                            <span className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">
                                                                 {themes.find(t => t.id === doc.topic_id)?.name || t('common.unknownTopic', '未知主题')}
                                                             </span>
                                                         </div>
                                                     </>
                                                 )}
-                                                <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
-                                                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-slate-200 hidden md:block" />
+                                                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest whitespace-nowrap">
                                                     {new Date(doc.created_at).toLocaleDateString()}
                                                 </span>
                                                 {lastOpenedMap[doc.id] && (
                                                     <>
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
-                                                        <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest" title={t('common.lastOpened', '上次打开')}>
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200 hidden md:block" />
+                                                        <span className={`text-[10px] font-bold text-indigo-400 uppercase tracking-widest whitespace-nowrap ${viewMode === 'list' ? 'hidden md:inline' : ''}`} title={t('common.lastOpened', '上次打开')}>
                                                             ⏱ {formatRelative(lastOpenedMap[doc.id])}
                                                         </span>
                                                     </>
@@ -339,18 +342,18 @@ const LibraryPage: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    <div className={`flex items-center gap-2 ${viewMode === 'grid' ? 'absolute top-3 right-3' : ''}`}>
+                                    <div className={`flex items-center gap-1 md:gap-2 shrink-0 absolute top-2 right-2 md:static ${viewMode === 'grid' ? 'md:absolute md:top-3 md:right-3' : ''}`}>
                                         <button
                                             onClick={(e) => handleEditClick(e, doc)}
-                                            className={`text-slate-300 hover:text-indigo-500 hover:bg-indigo-50 rounded-2xl transition-all opacity-0 group-hover:opacity-100 active:scale-90 ${viewMode === 'grid' ? 'p-2 bg-white/80 backdrop-blur-sm' : 'p-3'}`}
+                                            className={`text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-xl md:rounded-2xl transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 active:scale-90 p-1.5 bg-white/80 backdrop-blur-sm md:bg-transparent md:backdrop-blur-none ${viewMode === 'grid' ? 'md:p-2 md:bg-white/80 md:backdrop-blur-sm' : 'md:p-3'}`}
                                         >
-                                            <Edit2 size={viewMode === 'grid' ? 16 : 20} />
+                                            <Edit2 size={14} />
                                         </button>
                                         <button
                                             onClick={(e) => handleDeleteClick(e, doc)}
-                                            className={`text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all opacity-0 group-hover:opacity-100 active:scale-90 ${viewMode === 'grid' ? 'p-2 bg-white/80 backdrop-blur-sm' : 'p-3'}`}
+                                            className={`text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl md:rounded-2xl transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 active:scale-90 p-1.5 bg-white/80 backdrop-blur-sm md:bg-transparent md:backdrop-blur-none ${viewMode === 'grid' ? 'md:p-2 md:bg-white/80 md:backdrop-blur-sm' : 'md:p-3'}`}
                                         >
-                                            <Trash2 size={viewMode === 'grid' ? 16 : 20} />
+                                            <Trash2 size={14} />
                                         </button>
                                     </div>
                                 </motion.div>
@@ -394,6 +397,8 @@ const LibraryPage: React.FC = () => {
                 }}
                 onUpdateComplete={fetchDocuments}
             />
+
+            <BottomNav />
         </div>
     );
 };

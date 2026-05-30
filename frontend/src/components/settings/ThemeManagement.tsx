@@ -112,33 +112,33 @@ const ThemeManagement: React.FC<ThemeManagementProps> = ({
   }, [themes, handleThemesChange, setThemes]);
 
   return (
-    <section className="space-y-6">
-      <header className="flex items-center gap-4">
+    <section className="space-y-4 md:space-y-6">
+      <header className="flex items-center gap-3 md:gap-4 px-1">
         <div className="h-[2px] w-8 bg-rose-400 rounded-full" />
         <h2 className="text-xs font-bold uppercase tracking-[0.3em] text-slate-400">
           {t('settings.themes')}
         </h2>
       </header>
 
-      <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-1 gap-3 md:gap-4">
         {/* Add New Theme Card */}
-        <div className="bg-slate-900/5 border-2 border-dashed border-slate-200 rounded-[40px] p-8 mb-2">
-          <div className="flex flex-col gap-6">
-            <div className="flex flex-col md:flex-row gap-6 items-end">
-              <div className="flex-1 space-y-2 w-full">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-4">新主题名称</label>
+        <div className="bg-slate-900/5 border-2 border-dashed border-slate-200 rounded-2xl md:rounded-[40px] p-4 md:p-8 mb-2">
+          <div className="flex flex-col gap-3 md:gap-6">
+            <div className="flex flex-col md:flex-row gap-3 md:gap-6 items-stretch md:items-end">
+              <div className="flex-1 space-y-1.5 md:space-y-2 w-full">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-3 md:ml-4">新主题名称</label>
                 <input
                   type="text"
                   value={newThemeName}
                   onChange={(e) => setNewThemeName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleAddTheme()}
                   placeholder={t('settings.newThemeName')}
-                  className="w-full bg-white px-8 py-5 rounded-[24px] border border-slate-100 font-bold text-slate-700 shadow-sm focus:outline-none focus:ring-4 focus:ring-slate-900/5 transition-all"
+                  className="w-full bg-white px-4 md:px-8 py-3 md:py-5 rounded-xl md:rounded-[24px] border border-slate-100 font-bold text-slate-700 shadow-sm focus:outline-none focus:ring-4 focus:ring-slate-900/5 transition-all"
                 />
               </div>
-              <div className="space-y-2 w-full md:w-32">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-4">时长</label>
-                <div className="bg-white px-6 py-5 rounded-[24px] border border-slate-100 shadow-sm flex items-center justify-center">
+              <div className="space-y-1.5 md:space-y-2 w-full md:w-32">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-3 md:ml-4">时长</label>
+                <div className="bg-white px-4 md:px-6 py-3 md:py-5 rounded-xl md:rounded-[24px] border border-slate-100 shadow-sm flex items-center justify-center">
                   <input
                     type="number"
                     min={1}
@@ -151,7 +151,7 @@ const ThemeManagement: React.FC<ThemeManagementProps> = ({
               </div>
               <button
                 onClick={handleAddTheme}
-                className="w-full md:w-auto px-10 py-5 bg-slate-900 text-white rounded-[24px] font-bold uppercase tracking-widest text-[10px] shadow-2xl hover:bg-indigo-600 transition-all active:scale-95"
+                className="w-full md:w-auto px-6 md:px-10 py-3 md:py-5 bg-slate-900 text-white rounded-xl md:rounded-[24px] font-bold uppercase tracking-widest text-[10px] shadow-2xl hover:bg-indigo-600 transition-all active:scale-95"
               >
                 {t('common.add')}
               </button>
@@ -247,44 +247,44 @@ const ThemeManagement: React.FC<ThemeManagementProps> = ({
         {themes.map((theme) => (
           <div
             key={theme.id}
-            className="bg-white/60 backdrop-blur-xl rounded-[32px] p-6 border border-white shadow-sm flex flex-col md:flex-row items-center gap-6 group hover:shadow-xl transition-all duration-500"
+            className="bg-white/60 backdrop-blur-xl rounded-2xl md:rounded-[32px] p-3 md:p-6 border border-white shadow-sm flex flex-row items-center gap-3 md:gap-6 group hover:shadow-xl transition-all duration-500"
           >
-            <div className="w-14 h-14 rounded-2xl bg-white/70 border border-white p-2 flex-shrink-0 flex items-center justify-center shadow-inner">
+            <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-white/70 border border-white p-1.5 md:p-2 flex-shrink-0 flex items-center justify-center shadow-inner">
               {getThemeIconImg(theme) ? (
                 <img src={getThemeIconImg(theme)!} alt={theme.iconType || theme.id} className="w-full h-full object-contain" />
               ) : (
-                <span className="text-xl font-bold text-slate-300 font-heading">
+                <span className="text-base md:text-xl font-bold text-slate-300 font-heading">
                   {theme.name.charAt(0).toUpperCase()}
                 </span>
               )}
             </div>
 
-            <div className="flex-1 w-full">
+            <div className="flex-1 min-w-0">
               <input
                 type="text"
                 value={theme.name}
                 onChange={(e) => handleThemeNameChange(theme.id, e.target.value)}
                 disabled={theme.isDefault}
                 placeholder="Theme name"
-                className="w-full bg-transparent font-bold text-xl text-slate-800 focus:outline-none placeholder:text-slate-300 disabled:opacity-50"
+                className="w-full bg-transparent font-bold text-base md:text-xl text-slate-800 focus:outline-none placeholder:text-slate-300 disabled:opacity-50 truncate"
               />
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">卡片标题</div>
+              <div className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 md:mt-1">卡片标题</div>
             </div>
 
-            <div className="flex items-center gap-4 bg-slate-50/50 p-3 rounded-2xl border border-slate-100">
+            <div className="flex items-center gap-2 md:gap-4 bg-slate-50/50 p-2 md:p-3 rounded-xl md:rounded-2xl border border-slate-100 shrink-0">
               <input
                 type="number"
                 min={1}
                 value={theme.focusDuration}
                 onChange={(e) => handleThemeDurationChange(theme.id, parseInt(e.target.value))}
-                className="w-16 bg-transparent text-center font-bold text-slate-700 focus:outline-none"
+                className="w-10 md:w-16 bg-transparent text-center font-bold text-slate-700 focus:outline-none"
               />
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-l border-slate-200 pl-4">MINUTES</span>
+              <span className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest border-l border-slate-200 pl-2 md:pl-4 hidden sm:inline">MINUTES</span>
             </div>
 
             <button
               onClick={() => handleRemoveTheme(theme.id)}
-              className="p-4 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all active:scale-90"
+              className="p-2 md:p-4 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl md:rounded-2xl transition-all active:scale-90 shrink-0"
             >
               <Trash2 size={20} />
             </button>

@@ -11,6 +11,8 @@ interface ThemeDistributionChartProps {
     onPieRangeChange: (range: TimeRange) => void;
     getChartColorForTheme: (themeName: string, index: number) => string;
     formatDuration: (minutes: number) => string;
+    /** 嵌入到其他卡片内部时，去掉自身的外层卡片样式（背景、圆角、边框），只渲染内容 */
+    inline?: boolean;
 }
 
 const polarToCartesian = (cx: number, cy: number, r: number, angleDeg: number) => {
@@ -58,6 +60,7 @@ export const ThemeDistributionChart: React.FC<ThemeDistributionChartProps> = ({
     onPieRangeChange,
     getChartColorForTheme,
     formatDuration,
+    inline = false,
 }) => {
     const { t } = useTranslation();
 
@@ -104,25 +107,30 @@ export const ThemeDistributionChart: React.FC<ThemeDistributionChartProps> = ({
     const rOuter = 40;
     const rInner = 26;
 
+    const Wrapper = inline ? 'div' : motion.div;
+    const wrapperProps = inline
+        ? { className: 'mt-6 md:mt-8 pt-6 md:pt-8 border-t border-theme-text-muted/10 flex flex-col' }
+        : {
+            initial: { opacity: 0, y: 20 },
+            animate: { opacity: 1, y: 0 },
+            transition: { delay: 0.4 },
+            className: 'bg-white/70 backdrop-blur-2xl p-4 md:p-8 rounded-2xl md:rounded-[40px] border border-white/80 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.05)] flex flex-col',
+        };
+
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="bg-white/70 backdrop-blur-2xl p-8 rounded-[40px] border border-white/80 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.05)] flex flex-col"
-        >
-            <div className="flex items-center justify-between mb-8 flex-shrink-0">
-                <h3 className="text-xl font-bold text-theme-text flex items-center gap-2">
-                    <PieChart size={20} className="text-theme-text-muted/40" />
-                    {t('stats.themes', 'Themes')}
+        <Wrapper {...(wrapperProps as any)}>
+            <div className="flex items-center justify-between mb-4 md:mb-8 flex-shrink-0 gap-2">
+                <h3 className="text-base md:text-xl font-bold text-theme-text flex items-center gap-2 min-w-0 truncate">
+                    <PieChart size={18} className="text-theme-text-muted/40 shrink-0" />
+                    <span className="truncate">{t('stats.themes', 'Themes')}</span>
                 </h3>
 
-                <div className="bg-white/50 p-1 rounded-2xl flex items-center border border-white/80 shadow-inner">
+                <div className="bg-white/50 p-1 rounded-lg md:rounded-2xl flex items-center border border-white/80 shadow-inner shrink-0">
                     {(['day', 'week', 'month'] as const).map((range) => (
                         <button
                             key={range}
                             onClick={() => onPieRangeChange(range)}
-                            className={`px-3 py-1 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${pieRange === range
+                            className={`px-2 md:px-3 py-1 rounded-md md:rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${pieRange === range
                                 ? 'bg-white text-cozy-orange shadow-md'
                                 : 'text-cozy-text-light hover:text-cozy-text'
                                 }`}
@@ -133,15 +141,29 @@ export const ThemeDistributionChart: React.FC<ThemeDistributionChartProps> = ({
                 </div>
             </div>
 
-            <div className="flex flex-col items-center gap-8 flex-1">
-                <div className="relative w-56 h-56 flex-shrink-0">
-                    <svg
-                        viewBox="0 0 120 120"
-                        className="w-full h-full"
-                        style={{ overflow: 'visible' }}
-                    >
-                        {segments.length > 0 ? (
-                            segments.map((seg, i) => (
+            {segments.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center gap-3 py-8 md:py-12 text-center">
+                    <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-theme-surface/70 flex items-center justify-center shadow-inner">
+                        <Activity size={22} className="text-theme-text-muted/50" strokeWidth={1.8} />
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-sm font-bold text-theme-text">
+                            {t('stats.noData', '暂无数据记录')}
+                        </p>
+                        <p className="text-xs text-theme-text-muted/70">
+                            {t('stats.noDataHint', '完成一次专注后，主题分布会显示在这里')}
+                        </p>
+                    </div>
+                </div>
+            ) : (
+                <div className="flex flex-col items-center gap-6 md:gap-8 flex-1">
+                    <div className="relative w-44 h-44 md:w-56 md:h-56 flex-shrink-0">
+                        <svg
+                            viewBox="0 0 120 120"
+                            className="w-full h-full"
+                            style={{ overflow: 'visible' }}
+                        >
+                            {segments.map((seg, i) => (
                                 <motion.path
                                     key={seg.theme}
                                     d={describeDonutSlice(cx, cy, rOuter, rInner, seg.startAngle, seg.endAngle)}
@@ -150,78 +172,58 @@ export const ThemeDistributionChart: React.FC<ThemeDistributionChartProps> = ({
                                     animate={{ opacity: 1 }}
                                     transition={{ duration: 0.35, delay: i * 0.06, ease: 'easeOut' }}
                                 />
-                            ))
-                        ) : (
-                            <circle
-                                cx={cx}
-                                cy={cy}
-                                r={(rOuter + rInner) / 2}
-                                fill="transparent"
-                                stroke="var(--theme-border)"
-                                strokeWidth={rOuter - rInner}
-                            />
-                        )}
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        <span className="text-3xl font-black text-theme-text tabular-nums">{totalSessions}</span>
-                        <span className="text-[10px] font-bold text-theme-text-muted uppercase tracking-widest">
-                            {t('stats.completed', '次专注')}
-                        </span>
+                            ))}
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span className="text-2xl md:text-3xl font-black text-theme-text tabular-nums">{totalSessions}</span>
+                            <span className="text-[10px] font-bold text-theme-text-muted uppercase tracking-widest">
+                                {t('stats.completed', '次专注')}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="w-full space-y-3 md:space-y-4 pr-1">
+                        {segments.map((seg, index) => (
+                            <motion.div
+                                key={seg.theme}
+                                className="group"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.5 + index * 0.08 }}
+                            >
+                                <div className="flex justify-between items-center mb-1.5">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: seg.color }} />
+                                        <span className="font-bold text-theme-text text-sm truncate" title={seg.theme}>
+                                            {seg.theme}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                        <span className="text-xs font-medium text-theme-text-muted/60 tabular-nums">
+                                            {seg.count} {t('stats.sessions', '次')} · {formatDuration(seg.minutes)}
+                                        </span>
+                                        <span className="text-sm font-black w-[44px] text-right tabular-nums" style={{ color: seg.color }}>
+                                            {seg.percentage.toFixed(1)}%
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="h-2 w-full bg-theme-surface/50 rounded-full overflow-hidden">
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${seg.percentage}%` }}
+                                        transition={{ duration: 1.2, delay: 0.7 + index * 0.08, ease: 'circOut' }}
+                                        className="h-full rounded-full relative"
+                                        style={{ backgroundColor: seg.color }}
+                                    >
+                                        <div className="absolute inset-0 bg-white/10" />
+                                    </motion.div>
+                                </div>
+                            </motion.div>
+                        ))}
                     </div>
                 </div>
+            )}
 
-                <div className="w-full space-y-4 pr-1">
-                    {segments.map((seg, index) => (
-                        <motion.div
-                            key={seg.theme}
-                            className="group"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.5 + index * 0.08 }}
-                        >
-                            <div className="flex justify-between items-center mb-1.5">
-                                <div className="flex items-center gap-2 min-w-0">
-                                    <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: seg.color }} />
-                                    <span className="font-bold text-theme-text text-sm truncate" title={seg.theme}>
-                                        {seg.theme}
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-2 flex-shrink-0">
-                                    <span className="text-xs font-medium text-theme-text-muted/60 tabular-nums">
-                                        {seg.count} {t('stats.sessions', '次')} · {formatDuration(seg.minutes)}
-                                    </span>
-                                    <span className="text-sm font-black w-[44px] text-right tabular-nums" style={{ color: seg.color }}>
-                                        {seg.percentage.toFixed(1)}%
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="h-2 w-full bg-theme-surface/50 rounded-full overflow-hidden">
-                                <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${seg.percentage}%` }}
-                                    transition={{ duration: 1.2, delay: 0.7 + index * 0.08, ease: 'circOut' }}
-                                    className="h-full rounded-full relative"
-                                    style={{ backgroundColor: seg.color }}
-                                >
-                                    <div className="absolute inset-0 bg-white/10" />
-                                </motion.div>
-                            </div>
-                        </motion.div>
-                    ))}
-
-                    {segments.length === 0 && (
-                        <div className="text-center py-16 text-theme-text-muted/40 bg-theme-text/5 rounded-3xl border border-dashed border-theme-border">
-                            <div className="w-16 h-16 bg-theme-surface rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-                                <Activity size={24} className="opacity-20" />
-                            </div>
-                            <p className="text-sm font-bold uppercase tracking-widest">
-                                {t('stats.noData', 'No data collected')}
-                            </p>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-        </motion.div>
+        </Wrapper>
     );
 };

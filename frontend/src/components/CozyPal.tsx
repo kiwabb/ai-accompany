@@ -5,12 +5,14 @@ import MemoryToast from './MemoryToast';
 import CozyPalAvatarButton from './cozypal/CozyPalAvatarButton';
 import CozyPalSpeechBubble from './cozypal/CozyPalSpeechBubble';
 import CozyPalDrawer from './cozypal/CozyPalDrawer';
+import CozyPalBottomSheet from './cozypal/CozyPalBottomSheet';
 import CozyPalChatTab from './cozypal/CozyPalChatTab';
 import CozyPalMemoryTab from './cozypal/CozyPalMemoryTab';
 import CozyPalDebugTab from './cozypal/CozyPalDebugTab';
 import CozyPalInputArea from './cozypal/CozyPalInputArea';
 import CozyPalProfileEditOverlay from './cozypal/CozyPalProfileEditOverlay';
 import { useResizablePanel } from '../hooks/cozypal/useResizablePanel';
+import { useIsMobile } from '../hooks/useIsMobile';
 import { useCozyPalDiagnostics, type CozyPalDiagnosticsState } from '../hooks/cozypal/useCozyPalDiagnostics';
 import { useCozyPalTopics } from '../hooks/cozypal/useCozyPalTopics';
 import { useCozyPalChat } from '../hooks/cozypal/useCozyPalChat';
@@ -51,6 +53,7 @@ const CozyPal = React.forwardRef<CozyPalHandle, CozyPalProps>(({
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const { width, isResizing, startResizing } = useResizablePanel(450);
+  const isMobile = useIsMobile();
   const diagnosticsState = useCozyPalDiagnostics({ t }) as CozyPalDiagnosticsState;
   const topicsState = useCozyPalTopics();
 
@@ -72,8 +75,12 @@ const CozyPal = React.forwardRef<CozyPalHandle, CozyPalProps>(({
   });
 
   React.useEffect(() => {
+    if (isMobile) {
+      onDimensionsChange?.(0);
+      return;
+    }
     onDimensionsChange?.(isOpen ? width : 0);
-  }, [isOpen, width, onDimensionsChange]);
+  }, [isOpen, width, onDimensionsChange, isMobile]);
 
   React.useEffect(() => {
     if (activeTab === 'debug' || activeTab === 'memory') diagnosticsState.fetchDiagnostics();
@@ -89,7 +96,7 @@ const CozyPal = React.forwardRef<CozyPalHandle, CozyPalProps>(({
   }));
 
   return (
-    <div className="fixed bottom-6 right-6 z-[100]">
+    <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-[100]">
       <MemoryToast message={diagnosticsState.toastMessage} onDismiss={() => diagnosticsState.setToastMessage(null)} />
       <CozyPalAvatarButton 
         avatarState={chatState.avatarState} 
@@ -103,41 +110,79 @@ const CozyPal = React.forwardRef<CozyPalHandle, CozyPalProps>(({
 
       <AnimatePresence>
         {isOpen && (
-          <CozyPalDrawer
-            width={width} isResizing={isResizing} onStartResizing={startResizing} onClose={callbacks.toggleChat}
-            avatarState={chatState.avatarState} mainTab={mainTab} onMainTabChange={setMainTab}
-            activeTab={activeTab} onActiveTabChange={setActiveTab}
-            topics={topicsState.topics} activeTopicId={topicsState.activeTopicId}
-            showTopicSelector={topicsState.showTopicSelector}
-            onToggleTopicSelector={() => topicsState.setShowTopicSelector(!topicsState.showTopicSelector)}
-            onSelectTopic={topicsState.handleSelectTopic} onCreateTopic={topicsState.handleCreateTopic}
-            chatTab={<CozyPalChatTab key="chat" messages={chatState.messages} isLoading={chatState.isLoading} />}
-            memoryTab={
-              <CozyPalMemoryTab key="memory" diagnostics={diagnosticsState.diagnostics} memoryFragments={diagnosticsState.memoryFragments}
-                onEditProfileItem={callbacks.handleEditProfileItem} onDeleteProfileItem={diagnosticsState.handleDeleteProfileItem}
-                onEditFragment={callbacks.handleEditFragment} onDeleteFragment={diagnosticsState.handleDeleteFragment}
-                onResetMemory={diagnosticsState.handleResetMemory} isSavingEdit={diagnosticsState.isSavingEdit} t={t} />
-            }
-            debugTab={
-              <CozyPalDebugTab key="debug" diagnostics={diagnosticsState.diagnostics} isDiagLoading={diagnosticsState.isDiagLoading}
-                onRefresh={diagnosticsState.fetchDiagnostics} onStartEditFragment={callbacks.handleEditFragment}
-                editingFragment={diagnosticsState.editingFragment} editValue={diagnosticsState.editValue}
-                onEditValueChange={diagnosticsState.setEditValue} onCloseEdit={() => diagnosticsState.setEditingFragment(null)}
-                onSaveEdit={diagnosticsState.handleUpdateFragment} isSavingEdit={diagnosticsState.isSavingEdit} t={t} />
-            }
-            inputArea={
-              <CozyPalInputArea inputRef={inputRef} inputValue={chatState.inputValue} onInputChange={chatState.setInputValue}
-                isLoading={chatState.isLoading} onSend={(e) => chatState.sendMessage(e)} t={t} />
-            }
-            profileEditOverlay={
-              <CozyPalProfileEditOverlay editingProfileItem={diagnosticsState.editingProfileItem} editValue={diagnosticsState.editValue}
-                onEditValueChange={diagnosticsState.setEditValue} onCancel={() => diagnosticsState.setEditingProfileItem(null)}
-                onSave={diagnosticsState.handleUpdateProfileItem} isSavingEdit={diagnosticsState.isSavingEdit} t={t} />
-            }
-            t={t}
-            isChiikawaTheme={isChiikawaTheme}
-            isShinchanTheme={isShinchanTheme}
-          />
+          isMobile ? (
+            <CozyPalBottomSheet
+              onClose={callbacks.toggleChat}
+              avatarState={chatState.avatarState} mainTab={mainTab} onMainTabChange={setMainTab}
+              activeTab={activeTab} onActiveTabChange={setActiveTab}
+              topics={topicsState.topics} activeTopicId={topicsState.activeTopicId}
+              showTopicSelector={topicsState.showTopicSelector}
+              onToggleTopicSelector={() => topicsState.setShowTopicSelector(!topicsState.showTopicSelector)}
+              onSelectTopic={topicsState.handleSelectTopic} onCreateTopic={topicsState.handleCreateTopic}
+              chatTab={<CozyPalChatTab key="chat" messages={chatState.messages} isLoading={chatState.isLoading} />}
+              memoryTab={
+                <CozyPalMemoryTab key="memory" diagnostics={diagnosticsState.diagnostics} memoryFragments={diagnosticsState.memoryFragments}
+                  onEditProfileItem={callbacks.handleEditProfileItem} onDeleteProfileItem={diagnosticsState.handleDeleteProfileItem}
+                  onEditFragment={callbacks.handleEditFragment} onDeleteFragment={diagnosticsState.handleDeleteFragment}
+                  onResetMemory={diagnosticsState.handleResetMemory} isSavingEdit={diagnosticsState.isSavingEdit} t={t} />
+              }
+              debugTab={
+                <CozyPalDebugTab key="debug" diagnostics={diagnosticsState.diagnostics} isDiagLoading={diagnosticsState.isDiagLoading}
+                  onRefresh={diagnosticsState.fetchDiagnostics} onStartEditFragment={callbacks.handleEditFragment}
+                  editingFragment={diagnosticsState.editingFragment} editValue={diagnosticsState.editValue}
+                  onEditValueChange={diagnosticsState.setEditValue} onCloseEdit={() => diagnosticsState.setEditingFragment(null)}
+                  onSaveEdit={diagnosticsState.handleUpdateFragment} isSavingEdit={diagnosticsState.isSavingEdit} t={t} />
+              }
+              inputArea={
+                <CozyPalInputArea inputRef={inputRef} inputValue={chatState.inputValue} onInputChange={chatState.setInputValue}
+                  isLoading={chatState.isLoading} onSend={(e) => chatState.sendMessage(e)} t={t} />
+              }
+              profileEditOverlay={
+                <CozyPalProfileEditOverlay editingProfileItem={diagnosticsState.editingProfileItem} editValue={diagnosticsState.editValue}
+                  onEditValueChange={diagnosticsState.setEditValue} onCancel={() => diagnosticsState.setEditingProfileItem(null)}
+                  onSave={diagnosticsState.handleUpdateProfileItem} isSavingEdit={diagnosticsState.isSavingEdit} t={t} />
+              }
+              t={t}
+              isChiikawaTheme={isChiikawaTheme}
+              isShinchanTheme={isShinchanTheme}
+            />
+          ) : (
+            <CozyPalDrawer
+              width={width} isResizing={isResizing} onStartResizing={startResizing} onClose={callbacks.toggleChat}
+              avatarState={chatState.avatarState} mainTab={mainTab} onMainTabChange={setMainTab}
+              activeTab={activeTab} onActiveTabChange={setActiveTab}
+              topics={topicsState.topics} activeTopicId={topicsState.activeTopicId}
+              showTopicSelector={topicsState.showTopicSelector}
+              onToggleTopicSelector={() => topicsState.setShowTopicSelector(!topicsState.showTopicSelector)}
+              onSelectTopic={topicsState.handleSelectTopic} onCreateTopic={topicsState.handleCreateTopic}
+              chatTab={<CozyPalChatTab key="chat" messages={chatState.messages} isLoading={chatState.isLoading} />}
+              memoryTab={
+                <CozyPalMemoryTab key="memory" diagnostics={diagnosticsState.diagnostics} memoryFragments={diagnosticsState.memoryFragments}
+                  onEditProfileItem={callbacks.handleEditProfileItem} onDeleteProfileItem={diagnosticsState.handleDeleteProfileItem}
+                  onEditFragment={callbacks.handleEditFragment} onDeleteFragment={diagnosticsState.handleDeleteFragment}
+                  onResetMemory={diagnosticsState.handleResetMemory} isSavingEdit={diagnosticsState.isSavingEdit} t={t} />
+              }
+              debugTab={
+                <CozyPalDebugTab key="debug" diagnostics={diagnosticsState.diagnostics} isDiagLoading={diagnosticsState.isDiagLoading}
+                  onRefresh={diagnosticsState.fetchDiagnostics} onStartEditFragment={callbacks.handleEditFragment}
+                  editingFragment={diagnosticsState.editingFragment} editValue={diagnosticsState.editValue}
+                  onEditValueChange={diagnosticsState.setEditValue} onCloseEdit={() => diagnosticsState.setEditingFragment(null)}
+                  onSaveEdit={diagnosticsState.handleUpdateFragment} isSavingEdit={diagnosticsState.isSavingEdit} t={t} />
+              }
+              inputArea={
+                <CozyPalInputArea inputRef={inputRef} inputValue={chatState.inputValue} onInputChange={chatState.setInputValue}
+                  isLoading={chatState.isLoading} onSend={(e) => chatState.sendMessage(e)} t={t} />
+              }
+              profileEditOverlay={
+                <CozyPalProfileEditOverlay editingProfileItem={diagnosticsState.editingProfileItem} editValue={diagnosticsState.editValue}
+                  onEditValueChange={diagnosticsState.setEditValue} onCancel={() => diagnosticsState.setEditingProfileItem(null)}
+                  onSave={diagnosticsState.handleUpdateProfileItem} isSavingEdit={diagnosticsState.isSavingEdit} t={t} />
+              }
+              t={t}
+              isChiikawaTheme={isChiikawaTheme}
+              isShinchanTheme={isShinchanTheme}
+            />
+          )
         )}
       </AnimatePresence>
     </div>

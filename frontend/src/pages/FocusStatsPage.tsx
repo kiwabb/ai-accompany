@@ -6,13 +6,15 @@ import { ChevronLeft } from 'lucide-react';
 import AmbientBackground from '../components/AmbientBackground';
 import { formatDuration } from '../utils/date';
 import { useChartTheme } from '../hooks/useChartTheme';
-import { useTrendStats, usePieStats } from '../hooks/useFocusStats';
+import { useTrendStats, usePieStats, useHeatmapStats } from '../hooks/useFocusStats';
 import type { TimeRange } from '../hooks/useFocusStats';
 import { StatsHeader } from '../components/focus-stats/StatsHeader';
 import { SummaryCards } from '../components/focus-stats/SummaryCards';
 import { DailyTrendChart } from '../components/focus-stats/DailyTrendChart';
 import { ThemeDistributionChart } from '../components/focus-stats/ThemeDistributionChart';
+import { StudyHeatmap } from '../components/focus-stats/StudyHeatmap';
 import { SessionDetailsModal } from '../components/focus-stats/SessionDetailsModal';
+import BottomNav from '../components/BottomNav';
 import type { DailyStat } from '../api/client';
 
 const FocusStatsPage: React.FC = () => {
@@ -26,6 +28,7 @@ const FocusStatsPage: React.FC = () => {
     
     const { stats, trendLoading, initialLoading } = useTrendStats(timeRange);
     const { pieStats } = usePieStats(pieRange);
+    const { heatmapStats } = useHeatmapStats();
 
     // Local State
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -49,7 +52,7 @@ const FocusStatsPage: React.FC = () => {
     const maxDailyMinutes = stats?.daily_stats?.reduce((max: number, day: DailyStat) => Math.max(max, day.total_focus_minutes), 0) || 1;
 
     return (
-        <main className="min-h-screen w-full bg-[#FCFAF7] flex flex-col items-center p-6 pb-32 selection:bg-cozy-orange/30 relative overflow-x-hidden">
+        <main className="min-h-screen w-full bg-[#FCFAF7] flex flex-col items-center p-3 pt-16 md:p-6 md:pt-12 pb-32 selection:bg-cozy-orange/30 relative overflow-x-hidden">
             <AmbientBackground />
 
             {/* Back Button */}
@@ -59,13 +62,13 @@ const FocusStatsPage: React.FC = () => {
                 whileHover={{ x: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => navigate('/')}
-                className="fixed top-8 left-8 py-3 px-6 bg-white/70 backdrop-blur-2xl border border-white/80 shadow-xl rounded-2xl flex items-center gap-2 group z-50 text-cozy-text-light hover:text-cozy-text transition-colors font-bold uppercase tracking-widest text-[10px]"
+                className="fixed top-3 left-3 md:top-8 md:left-8 py-2 px-3 md:py-3 md:px-6 bg-white/70 backdrop-blur-2xl border border-white/80 shadow-xl rounded-2xl flex items-center gap-2 group z-50 text-cozy-text-light hover:text-cozy-text transition-colors font-bold uppercase tracking-widest text-[10px]"
             >
                 <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                <span>{t('common.back', 'Back')}</span>
+                <span className="hidden md:inline">{t('common.back', 'Back')}</span>
             </motion.button>
 
-            <div className="relative z-10 w-full max-w-5xl flex flex-col gap-8 py-12">
+            <div className="relative z-10 w-full max-w-5xl flex flex-col gap-6 md:gap-8 py-4 md:py-12">
                 
                 <StatsHeader />
 
@@ -75,35 +78,40 @@ const FocusStatsPage: React.FC = () => {
                     </div>
                 ) : (
                     <>
-                        <SummaryCards 
-                            stats={stats} 
+                        <SummaryCards
+                            stats={stats}
                             chartColors={chartColors}
                             formatDuration={formatDurationWithT}
                             onViewDetailsClick={() => setShowDetails(true)}
                         />
 
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <DailyTrendChart 
-                                stats={stats}
-                                pieStats={pieStats}
-                                trendLoading={trendLoading}
-                                timeRange={timeRange}
-                                onTimeRangeChange={setTimeRange}
-                                scrollContainerRef={scrollContainerRef}
-                                maxDailyMinutes={maxDailyMinutes}
-                                getChartColorForTheme={getChartColorForTheme}
-                                formatDuration={formatDurationWithT}
-                                activeVisualTheme={activeVisualTheme}
-                            />
+                        <StudyHeatmap
+                            stats={heatmapStats}
+                            formatDuration={formatDurationWithT}
+                        />
 
-                            <ThemeDistributionChart 
-                                pieStats={pieStats}
-                                pieRange={pieRange}
-                                onPieRangeChange={setPieRange}
-                                getChartColorForTheme={getChartColorForTheme}
-                                formatDuration={formatDurationWithT}
-                            />
-                        </div>
+                        <DailyTrendChart
+                            stats={stats}
+                            pieStats={pieStats}
+                            trendLoading={trendLoading}
+                            timeRange={timeRange}
+                            onTimeRangeChange={setTimeRange}
+                            scrollContainerRef={scrollContainerRef}
+                            maxDailyMinutes={maxDailyMinutes}
+                            getChartColorForTheme={getChartColorForTheme}
+                            formatDuration={formatDurationWithT}
+                            activeVisualTheme={activeVisualTheme}
+                            footer={
+                                <ThemeDistributionChart
+                                    inline
+                                    pieStats={pieStats}
+                                    pieRange={pieRange}
+                                    onPieRangeChange={setPieRange}
+                                    getChartColorForTheme={getChartColorForTheme}
+                                    formatDuration={formatDurationWithT}
+                                />
+                            }
+                        />
                     </>
                 )}
             </div>
@@ -120,6 +128,8 @@ const FocusStatsPage: React.FC = () => {
                 getChartColorForTheme={getChartColorForTheme}
                 formatDuration={formatDurationWithT}
             />
+
+            <BottomNav />
         </main>
     );
 };

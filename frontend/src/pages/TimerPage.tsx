@@ -87,16 +87,16 @@ const TimerPage: React.FC = () => {
                 whileHover={{ x: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => navigate('/')}
-                className={`fixed top-8 left-8 py-3 px-6 bg-white/60 backdrop-blur-2xl shadow-xl rounded-2xl flex items-center gap-2 group z-50 transition-colors font-bold uppercase tracking-widest text-[10px] ${isShinchanTheme
+                className={`fixed top-3 left-3 md:top-8 md:left-8 py-2 px-3 md:py-3 md:px-6 bg-white/60 backdrop-blur-2xl shadow-xl rounded-2xl flex items-center gap-2 group z-50 transition-colors font-bold uppercase tracking-widest text-[10px] ${isShinchanTheme
                         ? 'border border-[#FF6B6B]/20 text-[#8D6E63] hover:text-[#5D4037] hover:bg-[#FF6B6B]/10'
                         : 'border border-white text-slate-400 hover:text-slate-900'
                     }`}
             >
                 <ChevronLeftIcon size={16} className="group-hover:-translate-x-1 transition-transform" />
-                <span>返回列表</span>
+                <span className="hidden md:inline">返回列表</span>
             </motion.button>
 
-            <div className="fixed top-8 right-8 z-50 flex items-center gap-3">
+            <div className="fixed top-3 right-3 md:top-8 md:right-8 z-50 flex flex-wrap items-center justify-end gap-2 md:gap-3 max-w-[70vw] md:max-w-none">
                 {/* Countdown toggle */}
                 <div ref={countdownRef} className="relative">
                     <motion.button
@@ -105,14 +105,14 @@ const TimerPage: React.FC = () => {
                         whileHover={{ x: 2 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => setCountdownOpen(prev => !prev)}
-                        className={`py-3 px-5 bg-white/60 backdrop-blur-2xl shadow-xl rounded-2xl flex items-center gap-2 group transition-colors font-bold uppercase tracking-widest text-[10px] ${isShinchanTheme
+                        className={`py-2 px-3 md:py-3 md:px-5 bg-white/60 backdrop-blur-2xl shadow-xl rounded-2xl flex items-center gap-2 group transition-colors font-bold uppercase tracking-widest text-[10px] ${isShinchanTheme
                                 ? 'border border-[#FF6B6B]/20 text-[#8D6E63] hover:text-[#5D4037] hover:bg-[#FF6B6B]/10'
                                 : 'border border-white text-slate-400 hover:text-slate-900'
                             }`}
                         aria-label={t('countdown.title', '倒数日')}
                     >
                         <Calendar size={16} className="group-hover:scale-110 transition-transform" />
-                        <span>{t('countdown.title', '倒数日')}</span>
+                        <span className="hidden md:inline">{t('countdown.title', '倒数日')}</span>
                     </motion.button>
 
                     <AnimatePresence>
@@ -122,7 +122,7 @@ const TimerPage: React.FC = () => {
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 exit={{ opacity: 0, y: -8, scale: 0.96 }}
                                 transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-                                className="absolute top-full right-0 mt-3 w-[320px] bg-white/90 backdrop-blur-2xl rounded-3xl border border-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.18)] p-4"
+                                className="absolute top-full right-0 mt-3 w-[min(320px,90vw)] bg-white/90 backdrop-blur-2xl rounded-3xl border border-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.18)] p-4"
                             >
                                 <div className="flex items-center justify-between mb-3 px-1">
                                     <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500 flex items-center gap-2">
@@ -150,13 +150,13 @@ const TimerPage: React.FC = () => {
                         whileHover={{ x: 2 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => navigate(`/library?theme=${activeTheme.id}`)}
-                        className={`py-3 px-6 bg-white/60 backdrop-blur-2xl shadow-xl rounded-2xl flex items-center gap-2 group transition-colors font-bold uppercase tracking-widest text-[10px] ${isShinchanTheme
+                        className={`py-2 px-3 md:py-3 md:px-6 bg-white/60 backdrop-blur-2xl shadow-xl rounded-2xl flex items-center gap-2 group transition-colors font-bold uppercase tracking-widest text-[10px] ${isShinchanTheme
                                 ? 'border border-[#FF6B6B]/20 text-[#8D6E63] hover:text-[#5D4037] hover:bg-[#FF6B6B]/10'
                                 : 'border border-white text-slate-400 hover:text-slate-900'
                             }`}
                     >
                         <BookOpenIcon size={16} className="group-hover:scale-110 transition-transform" />
-                        <span>
+                        <span className="hidden md:inline">
                             {t('common.themeLibrary', {
                                 theme: t(`themes.${activeTheme.id}`, { defaultValue: activeTheme.name }),
                                 defaultValue: `{{theme}} ${t('common.library', '书架')}`,

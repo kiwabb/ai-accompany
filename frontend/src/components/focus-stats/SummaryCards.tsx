@@ -49,7 +49,7 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={onViewDetailsClick}
-                    className="mt-2 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-theme-surface text-theme-primary shadow-sm hover:shadow-md transition-all border border-theme-border"
+                    className="mt-1 md:mt-2 py-1 md:py-1.5 px-2 md:px-3 rounded-md md:rounded-lg text-[9px] md:text-[10px] font-bold uppercase tracking-wider bg-theme-surface text-theme-primary shadow-sm hover:shadow-md transition-all border border-theme-border whitespace-nowrap"
                 >
                     {t('stats.viewDetails', 'View Details')}
                 </motion.button>
@@ -58,28 +58,28 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
     ];
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-3 gap-2 md:gap-6">
             {summaryItems.map((item, index) => (
                 <motion.div
                     key={index}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="bg-white/70 backdrop-blur-2xl p-6 rounded-3xl border border-white/80 shadow-sm hover:shadow-md transition-shadow"
+                    className="bg-white/70 backdrop-blur-2xl p-3 md:p-6 rounded-xl md:rounded-3xl border border-white/80 shadow-sm hover:shadow-md transition-shadow"
                 >
                     <div
-                        className="w-10 h-10 rounded-2xl flex items-center justify-center mb-4"
+                        className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-2xl flex items-center justify-center mb-2 md:mb-4"
                         style={{
                             backgroundColor: `${item.color}33`,
                             color: item.color
                         }}
                     >
-                        {item.icon}
+                        {React.cloneElement(item.icon, { size: 16 })}
                     </div>
-                    <div className="flex-grow flex flex-col justify-between items-start">
-                        <div className="text-theme-text-muted text-xs font-bold uppercase tracking-wider mb-1">{item.label}</div>
-                        <div className="text-3xl font-bold text-theme-text mb-1">{item.value}</div>
-                        <div className="text-theme-text-muted/60 text-sm mt-auto">{item.sub}</div>
+                    <div className="flex-grow flex flex-col justify-between items-start min-w-0 w-full">
+                        <div className="text-theme-text-muted text-[9px] md:text-xs font-bold uppercase tracking-wider mb-1 truncate w-full">{item.label}</div>
+                        <div className="text-lg md:text-3xl font-bold text-theme-text mb-1 truncate w-full">{item.value}</div>
+                        <div className="text-theme-text-muted/60 text-[10px] md:text-sm mt-auto w-full">{item.sub}</div>
                     </div>
                 </motion.div>
             ))}

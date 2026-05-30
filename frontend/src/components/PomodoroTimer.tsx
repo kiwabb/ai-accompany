@@ -51,10 +51,10 @@ const PomodoroTimer: React.FC = () => {
         layout
         initial={{ opacity: 0, scale: 0.95, y: 30 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="w-full max-w-5xl rounded-[64px] p-10 md:p-16 flex flex-col lg:flex-row items-center gap-0 lg:gap-24 relative transition-all duration-700 mx-auto bg-white/60 backdrop-blur-3xl border border-white shadow-[0_40px_100px_-20px_rgba(0,0,0,0.1)]"
+        className="w-full max-w-5xl rounded-2xl md:rounded-[64px] p-5 sm:p-10 md:p-16 flex flex-col lg:flex-row items-center gap-0 lg:gap-24 relative transition-all duration-700 mx-auto bg-white/60 backdrop-blur-3xl border border-white shadow-[0_40px_100px_-20px_rgba(0,0,0,0.1)]"
       >
         {/* Top-right card controls */}
-        <div className="absolute top-6 right-6 flex items-center gap-2 z-20">
+        <div className="absolute top-3 right-3 md:top-6 md:right-6 flex items-center gap-2 z-20">
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
@@ -84,7 +84,7 @@ const PomodoroTimer: React.FC = () => {
             <motion.div
               initial={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 z-50 bg-white/40 backdrop-blur-3xl flex items-center justify-center rounded-[64px]"
+              className="absolute inset-0 z-50 bg-white/40 backdrop-blur-3xl flex items-center justify-center rounded-2xl md:rounded-[64px]"
             >
               <div className="flex flex-col items-center gap-6">
                 <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-500 rounded-full animate-spin" />
@@ -95,7 +95,7 @@ const PomodoroTimer: React.FC = () => {
         </AnimatePresence>
 
         {/* Top-left compact title (portrait only) */}
-        <div className="lg:hidden absolute top-6 left-6 z-20">
+        <div className="lg:hidden absolute top-3 left-3 md:top-6 md:left-6 z-20">
           <h1 className="text-sm font-bold text-slate-900 font-heading">
             {t('timer.studyBuddy')}
           </h1>
@@ -124,7 +124,7 @@ const PomodoroTimer: React.FC = () => {
             </h1>
           </div>
 
-          <div className="w-full flex flex-col items-center lg:items-start space-y-8">
+          <div className="w-full flex flex-col items-center lg:items-start space-y-4 md:space-y-8">
             {/* Cycle indicator */}
             {(() => {
               const interval = Math.max(1, settings.longBreakInterval || 4);
@@ -150,7 +150,7 @@ const PomodoroTimer: React.FC = () => {
                   key={completedSessions}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="flex flex-col items-center lg:items-start gap-3"
+                  className="flex flex-col items-center lg:items-start gap-2 md:gap-3"
                 >
                   {/* Dots row */}
                   <div className="flex items-center gap-2">
@@ -169,7 +169,7 @@ const PomodoroTimer: React.FC = () => {
                     ))}
                   </div>
                   {/* Stepper: 循环 / 轮数 */}
-                  <div className="flex items-center gap-6 flex-wrap">
+                  <div className="flex items-center gap-4 md:gap-6 flex-wrap">
                     <div className="flex flex-col items-center gap-1.5">
                       <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                         {t('timer.totalRounds', '轮数')}
@@ -231,15 +231,15 @@ const PomodoroTimer: React.FC = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6 }}
-                className="pt-8 border-t border-slate-100 w-full flex flex-col sm:flex-row gap-8 justify-center lg:justify-start"
+                className="pt-4 md:pt-8 border-t border-slate-100 w-full flex flex-row sm:flex-row gap-6 md:gap-8 justify-center lg:justify-start"
               >
                 <div className="space-y-1 text-center lg:text-left">
                   <div className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{t('timer.todayFocus')}</div>
-                  <div className="text-2xl font-bold text-indigo-500">{todayStats.total_focus_minutes} <span className="text-xs uppercase font-bold text-slate-400">{t('timer.minutes')}</span></div>
+                  <div className="text-xl md:text-2xl font-bold text-indigo-500">{todayStats.total_focus_minutes} <span className="text-xs uppercase font-bold text-slate-400">{t('timer.minutes')}</span></div>
                 </div>
                 <div className="space-y-1 text-center lg:text-left">
                   <div className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{t('timer.totalSessions')}</div>
-                  <div className="text-2xl font-bold text-rose-500">{todayStats.total_sessions}</div>
+                  <div className="text-xl md:text-2xl font-bold text-rose-500">{todayStats.total_sessions}</div>
                 </div>
               </motion.div>
             )}

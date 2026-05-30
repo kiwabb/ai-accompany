@@ -87,7 +87,7 @@ const TodoWidget: React.FC<TodoWidgetProps> = ({ isShinchanTheme = false }) => {
                 whileHover={{ x: 2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setOpen(prev => !prev)}
-                className={`py-3 px-5 bg-white/60 backdrop-blur-2xl shadow-xl rounded-2xl flex items-center gap-2 group transition-colors font-bold uppercase tracking-widest text-[10px] ${isShinchanTheme
+                className={`py-2 px-3 md:py-3 md:px-5 bg-white/60 backdrop-blur-2xl shadow-xl rounded-2xl flex items-center gap-2 group transition-colors font-bold uppercase tracking-widest text-[10px] ${isShinchanTheme
                         ? 'border border-[#FF6B6B]/20 text-[#8D6E63] hover:text-[#5D4037] hover:bg-[#FF6B6B]/10'
                         : 'border border-white text-slate-400 hover:text-slate-900'
                     }`}
@@ -95,7 +95,7 @@ const TodoWidget: React.FC<TodoWidgetProps> = ({ isShinchanTheme = false }) => {
                 aria-expanded={open}
             >
                 <CheckSquare size={16} className="group-hover:scale-110 transition-transform" />
-                <span>{t('todo.title', '待办')}</span>
+                <span className="hidden md:inline">{t('todo.title', '待办')}</span>
                 {remaining > 0 && (
                     <span className="ml-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-500 text-white text-[10px] tabular-nums">
                         {remaining}

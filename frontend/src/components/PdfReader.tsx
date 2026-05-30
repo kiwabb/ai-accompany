@@ -14,6 +14,7 @@ import { createWorker } from 'tesseract.js';
 import { useCreateBlockNote } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/mantine';
 import { getAuthHeaders } from '../api/client';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 // Using a local worker for better performance and offline support
 pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
@@ -591,6 +592,7 @@ const OutlineItem: React.FC<{ item: any; onClick: (item: any) => void; level: nu
 
 const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => {
     const navigate = useNavigate();
+    const isMobile = useIsMobile();
     const [searchParams] = useSearchParams();
     const backToLibrary = () => {
         const theme = searchParams.get('theme');
@@ -841,12 +843,12 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
 
     useEffect(() => {
         const root = document.documentElement;
-        const offset = isNotebookOpen ? notePanelWidth : 0;
+        const offset = isNotebookOpen && !isMobile ? notePanelWidth : 0;
         root.style.setProperty('--reader-notes-offset', `${offset}px`);
         return () => {
             root.style.setProperty('--reader-notes-offset', '0px');
         };
-    }, [isNotebookOpen, notePanelWidth]);
+    }, [isNotebookOpen, notePanelWidth, isMobile]);
 
     useEffect(() => {
         const onMouseMove = (event: MouseEvent) => {
@@ -3027,7 +3029,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
     return (
         <div className="flex flex-col items-center w-full transition-all duration-500">
             {/* Minimalist Cozy Toolbar - Simplified for Scrolling */}
-            <div className="w-full bg-[#faf9f6]/95 backdrop-blur-md border-b border-[#e9e6da] px-3 md:px-5 py-1 flex items-center sticky top-0 z-50">
+            <div className="w-full bg-[#faf9f6]/95 backdrop-blur-md border-b border-[#e9e6da] px-3 md:px-5 py-1 flex items-center sticky top-0 z-50 overflow-x-auto md:overflow-x-visible">
                 {/* 返回 + 标题，与原 ReaderPage header 合并到这一行 */}
                 <button
                     onClick={backToLibrary}
@@ -3037,7 +3039,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                     <ArrowLeft size={16} />
                 </button>
                 <h1
-                    className="shrink min-w-0 max-w-[260px] mr-3 text-sm font-bold text-slate-700 truncate"
+                    className="shrink min-w-0 max-w-[120px] md:max-w-[260px] mr-3 text-sm font-bold text-slate-700 truncate"
                     title={title}
                 >
                     {title || ''}
@@ -3289,7 +3291,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
             </div>
 
             <div
-                className={`w-full flex relative items-start gap-0 ${isSidebarOpen ? 'pl-72' : ''}`}
+                className={`w-full flex relative items-start gap-0 ${isSidebarOpen && !isMobile ? 'pl-72' : ''}`}
                 style={{
                     paddingRight: 'var(--cozypal-offset, 0px)',
                     backgroundColor:
@@ -3299,13 +3301,22 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                 }}
             >
                 <AnimatePresence>
+                    {isSidebarOpen && isMobile && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsSidebarOpen(false)}
+                            className="fixed inset-0 z-[29] bg-black/30 md:hidden"
+                        />
+                    )}
                     {isSidebarOpen && (
                         <motion.div
                             initial={{ x: '-100%', opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
                             exit={{ x: '-100%', opacity: 0 }}
                             transition={{ duration: 0.3, ease: 'easeInOut' }}
-                            className="w-72 h-[calc(100vh-2.25rem)] fixed top-9 left-0 z-30 bg-[#faf9f6]/95 backdrop-blur-md border-r border-[#e9e6da] flex flex-col"
+                            className="w-[85vw] max-w-[320px] md:w-72 h-[calc(100vh-2.25rem)] fixed top-9 left-0 z-30 bg-[#faf9f6]/95 backdrop-blur-md border-r border-[#e9e6da] flex flex-col"
                         >
                             <div className="flex items-center gap-1 border-b border-[#e9e6da] p-2 bg-[#f9f8f6]">
                                 <button
@@ -3730,25 +3741,40 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                             animate={{ x: 0, opacity: 1 }}
                             exit={{ x: '100%', opacity: 0 }}
                             transition={{ duration: 0.25, ease: 'easeInOut' }}
-                            className="shrink-0 h-[calc(100vh-2.25rem)] sticky top-9 self-start flex"
+                            className={isMobile
+                                ? 'fixed inset-0 z-[150] flex'
+                                : 'shrink-0 h-[calc(100vh-2.25rem)] sticky top-9 self-start flex'}
                         >
-                            <div
-                                onMouseDown={handleNoteResizeMouseDown}
-                                className="w-1 cursor-col-resize bg-transparent hover:bg-[#d6d1c4] active:bg-[#c7c1b0]"
-                                title={t('reader.resizePanel', '拖动调整宽度')}
-                            />
+                            {!isMobile && (
+                                <div
+                                    onMouseDown={handleNoteResizeMouseDown}
+                                    className="w-1 cursor-col-resize bg-transparent hover:bg-[#d6d1c4] active:bg-[#c7c1b0]"
+                                    title={t('reader.resizePanel', '拖动调整宽度')}
+                                />
+                            )}
                             <div
                                 className="notes-flat-panel h-full bg-[#fcfbf8]/95 border-l border-[#e9e6da] flex flex-col"
-                                style={{ width: `${notePanelWidth}px` }}
+                                style={{ width: isMobile ? '100%' : `${notePanelWidth}px` }}
                             >
                             <div className="px-3 py-2 border-b border-[#e9e6da] bg-[#f9f8f6] flex items-center justify-between gap-2">
                                 <div className="inline-flex items-center gap-2 text-[#4b483e]">
                                     <NotebookPen size={16} />
                                     <span className="text-xs font-bold uppercase tracking-widest">{t('reader.notes', 'Notes')}</span>
                                 </div>
-                                <span className={`text-[11px] font-semibold ${noteDirty ? 'text-amber-700' : 'text-emerald-700'}`}>
-                                    {noteDirty ? t('reader.autoSaving', '自动保存中...') : t('reader.autoSaved', '已自动保存')}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                    <span className={`text-[11px] font-semibold ${noteDirty ? 'text-amber-700' : 'text-emerald-700'}`}>
+                                        {noteDirty ? t('reader.autoSaving', '自动保存中...') : t('reader.autoSaved', '已自动保存')}
+                                    </span>
+                                    {isMobile && (
+                                        <button
+                                            onClick={() => setIsNotebookOpen(false)}
+                                            className="p-1.5 rounded-lg text-[#6b6654] hover:bg-white hover:text-[#4b483e] transition-colors"
+                                            aria-label={t('common.close', '关闭')}
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="flex-1 overflow-auto p-3 space-y-3">
@@ -3967,8 +3993,8 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                 className="fixed z-40 flex justify-center pointer-events-none"
                 style={{
                     bottom: 24,
-                    left: isSidebarOpen ? 288 : 0,
-                    right: isNotebookOpen
+                    left: isSidebarOpen && !isMobile ? 288 : 0,
+                    right: isNotebookOpen && !isMobile
                         ? `${notePanelWidth}px`
                         : 'var(--cozypal-offset, 0px)',
                     transition: 'left 0.2s ease, right 0.2s ease',

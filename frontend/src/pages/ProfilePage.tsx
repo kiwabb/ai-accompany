@@ -11,6 +11,7 @@ import { useTimerContext } from '../contexts/TimerContext';
 import { getStatsRange, getAchievements } from '../api/client';
 import type { StatsRangeResponse, UserAchievementBackend } from '../api/client';
 import AmbientBackground from '../components/AmbientBackground';
+import BottomNav from '../components/BottomNav';
 
 const ProfilePage: React.FC = () => {
     const { t } = useTranslation();
@@ -76,7 +77,7 @@ const ProfilePage: React.FC = () => {
                 <span>{t('common.back', 'Back')}</span>
             </motion.button>
 
-            <main className="relative z-10 w-full max-w-4xl mx-auto px-6 py-16">
+            <main className="relative z-10 w-full max-w-4xl mx-auto px-6 py-16 pb-32">
                 {/* Profile header */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -244,6 +245,8 @@ const ProfilePage: React.FC = () => {
                     ))}
                 </div>
             </main>
+
+            <BottomNav />
         </div>
     );
 };
