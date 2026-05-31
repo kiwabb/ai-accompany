@@ -85,7 +85,7 @@ const TasksPage: React.FC = () => {
     const [todos, setTodos] = useState<TodoItem[]>(() => loadFromStorage());
     const [draft, setDraft] = useState('');
     const [draftPriority, setDraftPriority] = useState<Priority | undefined>(undefined);
-    const [draftDueDate, setDraftDueDate] = useState<string>('');
+    const [draftDueDate, setDraftDueDate] = useState<string>(todayDateStr());
     const [filter, setFilter] = useState<FilterMode>('all');
     const [sortBy, setSortBy] = useState<SortMode>('manual');
     const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -116,7 +116,7 @@ const TasksPage: React.FC = () => {
         setDraft('');
         // 重置 quick-pick，避免下一条任务意外继承
         setDraftPriority(undefined);
-        setDraftDueDate('');
+        setDraftDueDate(todayDateStr());
         inputRef.current?.focus();
     };
 
@@ -210,212 +210,24 @@ const TasksPage: React.FC = () => {
 
     const hasCompleted = todos.some(item => item.done);
 
-    return (
-        <div className="min-h-screen bg-[#FCFAF7] relative overflow-hidden flex flex-col items-center">
-            <AmbientBackground />
-
-            {/* 移动端：紧凑顶栏 */}
-            <div className="md:hidden sticky top-0 z-[100] w-full bg-white/60 backdrop-blur-2xl border-b border-white shadow-sm py-3 px-3">
-                <div className="max-w-5xl mx-auto flex items-center justify-between gap-2">
-                    <motion.button
-                        whileHover={{ x: -2 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => navigate('/')}
-                        className="flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-colors font-bold uppercase tracking-widest text-[10px]"
-                    >
-                        <ChevronLeft size={16} />
-                    </motion.button>
-
-                    <h1 className="text-base font-extrabold text-slate-900 uppercase tracking-wider font-heading flex items-center gap-2">
-                        <CheckSquare size={18} className="text-indigo-500" />
-                        {t('todo.title', '待办')}
-                    </h1>
-
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 tabular-nums">
-                        {stats.pending}/{todos.length}
-                    </span>
-                </div>
-            </div>
-
-            {/* 桌面端：浮动卡片式返回按钮（对齐专注分析） */}
-            <motion.button
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                whileHover={{ x: -2 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => navigate('/')}
-                className="hidden md:flex fixed top-8 left-8 py-3 px-6 bg-white/70 backdrop-blur-2xl border border-white/80 shadow-xl rounded-2xl items-center gap-2 group z-50 text-slate-400 hover:text-slate-900 transition-colors font-bold uppercase tracking-widest text-[10px]"
-            >
-                <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                <span>{t('common.back', '返回')}</span>
-            </motion.button>
-
-            <main className="w-full max-w-5xl mx-auto px-4 md:px-8 pt-6 md:pt-12 pb-32 relative z-10 space-y-4">
-                {/* 桌面端：大号页面标题 */}
-                <h1 className="hidden md:flex text-2xl md:text-4xl font-extrabold text-slate-900 tracking-tight items-center gap-4 font-heading mb-6">
-                    <CheckSquare className="text-indigo-500" size={32} />
-                    {t('todo.title', '待办')}
-                </h1>
-
-                {/* 顶部统计 */}
-                <div className="grid grid-cols-3 gap-2 md:gap-3">
-                    <StatCard
-                        icon={<Flame size={16} className="text-emerald-500" />}
-                        value={stats.todayDone}
-                        label={t('todo.todayDone', '今日完成')}
-                        accent="emerald"
-                    />
-                    <StatCard
-                        icon={<Clock size={16} className="text-indigo-500" />}
-                        value={stats.pending}
-                        label={t('todo.pending', '待办')}
-                        accent="indigo"
-                    />
-                    <StatCard
-                        icon={<AlertTriangle size={16} className="text-rose-500" />}
-                        value={stats.overdue}
-                        label={t('todo.overdue', '超期')}
-                        accent="rose"
-                    />
-                </div>
-
-                {/* 输入区：文本 + 内联优先级 + 截止日 */}
-                <div className="bg-white/60 backdrop-blur-xl rounded-2xl md:rounded-[28px] p-3 md:p-4 border border-white shadow-sm space-y-2">
-                    <div className="flex items-center gap-2">
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            value={draft}
-                            onChange={e => setDraft(e.target.value)}
-                            onKeyDown={e => {
-                                if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    addTodo();
-                                }
-                            }}
-                            placeholder={t('todo.placeholder', '添加一个待办...')}
-                            className="flex-1 bg-slate-50 px-4 py-3 rounded-xl text-base md:text-lg font-bold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 border border-transparent focus:border-indigo-500/30 transition-all"
-                        />
-                        <button
-                            onClick={addTodo}
-                            disabled={!draft.trim()}
-                            className="p-3 rounded-xl bg-indigo-500 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-indigo-600 transition-colors active:scale-95"
-                            aria-label={t('todo.add', '添加')}
-                        >
-                            <Plus className="w-5 h-5" />
-                        </button>
-                    </div>
-
-                    {/* 快捷选项：优先级 + 截止日，建立时一步设好 */}
-                    <div className="flex items-center gap-2 flex-wrap text-[10px]">
-                        <div className="flex items-center gap-1">
-                            {(['high', 'medium', 'low'] as Priority[]).map(p => (
-                                <button
-                                    key={p}
-                                    onClick={() => setDraftPriority(draftPriority === p ? undefined : p)}
-                                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-md font-bold uppercase tracking-widest transition-all ${draftPriority === p
-                                        ? PRIORITY_STYLE[p].bg
-                                        : 'bg-white text-slate-400 hover:text-slate-700 border border-slate-200'}`}
-                                    title={t('todo.priority', '优先级')}
-                                >
-                                    <span className={`w-1.5 h-1.5 rounded-full ${PRIORITY_STYLE[p].dot}`} />
-                                    {PRIORITY_STYLE[p].label}
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="flex items-center gap-1">
-                            <label className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-slate-200 text-slate-500 hover:text-slate-900 cursor-pointer">
-                                <Calendar size={12} />
-                                <input
-                                    type="date"
-                                    value={draftDueDate}
-                                    onChange={e => setDraftDueDate(e.target.value)}
-                                    className="bg-transparent text-[10px] font-bold uppercase tracking-widest focus:outline-none cursor-pointer w-[88px]"
-                                />
-                            </label>
-                            {draftDueDate && (
-                                <button
-                                    onClick={() => setDraftDueDate('')}
-                                    className="p-1 rounded-md text-slate-300 hover:text-rose-500"
-                                    aria-label={t('common.clear', '清除')}
-                                >
-                                    <X size={12} />
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* 筛选 + 排序 + 清空 */}
-                <div className="bg-white/60 backdrop-blur-xl rounded-2xl md:rounded-[28px] p-2 md:p-3 border border-white shadow-sm flex items-center gap-2 flex-wrap">
-                    <div className="flex bg-slate-100/70 rounded-lg p-0.5 text-[10px] font-bold uppercase tracking-widest">
-                        {([
-                            { id: 'all', label: t('todo.filterAll', '全部') },
-                            { id: 'active', label: t('todo.filterActive', '进行中') },
-                            { id: 'completed', label: t('todo.filterCompleted', '已完成') },
-                        ] as { id: FilterMode; label: string }[]).map(f => (
-                            <button
-                                key={f.id}
-                                onClick={() => setFilter(f.id)}
-                                className={`px-2.5 py-1.5 rounded-md transition-colors ${filter === f.id
-                                    ? 'bg-white text-slate-900 shadow-sm'
-                                    : 'text-slate-400 hover:text-slate-700'}`}
-                            >
-                                {f.label}
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="flex items-center gap-1.5 ml-auto">
-                        <ArrowUpDown size={12} className="text-slate-300" />
-                        <select
-                            value={sortBy}
-                            onChange={e => setSortBy(e.target.value as SortMode)}
-                            className="text-[10px] font-bold uppercase tracking-widest bg-transparent text-slate-500 hover:text-slate-900 focus:outline-none cursor-pointer"
-                        >
-                            <option value="manual">{t('todo.sortManual', '手动')}</option>
-                            <option value="priority">{t('todo.sortPriority', '优先级')}</option>
-                            <option value="due">{t('todo.sortDue', '截止日')}</option>
-                            <option value="created">{t('todo.sortCreated', '创建时间')}</option>
-                        </select>
-                        {hasCompleted && (
-                            <button
-                                onClick={clearCompleted}
-                                className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest text-rose-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                                title={t('todo.clearCompleted', '清除已完成')}
-                            >
-                                <Eraser size={12} />
-                                <span>{t('todo.clear', '清除')}</span>
-                            </button>
-                        )}
-                    </div>
-                </div>
-
-                {/* 列表 */}
-                <div className="bg-white/60 backdrop-blur-xl rounded-2xl md:rounded-[28px] p-2 md:p-3 border border-white shadow-sm">
-                    <div className="space-y-1">
-                        <AnimatePresence initial={false}>
-                            {visibleTodos.length === 0 && (
-                                <motion.div
-                                    key="empty"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    className="flex flex-col items-center justify-center py-12 px-4 bg-slate-50/60 rounded-xl border border-dashed border-slate-200"
-                                >
-                                    <CheckCircle2 className="w-6 h-6 text-slate-200 mb-2" />
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                        {filter === 'completed'
-                                            ? t('todo.emptyCompleted', '还没有完成的待办')
-                                            : filter === 'active'
-                                                ? t('todo.emptyActive', '没有进行中的待办')
-                                                : t('todo.empty', '暂无待办')}
-                                    </p>
-                                </motion.div>
-                            )}
-
-                            {visibleTodos.map(item => {
+    
+    const renderTodoItems = (items: TodoItem[], emptyText: string) => (
+        <AnimatePresence initial={false}>
+            {items.length === 0 && (
+                <motion.div
+                    key="empty"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex flex-col items-center justify-center py-12 px-4 bg-slate-50/60 rounded-xl border border-dashed border-slate-200"
+                >
+                    <CheckCircle2 className="w-6 h-6 text-slate-200 mb-2" />
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        {emptyText}
+                    </p>
+                </motion.div>
+            )}
+            {items.map(item => {
                                 const expanded = expandedId === item.id;
                                 const editing = editingId === item.id;
                                 const overdue = isOverdue(item);
@@ -624,8 +436,220 @@ const TasksPage: React.FC = () => {
                                     </motion.div>
                                 );
                             })}
-                        </AnimatePresence>
+        </AnimatePresence>
+    );
+
+    return (
+        <div className="min-h-screen bg-[#FCFAF7] relative overflow-hidden flex flex-col items-center">
+            <AmbientBackground />
+
+            {/* 移动端：紧凑顶栏 */}
+            <div className="md:hidden sticky top-0 z-[100] w-full bg-white/60 backdrop-blur-2xl border-b border-white shadow-sm py-3 px-3">
+                <div className="max-w-5xl mx-auto flex items-center justify-between gap-2">
+                    <motion.button
+                        whileHover={{ x: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => navigate('/')}
+                        className="flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-colors font-bold uppercase tracking-widest text-[10px]"
+                    >
+                        <ChevronLeft size={16} />
+                    </motion.button>
+
+                    <h1 className="text-base font-extrabold text-slate-900 uppercase tracking-wider font-heading flex items-center gap-2">
+                        <CheckSquare size={18} className="text-indigo-500" />
+                        {t('todo.title', '待办')}
+                    </h1>
+
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 tabular-nums">
+                        {stats.pending}/{todos.length}
+                    </span>
+                </div>
+            </div>
+
+            {/* 桌面端：浮动卡片式返回按钮（对齐专注分析） */}
+            <motion.button
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                whileHover={{ x: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate('/')}
+                className="hidden md:flex fixed top-8 left-8 py-3 px-6 bg-white/70 backdrop-blur-2xl border border-white/80 shadow-xl rounded-2xl items-center gap-2 group z-50 text-slate-400 hover:text-slate-900 transition-colors font-bold uppercase tracking-widest text-[10px]"
+            >
+                <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                <span>{t('common.back', '返回')}</span>
+            </motion.button>
+
+            <main className="w-full max-w-5xl mx-auto px-4 md:px-8 pt-6 md:pt-12 pb-32 relative z-10 space-y-4">
+                {/* 桌面端：大号页面标题 */}
+                <h1 className="hidden md:flex text-2xl md:text-4xl font-extrabold text-slate-900 tracking-tight items-center gap-4 font-heading mb-6">
+                    <CheckSquare className="text-indigo-500" size={32} />
+                    {t('todo.title', '待办')}
+                </h1>
+
+                {/* 顶部统计 */}
+                <div className="grid grid-cols-3 gap-2 md:gap-3">
+                    <StatCard
+                        icon={<Flame size={16} className="text-emerald-500" />}
+                        value={stats.todayDone}
+                        label={t('todo.todayDone', '今日完成')}
+                        accent="emerald"
+                    />
+                    <StatCard
+                        icon={<Clock size={16} className="text-indigo-500" />}
+                        value={stats.pending}
+                        label={t('todo.pending', '待办')}
+                        accent="indigo"
+                    />
+                    <StatCard
+                        icon={<AlertTriangle size={16} className="text-rose-500" />}
+                        value={stats.overdue}
+                        label={t('todo.overdue', '超期')}
+                        accent="rose"
+                    />
+                </div>
+
+                {/* 输入区：文本 + 内联优先级 + 截止日 */}
+                <div className="bg-white/60 backdrop-blur-xl rounded-2xl md:rounded-[28px] p-3 md:p-4 border border-white shadow-sm space-y-2">
+                    <div className="flex items-center gap-2">
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={draft}
+                            onChange={e => setDraft(e.target.value)}
+                            onKeyDown={e => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    addTodo();
+                                }
+                            }}
+                            placeholder={t('todo.placeholder', '添加一个待办...')}
+                            className="flex-1 bg-slate-50 px-4 py-3 rounded-xl text-base md:text-lg font-bold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 border border-transparent focus:border-indigo-500/30 transition-all"
+                        />
+                        <button
+                            onClick={addTodo}
+                            disabled={!draft.trim()}
+                            className="p-3 rounded-xl bg-indigo-500 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-indigo-600 transition-colors active:scale-95"
+                            aria-label={t('todo.add', '添加')}
+                        >
+                            <Plus className="w-5 h-5" />
+                        </button>
                     </div>
+
+                    {/* 快捷选项：优先级 + 截止日，建立时一步设好 */}
+                    <div className="flex items-center gap-2 flex-wrap text-[10px]">
+                        <div className="flex items-center gap-1">
+                            {(['high', 'medium', 'low'] as Priority[]).map(p => (
+                                <button
+                                    key={p}
+                                    onClick={() => setDraftPriority(draftPriority === p ? undefined : p)}
+                                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-md font-bold uppercase tracking-widest transition-all ${draftPriority === p
+                                        ? PRIORITY_STYLE[p].bg
+                                        : 'bg-white text-slate-400 hover:text-slate-700 border border-slate-200'}`}
+                                    title={t('todo.priority', '优先级')}
+                                >
+                                    <span className={`w-1.5 h-1.5 rounded-full ${PRIORITY_STYLE[p].dot}`} />
+                                    {PRIORITY_STYLE[p].label}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                            <label className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-slate-200 text-slate-500 hover:text-slate-900 cursor-pointer">
+                                <Calendar size={12} />
+                                <input
+                                    type="date"
+                                    value={draftDueDate}
+                                    onChange={e => setDraftDueDate(e.target.value)}
+                                    className="bg-transparent text-[10px] font-bold uppercase tracking-widest focus:outline-none cursor-pointer w-[88px]"
+                                />
+                            </label>
+                            {draftDueDate && (
+                                <button
+                                    onClick={() => setDraftDueDate('')}
+                                    className="p-1 rounded-md text-slate-300 hover:text-rose-500"
+                                    aria-label={t('common.clear', '清除')}
+                                >
+                                    <X size={12} />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* 筛选 + 排序 + 清空 */}
+                <div className="bg-white/60 backdrop-blur-xl rounded-2xl md:rounded-[28px] p-2 md:p-3 border border-white shadow-sm flex items-center gap-2 flex-wrap">
+                    <div className="flex bg-slate-100/70 rounded-lg p-0.5 text-[10px] font-bold uppercase tracking-widest">
+                        {([
+                            { id: 'all', label: t('todo.filterAll', '全部') },
+                            { id: 'active', label: t('todo.filterActive', '进行中') },
+                            { id: 'completed', label: t('todo.filterCompleted', '已完成') },
+                        ] as { id: FilterMode; label: string }[]).map(f => (
+                            <button
+                                key={f.id}
+                                onClick={() => setFilter(f.id)}
+                                className={`px-2.5 py-1.5 rounded-md transition-colors ${filter === f.id
+                                    ? 'bg-white text-slate-900 shadow-sm'
+                                    : 'text-slate-400 hover:text-slate-700'}`}
+                            >
+                                {f.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="flex items-center gap-1.5 ml-auto">
+                        <ArrowUpDown size={12} className="text-slate-300" />
+                        <select
+                            value={sortBy}
+                            onChange={e => setSortBy(e.target.value as SortMode)}
+                            className="text-[10px] font-bold uppercase tracking-widest bg-transparent text-slate-500 hover:text-slate-900 focus:outline-none cursor-pointer"
+                        >
+                            <option value="manual">{t('todo.sortManual', '手动')}</option>
+                            <option value="priority">{t('todo.sortPriority', '优先级')}</option>
+                            <option value="due">{t('todo.sortDue', '截止日')}</option>
+                            <option value="created">{t('todo.sortCreated', '创建时间')}</option>
+                        </select>
+                        {hasCompleted && (
+                            <button
+                                onClick={clearCompleted}
+                                className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest text-rose-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                                title={t('todo.clearCompleted', '清除已完成')}
+                            >
+                                <Eraser size={12} />
+                                <span>{t('todo.clear', '清除')}</span>
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* 列表 */}
+                <div className={`grid grid-cols-1 gap-4 md:gap-6 ${filter === 'all' ? 'md:grid-cols-2' : ''}`}>
+                    {(filter === 'all' || filter === 'active') && (
+                        <div className="bg-white/60 backdrop-blur-xl rounded-2xl md:rounded-[28px] p-2 md:p-3 border border-white shadow-sm">
+                            {filter === 'all' && (
+                                <h2 className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 mt-1 px-2 flex items-center gap-1.5">
+                                    <Clock size={14} className="text-indigo-400" />
+                                    {t('todo.filterActive', '进行中')}
+                                </h2>
+                            )}
+                            <div className="space-y-1">
+                                {renderTodoItems(visibleTodos.filter(t => !t.done), t('todo.emptyActive', '没有进行中的待办'))}
+                            </div>
+                        </div>
+                    )}
+
+                    {(filter === 'all' || filter === 'completed') && (
+                        <div className="bg-white/60 backdrop-blur-xl rounded-2xl md:rounded-[28px] p-2 md:p-3 border border-white shadow-sm">
+                            {filter === 'all' && (
+                                <h2 className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 mt-1 px-2 flex items-center gap-1.5">
+                                    <CheckCircle2 size={14} className="text-emerald-400" />
+                                    {t('todo.filterCompleted', '已完成')}
+                                </h2>
+                            )}
+                            <div className="space-y-1">
+                                {renderTodoItems(visibleTodos.filter(t => t.done), t('todo.emptyCompleted', '还没有完成的待办'))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </main>
         </div>

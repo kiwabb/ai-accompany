@@ -235,7 +235,7 @@ const LibraryPage: React.FC = () => {
                     {t('common.library')}
                 </h1>
 
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 mb-8 md:mb-12">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 mb-4 md:mb-6">
                     <div>
                         {themeFilter && (
                             <div className="flex items-center gap-2">

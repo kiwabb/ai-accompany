@@ -6,6 +6,7 @@ import type { StatsRangeResponse } from '../../api/client';
 import type { TimeRange } from '../../hooks/useFocusStats';
 import { ChartEmptyState } from './ChartEmptyState';
 import MiniDonut from './MiniDonut';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 interface DailyTrendChartProps {
     stats: StatsRangeResponse | null;
@@ -65,6 +66,7 @@ export const DailyTrendChart: React.FC<DailyTrendChartProps> = ({
 }) => {
     const { t, i18n } = useTranslation();
     const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+    const isMobile = useIsMobile();
 
     const dailyStats = stats?.daily_stats || [];
 
@@ -121,21 +123,21 @@ export const DailyTrendChart: React.FC<DailyTrendChartProps> = ({
     }, [stats]);
 
     const hasData = dailyStats.some(d => d.total_focus_minutes > 0);
-    const chartHeight = 240;
+    const chartHeight = isMobile ? 180 : 240;
 
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-white/70 backdrop-blur-2xl p-8 rounded-[40px] border border-white/80 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.05)]"
+            className="bg-white/70 backdrop-blur-2xl p-4 md:p-8 rounded-3xl md:rounded-[40px] border border-white/80 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.05)]"
         >
-            <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
                 <h3 className="text-lg md:text-2xl font-bold text-theme-text flex items-center gap-2">
                     <Calendar size={20} className="text-theme-text-muted/40" />
                     {t('stats.dailyTrend', 'Daily Trend')}
                 </h3>
-                <div className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-widest flex-wrap justify-end max-w-[60%]">
+                <div className="flex items-center gap-x-4 gap-y-2 text-[11px] font-bold uppercase tracking-widest flex-wrap">
                     {(() => {
                         const legendThemes = themeOrder.length > 0 ? themeOrder : Object.keys(themes);
                         if (legendThemes.length === 0) {
