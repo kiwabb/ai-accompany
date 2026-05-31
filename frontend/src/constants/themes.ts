@@ -1,6 +1,9 @@
 import type { VisualTheme } from '../types/pomodoro';
 
-export const VISUAL_THEMES: VisualTheme[] = [
+// Chiikawa 和 Shinchan 主题因版权问题暂时下架，保留代码供后续替换原创素材后恢复
+const HIDDEN_THEMES = ['chiikawa', 'shinchan'];
+
+export const VISUAL_THEMES: VisualTheme[] = ([
   {
     id: 'cozy',
     name: 'Cozy',
@@ -101,7 +104,7 @@ export const VISUAL_THEMES: VisualTheme[] = [
     fontHeading: '"Fredoka"',
     fontSans: '"Nunito"',
   }
-];
+] as VisualTheme[]).filter(t => !HIDDEN_THEMES.includes(t.id));
 
 export const DEFAULT_VISUAL_THEME_ID = 'cozy';
 
