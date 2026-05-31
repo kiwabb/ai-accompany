@@ -3,13 +3,15 @@ import { useTranslation } from 'react-i18next';
 import type { Message } from '../components/cozypal/types';
 import type { ChatContext } from './cozypal/chatTypes';
 import {
-  buildChatRequestBody,
-  buildChatHeaders,
   streamChatResponse,
   updateLastAiMessage,
   addPlaceholderAiMessage,
   addUserMessage,
 } from './cozypal/chatStreamingUtils';
+import { getChatHistory, saveChatMessage } from '../lib/storage/chatHistory';
+import { getUserProfile } from '../lib/storage/userProfile';
+import { constructSystemPrompt } from '../lib/ai/systemPrompt';
+import { streamChatDirect } from '../lib/ai/providers';
 
 interface UseChatLogicProps {
   context: ChatContext;
@@ -51,21 +53,16 @@ export const useChatLogic = ({
   const { t } = useTranslation();
 
   const fetchHistory = useCallback(async (topicId: number | null) => {
+    if (topicId === null) return;
     try {
-      const url = topicId
-        ? `/api/chat/history?topic_id=${topicId}&limit=10`
-        : '/api/chat/history?limit=10';
-      const response = await fetch(url);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.messages && data.messages.length > 0) {
-          setMessages(data.messages.map((msg: { role: string; content: string }) => ({
-            sender: msg.role,
-            text: msg.content,
-          })));
-        } else {
-          setMessages([{ sender: 'ai', text: t('cozyPal.greeting') }]);
-        }
+      const data = await getChatHistory(topicId, 10);
+      if (data.messages && data.messages.length > 0) {
+        setMessages(data.messages.map((msg: { role: string; content: string }) => ({
+          sender: msg.role as 'user' | 'ai',
+          text: msg.content,
+        })));
+      } else {
+        setMessages([{ sender: 'ai', text: t('cozyPal.greeting') }]);
       }
     } catch (error) {
       console.error('Failed to fetch chat history', error);
@@ -106,29 +103,48 @@ export const useChatLogic = ({
     setAvatarState('thinking');
 
     try {
-      const response = await fetch('/api/chat/completions', {
-        method: 'POST',
-        headers: buildChatHeaders(apiKey),
-        body: JSON.stringify(buildChatRequestBody({
-          message: textToSend,
-          topicId: activeTopicId,
-          apiKey,
-          provider: aiProvider,
-          model: aiModel,
-          context,
-          documentId,
-          documentTitle,
-          documentContent,
-          proactiveTrigger,
-          durationOverride,
-        })),
-      });
+      // 1. Compile System Prompt combining UserProfile and current Pomodoro Context
+      const userProfile = getUserProfile();
+      
+      // Inject Document context if reading a document
+      const docSuffix = documentId && documentTitle && documentContent 
+        ? `\n\n[Current Document Context]\nDocument ID: ${documentId}\nTitle: ${documentTitle}\nContent Snippet: ${documentContent.slice(0, 800)}\n[End of Document Context]`
+        : '';
+        
+      const systemPrompt = constructSystemPrompt(
+        {
+          themeName: context.themeName,
+          phase: context.phase,
+          timeLeft: durationOverride !== undefined ? durationOverride : context.timeLeft,
+          aiPersona: context.aiPersona,
+        },
+        context.totalFocusMinutes,
+        context.dailyCompletedPomodoros,
+        context.currentLanguage,
+        textToSend,
+        userProfile
+      ) + docSuffix;
 
-      if (!response.ok) throw new Error('Failed to fetch');
+      // 2. Fetch history
+      const historyData = await getChatHistory(activeTopicId, 10);
+      const history = (historyData.messages || []).map((m: any) => ({
+        sender: m.role as 'user' | 'ai',
+        text: m.content,
+      }));
+
+      // 3. Connect browser direct streaming APIs
+      const stream = streamChatDirect({
+        message: textToSend,
+        systemPrompt,
+        history,
+        apiKey: apiKey || '',
+        provider: aiProvider || 'gemini',
+        model: aiModel,
+      });
 
       setAvatarState('speaking');
 
-      await streamChatResponse(response, {
+      await streamChatResponse(stream, {
         onChunk: (accumulated) => {
           if (proactiveTrigger) {
             setSpeechBubble(accumulated);
@@ -136,7 +152,15 @@ export const useChatLogic = ({
             updateLastAiMessage(setMessages, accumulated);
           }
         },
-        onComplete: () => {
+        onComplete: async (accumulated) => {
+          // Persist the dialog locally
+          try {
+            await saveChatMessage(activeTopicId, 'user', textToSend);
+            await saveChatMessage(activeTopicId, 'ai', accumulated);
+          } catch (storageErr) {
+            console.error('Failed to save message to local storage:', storageErr);
+          }
+
           if (proactiveTrigger) {
             speechBubbleTimerRef.current = setTimeout(() => {
               setSpeechBubble(null);

@@ -13,7 +13,6 @@ import { ArrowLeft } from 'lucide-react';
 import { createWorker } from 'tesseract.js';
 import { useCreateBlockNote } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/mantine';
-import { getAuthHeaders } from '../api/client';
 import { useIsMobile } from '../hooks/useIsMobile';
 
 // Using a local worker for better performance and offline support
@@ -786,24 +785,16 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
 
     const saveReaderState = React.useCallback(async (nextBookmarks: BookmarkType[], nextHighlights: HighlightItem[]) => {
         if (!documentId) return;
-        await fetch(`/api/documents/${documentId}/reader-state`, {
-            method: 'PUT',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({
-                bookmarks: nextBookmarks,
-                highlights: nextHighlights,
-            }),
-        });
+        localStorage.setItem(`doc_reader_state_${documentId}`, JSON.stringify({
+            bookmarks: nextBookmarks,
+            highlights: nextHighlights,
+        }));
     }, [documentId]);
 
     const saveNotebook = React.useCallback(async (nextMarkdown: string, options?: { silent?: boolean }) => {
         if (!documentId) return;
         try {
-            await fetch(`/api/documents/${documentId}/notebook`, {
-                method: 'PUT',
-                headers: getAuthHeaders(),
-                body: JSON.stringify({ markdown: nextMarkdown }),
-            });
+            localStorage.setItem(`doc_notebook_${documentId}`, JSON.stringify({ markdown: nextMarkdown }));
             setNoteMarkdown(nextMarkdown);
             if (!options?.silent) {
                 showNotice(t('reader.noteSaved', '笔记已保存'), 'success');
@@ -901,15 +892,13 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
         const loadReaderState = async () => {
             if (!documentId) return;
             try {
-                const response = await fetch(`/api/documents/${documentId}/reader-state`, {
-                    headers: getAuthHeaders(),
-                });
-                if (!response.ok) {
+                const saved = localStorage.getItem(`doc_reader_state_${documentId}`);
+                if (!saved) {
                     setBookmarks([]);
                     setHighlights([]);
                     return;
                 }
-                const data = await response.json();
+                const data = JSON.parse(saved);
                 setBookmarks(Array.isArray(data.bookmarks) ? data.bookmarks : []);
                 setHighlights(Array.isArray(data.highlights) ? data.highlights : []);
             } catch {
@@ -929,15 +918,13 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                 return;
             }
             try {
-                const response = await fetch(`/api/documents/${documentId}/notebook`, {
-                    headers: getAuthHeaders(),
-                });
-                if (!response.ok) {
+                const saved = localStorage.getItem(`doc_notebook_${documentId}`);
+                if (!saved) {
                     setNoteMarkdown('');
                     setNoteDraft('');
                     return;
                 }
-                const data = await response.json();
+                const data = JSON.parse(saved);
                 const markdown = typeof data.markdown === 'string' ? data.markdown : '';
                 setNoteMarkdown(markdown);
                 setNoteDraft(markdown);
@@ -2714,10 +2701,9 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
     const downloadPdf = async () => {
         if (!documentId) return;
         try {
-            const headers = (await import('../api/client')).getAuthHeaders();
-            const resp = await fetch(`/api/documents/${documentId}/file`, { headers });
-            if (!resp.ok) throw new Error(`status ${resp.status}`);
-            const arrayBuffer = await resp.arrayBuffer();
+            const { getDocumentFile } = await import('../lib/storage/documents');
+            const pdfFileBlob = await getDocumentFile(parseInt(documentId, 10));
+            const arrayBuffer = await pdfFileBlob.arrayBuffer();
 
             const { PDFDocument, rgb, BlendMode } = await import('pdf-lib');
             const pdfDoc = await PDFDocument.load(arrayBuffer);
@@ -2794,8 +2780,8 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
             }
 
             const newPdfBytes = await pdfDoc.save();
-            const blob = new Blob([new Uint8Array(newPdfBytes)], { type: 'application/pdf' });
-            const url = URL.createObjectURL(blob);
+            const renderedPdfBlob = new Blob([new Uint8Array(newPdfBytes)], { type: 'application/pdf' });
+            const url = URL.createObjectURL(renderedPdfBlob);
             const a = document.createElement('a');
             a.href = url;
             a.download = `document_${documentId}.pdf`;
@@ -2806,12 +2792,10 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
         } catch (err) {
             console.error('Failed to download PDF', err);
             showNotice(t('reader.downloadFailed', '下载失败，已回退到原文件'), 'error');
-            // 失败时回退到原始 PDF
             try {
-                const headers = (await import('../api/client')).getAuthHeaders();
-                const resp = await fetch(`/api/documents/${documentId}/file`, { headers });
-                const blob = await resp.blob();
-                const url = URL.createObjectURL(blob);
+                const { getDocumentFile } = await import('../lib/storage/documents');
+                const fallbackPdfBlob = await getDocumentFile(parseInt(documentId, 10));
+                const url = URL.createObjectURL(fallbackPdfBlob);
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = `document_${documentId}.pdf`;

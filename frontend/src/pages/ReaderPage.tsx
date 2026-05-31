@@ -3,10 +3,10 @@ import { motion } from 'framer-motion';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { getAuthHeaders } from '../api/client';
 import PdfReader from '../components/PdfReader';
 import AmbientBackground from '../components/AmbientBackground';
 import { useTimerContext } from '../contexts/TimerContext';
+import { getDocuments, getDocumentFile } from '../lib/storage/documents';
 
 const ReaderPage: React.FC = () => {
     const { t } = useTranslation();
@@ -51,36 +51,31 @@ const ReaderPage: React.FC = () => {
         };
     }, [id, setDocumentContext]);
 
-    const fetchDocumentContent = async (docId: string, signal: AbortSignal) => {
+    const fetchDocumentContent = async (docIdStr: string, signal: AbortSignal) => {
         setIsLoading(true);
         try {
-            const response = await fetch(`/api/documents/${docId}`, {
-                headers: getAuthHeaders(),
-                signal,
-            });
-            if (response.ok) {
-                const data = await response.json();
-                const docTitle = data.title || t('common.library');
-                const docContent = data.content || '';
+            const docId = parseInt(docIdStr, 10);
+            const documents = await getDocuments();
+            const doc = documents.find(d => d.id === docId);
+
+            if (doc) {
+                const docTitle = doc.title || t('common.library');
+                const docContent = ''; // Default client-side extracted empty context (handled by reader session layers)
 
                 setContent(docContent || t('reader.noExtraction'));
                 setTitle(docTitle);
-                setFileType(data.file_type || '');
+                setFileType(doc.file_type || '');
 
                 // Set Global AI Context
                 setDocumentContext({
-                    id: parseInt(docId),
+                    id: docId,
                     title: docTitle,
                     content: docContent
                 });
 
-                if (data.file_type === 'pdf') {
-                    const fileResponse = await fetch(`/api/documents/${docId}/file`, {
-                        headers: getAuthHeaders(),
-                        signal,
-                    });
-                    if (fileResponse.ok) {
-                        const blob = await fileResponse.blob();
+                if (doc.file_type === 'pdf') {
+                    try {
+                        const blob = await getDocumentFile(docId);
                         const url = URL.createObjectURL(blob);
 
                         if (pdfUrlRef.current) {
@@ -89,6 +84,9 @@ const ReaderPage: React.FC = () => {
 
                         pdfUrlRef.current = url;
                         setPdfUrl(url);
+                    } catch (fileErr) {
+                        console.error('Failed to load PDF file from IndexedDB:', fileErr);
+                        setContent(t('reader.errorLoading'));
                     }
                 }
             } else {

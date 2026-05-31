@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Save, AlertCircle, Loader2 } from 'lucide-react';
-import axios from 'axios';
-import { getAuthHeaders, getUserThemes } from '../../api/client';
+import { getUserThemes } from '../../api/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { FocusTheme } from '../../types/pomodoro';
 import CustomSelect from '../ui/CustomSelect';
+import { updateDocumentMetadata } from '../../lib/storage/documents';
 
 interface Document {
   id: number;
@@ -59,20 +59,16 @@ const DocumentEditModal: React.FC<DocumentEditModalProps> = ({
     setError(null);
 
     try {
-      const authHeaders = getAuthHeaders();
-      await axios.patch(`/api/documents/${document.id}`, {
+      await updateDocumentMetadata(document.id, {
         title: title,
         topic_id: selectedTopicId || null,
-      }, {
-        headers: authHeaders,
       });
 
       onUpdateComplete();
       onClose();
     } catch (err: any) {
       console.error('Update failed:', err);
-      const errorMessage = err.response?.data?.detail || err.message || 'Update failed';
-      setError(errorMessage);
+      setError(err.message || '更新书籍元数据失败');
     } finally {
       setIsUpdating(false);
     }

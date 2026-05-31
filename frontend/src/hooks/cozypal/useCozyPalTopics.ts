@@ -19,17 +19,9 @@ export const useCozyPalTopics = () => {
 
   const handleCreateTopic = async (name: string, description?: string) => {
     try {
-      const response = await fetch('/api/topics', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description }),
-      });
-      if (response.ok) {
-        const newTopic = await response.json();
-        cozyPalTopicsStore.addTopic(newTopic);
-        setSelectedTopicId(newTopic.id);
-        setShowTopicSelector(false);
-      }
+      const newTopic = await cozyPalTopicsStore.addTopicLocally(name, description);
+      setSelectedTopicId(newTopic.id);
+      setShowTopicSelector(false);
     } catch (error) {
       console.error('Failed to create topic', error);
     }

@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Upload, Check, AlertCircle, Loader2 } from 'lucide-react';
-import axios from 'axios';
-import { getAuthHeaders } from '../../api/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import CustomSelect from '../ui/CustomSelect';
 import { useTimerContext } from '../../contexts/TimerContext';
+import { saveDocumentFile, saveDocumentMetadata } from '../../lib/storage/documents';
 
 interface DocumentUploadModalProps {
   isOpen: boolean;
@@ -37,6 +36,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   const [isDragging, setIsDragging] = useState(false);
 
   const ACCEPTED_EXTS = ['pdf', 'docx', 'txt', 'md'];
+  const MAX_PERFORMANCE_SIZE = 50 * 1024 * 1024; // 50MB
 
   const acceptFile = (selected: File) => {
     const ext = selected.name.split('.').pop()?.toLowerCase() || '';
@@ -104,46 +104,47 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
     setError(null);
 
     try {
-      // 1. Get presigned URL
-      const authHeaders = getAuthHeaders();
-      const uploadUrlResponse = await axios.post('/api/documents/upload_url', {
-        filename: file.name,
-        content_type: file.type || 'application/octet-stream',
+      const documentId = Date.now();
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'pdf';
+
+      // 1. Simulate smooth progress animation to maintain a premium feel
+      const progressPromise = new Promise<void>((resolve) => {
+        let currentProgress = 0;
+        const interval = setInterval(() => {
+          currentProgress += 10;
+          setProgress(Math.min(currentProgress, 95));
+          if (currentProgress >= 95) {
+            clearInterval(interval);
+            resolve();
+          }
+        }, 80);
+      });
+
+      // 2. Perform local storage writes
+      await saveDocumentFile(documentId, file);
+      await saveDocumentMetadata({
+        id: documentId,
         title: title,
-        topic_id: selectedTopicId,
-      }, {
-        headers: authHeaders,
+        filename: file.name,
+        file_type: ext,
+        created_at: new Date().toISOString(),
+        topic_id: selectedTopicId || null,
+        status: 'completed',
       });
 
-      const { presigned_url, document_id } = uploadUrlResponse.data;
-
-      // 2. Upload to MinIO
-      await axios.put(presigned_url, file, {
-        headers: {
-          'Content-Type': file.type || 'application/octet-stream',
-        },
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round(
-            (progressEvent.loaded * 100) / (progressEvent.total || file.size)
-          );
-          setProgress(percentCompleted);
-        },
-      });
-
-      // 3. Confirm completion
-      await axios.post(`/api/documents/${document_id}/complete`, {}, {
-        headers: authHeaders,
-      });
-
-      setStep('complete');
+      await progressPromise;
+      setProgress(100);
+      
       setTimeout(() => {
-        onUploadComplete();
-        onClose();
-      }, 1500);
+        setStep('complete');
+        setTimeout(() => {
+          onUploadComplete();
+          onClose();
+        }, 1500);
+      }, 200);
     } catch (err: any) {
       console.error('Upload failed:', err);
-      const errorMessage = err.response?.data?.detail || err.response?.statusText || err.message || 'Upload failed';
-      setError(`${errorMessage} (${err.response?.status || 'network error'})`);
+      setError(err.message || '保存书籍文件失败');
       setStep('info');
     } finally {
       setIsUploading(false);
@@ -221,6 +222,21 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                   </div>
                 )}
 
+                {/* File size warning for files > 50MB */}
+                {file && file.size > MAX_PERFORMANCE_SIZE && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-amber-50 text-amber-700 p-4 rounded-2xl flex items-start gap-3 text-xs font-medium border border-amber-200/50 leading-relaxed"
+                  >
+                    <AlertCircle size={16} className="text-amber-500 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold">文件较大（大于 50MB）：</span>
+                      浏览器在本地 IndexedDB 中存储大文件可能会消耗较多缓存空间。解析和渲染时可能会发生卡顿，建议优先使用较小的文档以保证极致流畅体验。
+                    </div>
+                  </motion.div>
+                )}
+
                 {/* Title Input */}
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
@@ -261,7 +277,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                   className="w-full py-5 bg-slate-900 text-white rounded-[24px] font-bold uppercase tracking-[2px] text-xs shadow-xl shadow-slate-200 hover:shadow-indigo-200/50 hover:bg-slate-800 transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2"
                 >
                   {isUploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-                  {t('common.startUpload', '开始上传')}
+                  {t('common.startUpload', '导入阅读器')}
                 </button>
               </div>
             )}
@@ -294,7 +310,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                     {progress}%
                   </div>
                 </div>
-                <h3 className="text-xl font-bold text-slate-800 mb-2">{t('common.uploading', '正在上传...')}</h3>
+                <h3 className="text-xl font-bold text-slate-800 mb-2">{t('common.uploading', '正在写入浏览器存储...')}</h3>
                 <p className="text-slate-400 font-medium">{title}</p>
               </div>
             )}
@@ -309,7 +325,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                   <Check size={48} />
                 </motion.div>
                 <h3 className="text-2xl font-bold text-slate-800 mb-2">{t('common.done', '完成')}</h3>
-                <p className="text-slate-400 font-medium">{t('common.uploadSuccess', '文件已成功上传')}</p>
+                <p className="text-slate-400 font-medium">书籍已成功导入本地数据库</p>
               </div>
             )}
           </div>

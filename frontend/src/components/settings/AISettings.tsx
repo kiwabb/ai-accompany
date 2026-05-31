@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Save, Check } from 'lucide-react';
 import CustomSelect from '../ui/CustomSelect';
-import { getProviderModels } from '../../api/client';
 import type { TimerSettings } from '../../types/pomodoro';
+import { KNOWN_MODELS } from '../../lib/ai/models';
 
 interface AISettingsProps {
   settings: TimerSettings;
@@ -15,34 +15,8 @@ const AISettings: React.FC<AISettingsProps> = ({
   handleSettingChange,
 }) => {
   const { t } = useTranslation();
-  const [availableModels, setAvailableModels] = useState<string[]>([]);
-  const [isFetchingModels, setIsFetchingModels] = useState(false);
-
-  const fetchModels = useCallback(async (provider: string, apiKey?: string) => {
-    if (!provider) return;
-    setIsFetchingModels(true);
-    try {
-      const models = await getProviderModels(provider, apiKey);
-      setAvailableModels(models);
-    } catch (error) {
-      console.error("Failed to fetch models:", error);
-      setAvailableModels([]);
-    } finally {
-      setIsFetchingModels(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (settings.aiProvider) {
-      let key = undefined;
-      if (settings.aiProvider === 'gemini') key = settings.googleApiKey;
-      else if (settings.aiProvider === 'gpt') key = settings.openaiApiKey;
-      else if (settings.aiProvider === 'deepseek') key = settings.deepseekApiKey;
-      else if (settings.aiProvider === 'zhipu') key = settings.zhipuApiKey;
-
-      fetchModels(settings.aiProvider, key);
-    }
-  }, [settings.aiProvider, settings.googleApiKey, settings.openaiApiKey, settings.deepseekApiKey, settings.zhipuApiKey, fetchModels]);
+  const availableModels = settings.aiProvider ? (KNOWN_MODELS[settings.aiProvider] || []) : [];
+  const isFetchingModels = false;
 
   return (
     <section className="space-y-4 md:space-y-6">

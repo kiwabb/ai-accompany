@@ -1,76 +1,42 @@
-import { getAuthHeaders } from '../../api/client';
 import type { ChatRequestOptions, StreamCallbacks } from './chatTypes';
 import type { Message } from '../../components/cozypal/types';
 
 /**
- * Builds the request body for the chat API
+ * Builds the context payload for local prompt generation
  */
-export function buildChatRequestBody(options: ChatRequestOptions): object {
-  const {
-    message,
-    topicId,
-    provider,
-    model,
-    context,
-    documentId,
-    documentTitle,
-    documentContent,
-    proactiveTrigger,
-    durationOverride,
-  } = options;
-
+export function buildChatContext(options: ChatRequestOptions): object {
+  const { context, durationOverride } = options;
   return {
-    message: proactiveTrigger ? `[SYSTEM_TRIGGER:${proactiveTrigger}]` : message,
-    topic_id: topicId,
-    provider,
-    model,
-    context: {
-      theme_name: context.themeName,
-      phase: context.phase,
-      time_left: durationOverride !== undefined ? durationOverride : context.timeLeft,
-      language: context.currentLanguage,
-      ai_persona: context.aiPersona,
-      daily_completed_pomodoros: context.dailyCompletedPomodoros,
-      total_focus_minutes: context.totalFocusMinutes,
-    },
-    document_id: documentId,
-    document_title: documentTitle,
-    document_content: documentContent,
+    theme_name: context.themeName,
+    phase: context.phase,
+    time_left: durationOverride !== undefined ? durationOverride : context.timeLeft,
+    language: context.currentLanguage,
+    ai_persona: context.aiPersona,
+    daily_completed_pomodoros: context.dailyCompletedPomodoros,
+    total_focus_minutes: context.totalFocusMinutes,
   };
 }
 
 /**
- * Builds headers for the chat API request
- */
-export function buildChatHeaders(apiKey?: string): HeadersInit {
-  const headers: HeadersInit = { ...getAuthHeaders() };
-  if (apiKey) {
-    headers['x-google-api-key'] = apiKey;
-  }
-  return headers;
-}
-
-/**
- * Streams a chat response and calls the provided callbacks
+ * Streams a chat response from an AsyncIterable and calls the provided callbacks
  */
 export async function streamChatResponse(
-  response: Response,
+  stream: AsyncIterable<string>,
   callbacks: StreamCallbacks
 ): Promise<void> {
-  const reader = response.body?.getReader();
-  const decoder = new TextDecoder();
-  let done = false;
   let accumulatedResponse = '';
-
-  while (!done && reader) {
-    const { value, done: doneReading } = await reader.read();
-    done = doneReading;
-    const chunkValue = decoder.decode(value);
-    accumulatedResponse += chunkValue;
-    callbacks.onChunk(accumulatedResponse);
+  try {
+    for await (const chunkValue of stream) {
+      accumulatedResponse += chunkValue;
+      callbacks.onChunk(accumulatedResponse);
+    }
+    callbacks.onComplete(accumulatedResponse);
+  } catch (error) {
+    if (callbacks.onError) {
+      callbacks.onError(error instanceof Error ? error.message : String(error));
+    }
+    throw error;
   }
-
-  callbacks.onComplete(accumulatedResponse);
 }
 
 /**

@@ -1,143 +1,90 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import { useMemo, type ReactNode } from 'react';
+import { motion } from 'framer-motion';
+import { useState } from 'react';
 import type { TFunction } from 'i18next';
-import type { DiagnosticData, EditingFragment } from './types';
+import { Copy, Check, RefreshCw } from 'lucide-react';
+import type { DiagnosticData } from './types';
 
 interface CozyPalDebugTabProps {
   diagnostics: DiagnosticData | null;
   isDiagLoading: boolean;
   onRefresh: () => void;
-  onStartEditFragment: (id: number, content: string) => void;
-  editingFragment: EditingFragment | null;
-  editValue: string;
-  onEditValueChange: (value: string) => void;
-  onCloseEdit: () => void;
-  onSaveEdit: () => void;
-  isSavingEdit: boolean;
   t: TFunction;
+  // Optional legacy props to satisfy TypeScript and CozyPal.tsx
+  onStartEditFragment?: any;
+  editingFragment?: any;
+  editValue?: any;
+  onEditValueChange?: any;
+  onCloseEdit?: any;
+  onSaveEdit?: any;
+  isSavingEdit?: any;
 }
 
 const CozyPalDebugTab = ({
   diagnostics,
   isDiagLoading,
   onRefresh,
-  onStartEditFragment,
-  editingFragment,
-  editValue,
-  onEditValueChange,
-  onCloseEdit,
-  onSaveEdit,
-  isSavingEdit,
   t,
 }: CozyPalDebugTabProps) => {
-  const highlightedPrompt = useMemo(() => {
-    if (!diagnostics || !diagnostics.full_prompt) return 'No prompt data.';
+  const [copied, setCopied] = useState(false);
 
-    let content = diagnostics.full_prompt;
-    const fragments = diagnostics.memory_fragments || [];
-    const sortedFragments = [...fragments].sort((a, b) => b.content.length - a.content.length);
-    let parts: (string | ReactNode)[] = [content];
-
-    sortedFragments.forEach((fragment) => {
-      const newParts: (string | ReactNode)[] = [];
-      parts.forEach((part) => {
-        if (typeof part !== 'string') {
-          newParts.push(part);
-          return;
-        }
-
-        const subParts = part.split(fragment.content);
-        subParts.forEach((subPart, idx) => {
-          newParts.push(subPart);
-          if (idx < subParts.length - 1) {
-            newParts.push(
-              <motion.span
-                key={`${fragment.id}-${idx}`}
-                whileHover={{ scale: 1.02 }}
-                onClick={() => onStartEditFragment(fragment.id, fragment.content)}
-                className="bg-purple-100 text-purple-900 px-1 rounded border border-purple-200 cursor-pointer hover:bg-purple-200 transition-colors relative group mx-0.5 inline-block"
-              >
-                {fragment.content}
-                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-800 text-white text-[8px] py-1 px-2 rounded whitespace-nowrap z-40 shadow-xl">
-                  {t('cozyPal.debug.score')}: {fragment.score.toFixed(4)} ({t('cozyPal.debug.clickToEdit')})
-                </span>
-              </motion.span>
-            );
-          }
-        });
-      });
-      parts = newParts;
-    });
-
-    return parts;
-  }, [diagnostics, onStartEditFragment, t]);
+  const handleCopy = async () => {
+    if (!diagnostics?.full_prompt) return;
+    try {
+      await navigator.clipboard.writeText(diagnostics.full_prompt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (e) {
+      console.error('Failed to copy prompt to clipboard:', e);
+    }
+  };
 
   return (
     <motion.div
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 10 }}
-      className="p-4 font-mono text-[10px]"
+      className="p-4 font-mono text-[10px] space-y-3 flex flex-col flex-grow max-h-[80vh] overflow-hidden"
     >
-      <div className="flex justify-between items-center mb-2">
-        <p className="text-gray-500 uppercase tracking-widest text-[8px] font-bold">// {t('cozyPal.debug.title')}</p>
-        <button
-          onClick={onRefresh}
-          className="text-indigo-400 hover:text-indigo-600 transition-colors p-1"
-          title={t('cozyPal.debug.refresh')}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className={`h-3 w-3 ${isDiagLoading ? 'animate-spin' : ''}`} viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
-          </svg>
-        </button>
+      <div className="flex justify-between items-center flex-shrink-0">
+        <p className="text-slate-500 uppercase tracking-widest text-[8px] font-bold">
+          // {t('cozyPal.debug.title', 'System Prompt Debugger')}
+        </p>
+        <div className="flex items-center gap-1">
+          {diagnostics?.full_prompt && (
+            <button
+              onClick={handleCopy}
+              className="text-slate-400 hover:text-slate-700 transition-colors p-1.5 rounded-lg hover:bg-slate-100"
+              title="Copy system prompt"
+            >
+              {copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
+            </button>
+          )}
+          <button
+            onClick={onRefresh}
+            className="text-indigo-400 hover:text-indigo-600 transition-colors p-1.5 rounded-lg hover:bg-slate-100"
+            title={t('cozyPal.debug.refresh', 'Refresh prompt')}
+          >
+            <RefreshCw size={12} className={isDiagLoading ? 'animate-spin' : ''} />
+          </button>
+        </div>
       </div>
-      <div className="bg-gray-900 text-gray-300 p-4 rounded-xl border border-gray-800 shadow-inner overflow-x-auto min-h-[250px] leading-relaxed relative">
+
+      <div className="flex-grow bg-slate-900 text-slate-300 p-4 rounded-2xl border border-slate-800 shadow-inner overflow-y-auto leading-relaxed text-[11px] font-mono select-text max-h-[50vh]">
         {isDiagLoading ? (
           <div className="flex items-center justify-center h-full animate-pulse text-indigo-400">
-            {t('cozyPal.debug.loading')}
+            {t('cozyPal.debug.loading', 'Compiling System Prompt...')}
           </div>
-        ) : (diagnostics?.full_prompt ? highlightedPrompt : <div className="text-gray-500">{t('cozyPal.debug.noData')}</div>)}
+        ) : diagnostics?.full_prompt ? (
+          <pre className="whitespace-pre-wrap break-all pr-2">{diagnostics.full_prompt}</pre>
+        ) : (
+          <div className="text-slate-500 italic text-center py-12">
+            {t('cozyPal.debug.noData', 'No compiled prompt data. Try clicking refresh.')}
+          </div>
+        )}
+      </div>
 
-        <AnimatePresence>
-          {editingFragment && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="absolute inset-0 bg-gray-900/95 backdrop-blur-sm z-50 p-4 flex flex-col"
-            >
-              <div className="flex justify-between items-center mb-2">
-                <h4 className="text-purple-400 font-bold uppercase text-[8px]">{t('cozyPal.debug.editTitle')}</h4>
-                <button onClick={onCloseEdit} className="text-gray-500 hover:text-white">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </button>
-              </div>
-              <textarea
-                value={editValue}
-                onChange={(e) => onEditValueChange(e.target.value)}
-                className="flex-grow bg-gray-800 border border-purple-500/30 rounded-lg p-3 text-[10px] text-purple-100 focus:outline-none focus:ring-1 focus:ring-purple-500"
-                placeholder="Edit memory content..."
-              />
-              <div className="mt-3 flex justify-end gap-2">
-                <button
-                  onClick={onCloseEdit}
-                  className="px-3 py-1.5 text-[8px] font-bold text-gray-400 uppercase"
-                >
-                  {t('common.cancel')}
-                </button>
-                <button
-                  onClick={onSaveEdit}
-                  disabled={isSavingEdit}
-                  className="px-3 py-1.5 text-[8px] font-bold bg-purple-600 text-white rounded-md uppercase shadow-lg shadow-purple-900/20 disabled:opacity-50"
-                >
-                  {isSavingEdit ? 'Saving...' : t('cozyPal.debug.saveAndRescan')}
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+      <div className="bg-indigo-50/50 border border-indigo-100/50 rounded-xl p-3 text-[10px] text-indigo-600/90 leading-relaxed font-sans flex-shrink-0 select-none">
+        <strong>提示：</strong>此处展示的是根据您的 Timer 状态、当前阅读的书籍上下文以及手动录入的<strong>个人事实/喜好偏好</strong>，在本地合成编译的真实系统提示词 (System Prompt)。这是 CozyPal 在开始每一次流式对话时获得的初始设定。
       </div>
     </motion.div>
   );

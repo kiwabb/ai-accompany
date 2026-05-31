@@ -12,8 +12,6 @@ import ReaderPage from './pages/ReaderPage';
 import SettingsPage from './pages/SettingsPage';
 import AchievementWall from './pages/AchievementWall';
 import FocusStatsPage from './pages/FocusStatsPage';
-import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
 import ProfilePage from './pages/ProfilePage';
 import TasksPage from './pages/TasksPage';
 import BottomNav from './components/BottomNav';
@@ -35,12 +33,11 @@ const AppContent: React.FC = () => {
     activeVisualThemeId: state.activeVisualThemeId,
   });
 
-  const hideCozyPal = ['/login', '/signup'].includes(location.pathname);
-  // BottomNav 在沉浸式页面（Timer / Reader）和鉴权页隐藏，其他路由都显示
+  const hideCozyPal = false;
+  // BottomNav 在沉浸式页面（Timer / Reader）隐藏，其他路由都显示
   const hideBottomNav =
     location.pathname.startsWith('/timer/') ||
-    location.pathname.startsWith('/read/') ||
-    ['/login', '/signup'].includes(location.pathname);
+    location.pathname.startsWith('/read/');
   const [cozyPalWidth, setCozyPalWidth] = useState(0);
   const isMobile = useIsMobile();
 
@@ -96,8 +93,6 @@ const AppContent: React.FC = () => {
       <ShinchanDecorations enabled={isShinchanTheme && showFloatingElements} />
 
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
         <Route path="/" element={<FocusListPage />} />
         <Route path="/timer/:themeId" element={<TimerPage />} />
         <Route path="/library" element={<LibraryPage />} />

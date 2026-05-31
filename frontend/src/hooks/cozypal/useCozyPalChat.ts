@@ -3,14 +3,15 @@ import type { TFunction } from 'i18next';
 import type { Message } from '../../components/cozypal/types';
 import type { ChatContext } from './chatTypes';
 import {
-  buildChatRequestBody,
-  buildChatHeaders,
   streamChatResponse,
   updateLastAiMessage,
   addPlaceholderAiMessage,
   addUserMessage,
 } from './chatStreamingUtils';
-import { getAuthHeaders } from '../../api/client';
+import { getChatHistory, saveChatMessage } from '../../lib/storage/chatHistory';
+import { getUserProfile } from '../../lib/storage/userProfile';
+import { constructSystemPrompt } from '../../lib/ai/systemPrompt';
+import { streamChatDirect } from '../../lib/ai/providers';
 
 interface UseCozyPalChatOptions {
   t: TFunction;
@@ -63,20 +64,14 @@ export const useCozyPalChat = ({
   const fetchHistory = useCallback(async () => {
     if (activeTopicId === null) return;
     try {
-      const url = activeTopicId
-        ? `/api/chat/history?topic_id=${activeTopicId}&limit=10`
-        : '/api/chat/history?limit=10';
-      const response = await fetch(url, { headers: getAuthHeaders() });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.messages && data.messages.length > 0) {
-          setMessages(data.messages.map((msg: { role: string; content: string }) => ({
-            sender: msg.role,
-            text: msg.content,
-          })));
-        } else {
-          setMessages([{ sender: 'ai', text: t('cozyPal.greeting') }]);
-        }
+      const data = await getChatHistory(activeTopicId, 10);
+      if (data.messages && data.messages.length > 0) {
+        setMessages(data.messages.map((msg: { role: string; content: string }) => ({
+          sender: msg.role as 'user' | 'ai',
+          text: msg.content,
+        })));
+      } else {
+        setMessages([{ sender: 'ai', text: t('cozyPal.greeting') }]);
       }
     } catch (error) {
       console.error('Failed to fetch chat history', error);
@@ -103,7 +98,7 @@ export const useCozyPalChat = ({
     if (e && 'key' in e && e.key !== 'Enter') return;
     if (e) e.preventDefault();
 
-    const textToSend = proactiveTrigger || inputValue.trim();
+    const textToSend = proactiveTrigger ? `[SYSTEM_TRIGGER:${proactiveTrigger}]` : inputValue.trim();
     if (!textToSend || isLoading) return;
 
     // Clear any existing speech bubble timer
@@ -125,29 +120,47 @@ export const useCozyPalChat = ({
     setAvatarState('thinking');
 
     try {
-      const response = await fetch('/api/chat/completions', {
-        method: 'POST',
-        headers: buildChatHeaders(apiKey),
-        body: JSON.stringify(buildChatRequestBody({
-          message: textToSend,
-          topicId: activeTopicId,
-          apiKey,
-          provider: aiProvider,
-          model: aiModel,
-          context,
-          documentId,
-          documentTitle,
-          documentContent,
-          proactiveTrigger,
-          durationOverride,
-        })),
-      });
+      // 1. Compile System Prompt combining UserProfile and current Pomodoro Context
+      const userProfile = getUserProfile();
+      
+      // Inject Document context if reading a document
+      const docSuffix = documentId && documentTitle && documentContent 
+        ? `\n\n[Current Document Context]\nDocument ID: ${documentId}\nTitle: ${documentTitle}\nContent Snippet: ${documentContent.slice(0, 800)}\n[End of Document Context]`
+        : '';
+        
+      const systemPrompt = constructSystemPrompt(
+        {
+          themeName: context.themeName,
+          phase: context.phase,
+          timeLeft: durationOverride !== undefined ? durationOverride : context.timeLeft,
+          aiPersona: context.aiPersona,
+        },
+        context.totalFocusMinutes,
+        context.dailyCompletedPomodoros,
+        context.currentLanguage,
+        textToSend,
+        userProfile
+      ) + docSuffix;
 
-      if (!response.ok) throw new Error('Failed to fetch');
+      // 2. Fetch history (messages before the user's new message is pushed)
+      const history = messages.map(m => ({
+        sender: m.sender,
+        text: m.text,
+      }));
+
+      // 3. Connect browser direct streaming APIs
+      const stream = streamChatDirect({
+        message: textToSend,
+        systemPrompt,
+        history,
+        apiKey: apiKey || '',
+        provider: aiProvider || 'gemini',
+        model: aiModel,
+      });
 
       setAvatarState('speaking');
 
-      await streamChatResponse(response, {
+      await streamChatResponse(stream, {
         onChunk: (accumulated) => {
           if (proactiveTrigger) {
             setSpeechBubble(accumulated);
@@ -155,7 +168,15 @@ export const useCozyPalChat = ({
             updateLastAiMessage(setMessages, accumulated);
           }
         },
-        onComplete: () => {
+        onComplete: async (accumulated) => {
+          // Persist the dialog locally
+          try {
+            await saveChatMessage(activeTopicId, 'user', textToSend);
+            await saveChatMessage(activeTopicId, 'ai', accumulated);
+          } catch (storageErr) {
+            console.error('Failed to save message to local storage:', storageErr);
+          }
+
           if (proactiveTrigger) {
             speechBubbleTimerRef.current = setTimeout(() => {
               setSpeechBubble(null);
@@ -190,7 +211,7 @@ export const useCozyPalChat = ({
   }, [
     activeTopicId, aiModel, aiProvider, apiKey, context,
     documentContent, documentId, documentTitle, inputValue,
-    isLoading, isOpen, onMemoryUpdateCheck, t,
+    isLoading, isOpen, onMemoryUpdateCheck, t, messages,
   ]);
 
   const ensureGreeting = useCallback(() => {

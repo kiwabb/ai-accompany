@@ -1,11 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
-import {
-  fetchLatestMemoryUpdate,
-  seedKnownMemory,
-  detectNewMemoryItems,
-  showMemoryLearnedToast,
-} from './cozypal/memoryCheckUtils';
 
 export interface CozyPalState {
     isOpen: boolean;
@@ -39,7 +32,6 @@ export interface CozyPalActions {
 }
 
 export const useCozyPalState = (onDimensionsChange?: (width: number) => void): [CozyPalState, CozyPalActions] => {
-    const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState(false);
     const [width, setWidth] = useState(450);
     const [isResizing, setIsResizing] = useState(false);
@@ -54,8 +46,6 @@ export const useCozyPalState = (onDimensionsChange?: (width: number) => void): [
     const knownFactsRef = useRef<Set<string>>(new Set());
     const knownPrefsRef = useRef<Set<string>>(new Set());
     const isInitializedRef = useRef(false);
-
-    const refs = { knownFactsRef, knownPrefsRef, isInitializedRef };
 
     useEffect(() => {
         if (onDimensionsChange) {
@@ -88,24 +78,8 @@ export const useCozyPalState = (onDimensionsChange?: (width: number) => void): [
     }, [isResizing]);
 
     const checkForMemoryUpdates = useCallback(async () => {
-        const data = await fetchLatestMemoryUpdate();
-        if (!data) return;
-
-        if (data.has_update) {
-            const newFacts = data.facts || [];
-            const newPrefs = data.preferences || [];
-
-            if (!isInitializedRef.current) {
-                seedKnownMemory(newFacts, newPrefs, refs);
-                return;
-            }
-
-            const result = detectNewMemoryItems(newFacts, newPrefs, refs);
-            showMemoryLearnedToast(result, t, setToastMessage);
-        } else {
-            isInitializedRef.current = true;
-        }
-    }, [t]);
+        isInitializedRef.current = true;
+    }, []);
 
     useEffect(() => {
         void checkForMemoryUpdates();

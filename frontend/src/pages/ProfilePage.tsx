@@ -11,20 +11,20 @@ import { useTimerContext } from '../contexts/TimerContext';
 import { getStatsRange, getAchievements } from '../api/client';
 import type { StatsRangeResponse, UserAchievementBackend } from '../api/client';
 import AmbientBackground from '../components/AmbientBackground';
+import { getUserProfile } from '../lib/storage/userProfile';
 
 const ProfilePage: React.FC = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const { username, isAuthenticated, logout } = useAuth();
+    const { isAuthenticated, logout } = useAuth();
+    const username = getUserProfile().name ?? '学子';
     const { todayStats } = useTimerContext();
     const [rangeStats, setRangeStats] = useState<StatsRangeResponse | null>(null);
     const [achievements, setAchievements] = useState<UserAchievementBackend[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!isAuthenticated) {
-            navigate('/login', { replace: true });
-        }
+        // Always authenticated in guest mode, no redirect needed
     }, [isAuthenticated, navigate]);
 
     useEffect(() => {
@@ -110,7 +110,7 @@ const ProfilePage: React.FC = () => {
                             <button
                                 onClick={() => {
                                     logout();
-                                    navigate('/login');
+                                    navigate('/');
                                 }}
                                 className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:bg-red-50 hover:border-red-200 hover:text-red-500 transition-all active:scale-95 flex items-center gap-2"
                             >

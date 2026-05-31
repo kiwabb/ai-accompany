@@ -3,21 +3,13 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Upload, Trash2, Edit2, FileText, BookOpen, Loader2, ChevronLeft as ChevronLeftIcon, LayoutGrid, List, Tag } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { getAuthHeaders, getUserThemes } from '../api/client';
+import { getUserThemes } from '../api/client';
+import { getDocuments, deleteDocumentMetadata, deleteDocumentFile } from '../lib/storage/documents';
 import type { FocusTheme } from '../types/pomodoro';
+import type { Document } from '../types/document';
 
 import DocumentUploadModal from '../components/documents/DocumentUploadModal';
 import DocumentEditModal from '../components/documents/DocumentEditModal';
-
-interface Document {
-    id: number;
-    title: string;
-    filename: string;
-    file_type: string;
-    created_at: string;
-    topic_id?: string;
-    status: string;
-}
 
 import AmbientBackground from '../components/AmbientBackground';
 import ConfirmModal from '../components/ConfirmModal';
@@ -99,13 +91,8 @@ const LibraryPage: React.FC = () => {
     const fetchDocuments = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch('/api/documents', {
-                headers: getAuthHeaders(),
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setDocuments(data);
-            }
+            const data = await getDocuments();
+            setDocuments(data);
         } catch (error) {
             console.error('Failed to fetch documents', error);
         } finally {
@@ -129,15 +116,15 @@ const LibraryPage: React.FC = () => {
         if (!docToDelete) return;
 
         try {
-            const response = await fetch(`/api/documents/${docToDelete.id}`, {
-                method: 'DELETE',
-                headers: getAuthHeaders(),
-            });
-            if (response.ok) {
-                setDocuments(prev => prev.filter(d => d.id !== docToDelete.id));
-                setIsDeleteModalOpen(false);
-                setDocToDelete(null);
+            await deleteDocumentMetadata(docToDelete.id);
+            try {
+                await deleteDocumentFile(docToDelete.id);
+            } catch (err) {
+                console.error('Failed to delete file from IndexedDB:', err);
             }
+            setDocuments(prev => prev.filter(d => d.id !== docToDelete.id));
+            setIsDeleteModalOpen(false);
+            setDocToDelete(null);
         } catch (error) {
             console.error('Failed to delete document', error);
         }

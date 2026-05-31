@@ -1,4 +1,4 @@
-import { getAuthHeaders } from '../../api/client';
+import { getTopics, createTopic as localCreateTopic } from '../../lib/storage/topics';
 import type { Topic } from '../../components/cozypal/types';
 
 type TopicsListener = () => void;
@@ -23,25 +23,12 @@ const setTopics = (nextTopics: Topic[]) => {
   notify();
 };
 
-const addTopic = (topic: Topic) => {
-  topics = [...topics, topic];
-  notify();
-};
-
 const fetchTopics = async () => {
   if (isFetching) return;
   isFetching = true;
   try {
-    const response = await fetch('/api/topics', {
-      headers: getAuthHeaders(),
-    });
-    console.log('Fetch topics response:', response.status);
-    if (response.ok) {
-      const data = await response.json();
-      setTopics(data);
-    } else {
-      console.error('Failed to fetch topics:', response.status, await response.text());
-    }
+    const data = await getTopics();
+    setTopics(data);
   } catch (error) {
     console.error('Failed to fetch topics', error);
   } finally {
@@ -49,9 +36,16 @@ const fetchTopics = async () => {
   }
 };
 
+const addTopicLocally = async (name: string, description?: string): Promise<Topic> => {
+  const newTopic = await localCreateTopic(name, description);
+  topics = [...topics, newTopic];
+  notify();
+  return newTopic;
+};
+
 export const cozyPalTopicsStore = {
   subscribe,
   getSnapshot,
   fetchTopics,
-  addTopic,
+  addTopicLocally,
 };

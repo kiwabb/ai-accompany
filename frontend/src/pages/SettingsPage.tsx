@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Save, Check, Palette, User, ChevronRight, LogIn } from 'lucide-react';
+import { ArrowLeft, Save, Check, Palette, User, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -14,7 +14,7 @@ import { useSettingsPageLogic } from '../hooks/useSettingsPageLogic';
 const SettingsPage: React.FC = () => {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
-    const { isAuthenticated, username } = useAuth();
+    const { username } = useAuth();
     const {
         settings,
         themes,
@@ -71,21 +71,19 @@ const SettingsPage: React.FC = () => {
                     <motion.button
                         whileHover={{ y: -2 }}
                         whileTap={{ scale: 0.99 }}
-                        onClick={() => navigate(isAuthenticated ? '/profile' : '/login')}
+                        onClick={() => navigate('/profile')}
                         className="w-full bg-white/60 backdrop-blur-xl rounded-2xl md:rounded-[32px] p-4 md:p-8 border border-white shadow-xl flex items-center justify-between text-left hover:bg-white/80 hover:shadow-2xl transition-all"
                     >
                         <div className="flex items-center gap-3 md:gap-4 min-w-0">
-                            <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center text-cozy-text font-bold text-base md:text-lg shrink-0 ${isAuthenticated ? 'bg-cozy-pastelBlue' : 'bg-slate-100 text-slate-400'}`}>
-                                {isAuthenticated ? username?.charAt(0).toUpperCase() : <LogIn size={20} />}
+                            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center text-cozy-text font-bold text-base md:text-lg shrink-0 bg-cozy-pastelBlue">
+                                {username?.charAt(0).toUpperCase() || '你'}
                             </div>
                             <div className="min-w-0">
                                 <p className="text-slate-900 font-bold font-heading truncate">
-                                    {isAuthenticated ? username : t('settings.notLoggedIn', '未登录')}
+                                    {username || '学子'}
                                 </p>
                                 <p className="text-slate-400 text-[10px] uppercase tracking-widest font-bold truncate">
-                                    {isAuthenticated
-                                        ? t('settings.viewProfile', '查看个人主页')
-                                        : t('settings.tapToLogin', '点击登录')}
+                                    {t('settings.viewProfile', '查看个人主页')}
                                 </p>
                             </div>
                         </div>
