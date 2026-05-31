@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft } from 'lucide-react';
 import AmbientBackground from '../components/AmbientBackground';
@@ -14,16 +14,18 @@ import { DailyTrendChart } from '../components/focus-stats/DailyTrendChart';
 import { ThemeDistributionChart } from '../components/focus-stats/ThemeDistributionChart';
 import { StudyHeatmap } from '../components/focus-stats/StudyHeatmap';
 import { SessionDetailsModal } from '../components/focus-stats/SessionDetailsModal';
-import BottomNav from '../components/BottomNav';
 import type { DailyStat } from '../api/client';
 
 const FocusStatsPage: React.FC = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const highlightDate = searchParams.get('date') || undefined;
 
     // Hooks
     const { chartColors, getChartColorForTheme, activeVisualTheme } = useChartTheme();
-    const [timeRange, setTimeRange] = useState<TimeRange>('week');
+    // 来自 ?date=YYYY-MM-DD 时默认切到 month 视图，便于在趋势图里看到该日
+    const [timeRange, setTimeRange] = useState<TimeRange>(highlightDate ? 'month' : 'week');
     const [pieRange, setPieRange] = useState<TimeRange>('day');
     
     const { stats, trendLoading, initialLoading } = useTrendStats(timeRange);
@@ -52,7 +54,7 @@ const FocusStatsPage: React.FC = () => {
     const maxDailyMinutes = stats?.daily_stats?.reduce((max: number, day: DailyStat) => Math.max(max, day.total_focus_minutes), 0) || 1;
 
     return (
-        <main className="min-h-screen w-full bg-[#FCFAF7] flex flex-col items-center p-3 pt-16 md:p-6 md:pt-12 pb-32 selection:bg-cozy-orange/30 relative overflow-x-hidden">
+        <main className="min-h-screen w-full bg-[#FCFAF7] flex flex-col items-center pt-16 md:pt-12 pb-32 selection:bg-cozy-orange/30 relative overflow-x-hidden">
             <AmbientBackground />
 
             {/* Back Button */}
@@ -68,7 +70,7 @@ const FocusStatsPage: React.FC = () => {
                 <span className="hidden md:inline">{t('common.back', 'Back')}</span>
             </motion.button>
 
-            <div className="relative z-10 w-full max-w-5xl flex flex-col gap-6 md:gap-8 py-4 md:py-12">
+            <div className="relative z-10 w-full max-w-5xl px-4 md:px-8 flex flex-col gap-6 md:gap-8 py-4 md:py-12">
                 
                 <StatsHeader />
 
@@ -101,6 +103,7 @@ const FocusStatsPage: React.FC = () => {
                             getChartColorForTheme={getChartColorForTheme}
                             formatDuration={formatDurationWithT}
                             activeVisualTheme={activeVisualTheme}
+                            highlightDate={highlightDate}
                             footer={
                                 <ThemeDistributionChart
                                     inline
@@ -128,8 +131,6 @@ const FocusStatsPage: React.FC = () => {
                 getChartColorForTheme={getChartColorForTheme}
                 formatDuration={formatDurationWithT}
             />
-
-            <BottomNav />
         </main>
     );
 };

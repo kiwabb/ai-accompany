@@ -16,7 +16,7 @@ const polarToCartesian = (cx: number, cy: number, r: number, angleDeg: number) =
 
 const describeDonutSlice = (
     cx: number, cy: number, rOuter: number, rInner: number, startAngle: number, endAngle: number,
-) => {
+): string => {
     const sweep = endAngle - startAngle;
     if (sweep <= 0) return '';
     if (sweep >= 360 - 0.0001) {

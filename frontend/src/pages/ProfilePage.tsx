@@ -11,7 +11,6 @@ import { useTimerContext } from '../contexts/TimerContext';
 import { getStatsRange, getAchievements } from '../api/client';
 import type { StatsRangeResponse, UserAchievementBackend } from '../api/client';
 import AmbientBackground from '../components/AmbientBackground';
-import BottomNav from '../components/BottomNav';
 
 const ProfilePage: React.FC = () => {
     const { t } = useTranslation();
@@ -77,7 +76,7 @@ const ProfilePage: React.FC = () => {
                 <span>{t('common.back', 'Back')}</span>
             </motion.button>
 
-            <main className="relative z-10 w-full max-w-4xl mx-auto px-6 py-16 pb-32">
+            <main className="relative z-10 w-full max-w-5xl mx-auto px-4 md:px-8 pt-6 md:pt-12 pb-32">
                 {/* Profile header */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -97,7 +96,7 @@ const ProfilePage: React.FC = () => {
                         <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400 mb-2">
                             {t('profile.welcomeBack', '欢迎回来')}
                         </p>
-                        <h1 className="text-3xl md:text-4xl font-bold text-slate-900 font-heading mb-4 break-all">
+                        <h1 className="text-2xl md:text-4xl font-extrabold text-slate-900 font-heading mb-4 break-all">
                             {username || t('profile.guest', '访客')}
                         </h1>
                         <div className="flex flex-wrap gap-2 justify-center md:justify-start">
@@ -167,7 +166,7 @@ const ProfilePage: React.FC = () => {
                             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">
                                 {card.label}
                             </p>
-                            <p className="text-2xl font-black text-slate-900 tabular-nums">
+                            <p className="text-2xl md:text-4xl font-black text-slate-900 tabular-nums">
                                 {loading ? '—' : card.value}
                                 <span className="text-xs text-slate-400 font-bold ml-1">{card.unit}</span>
                             </p>
@@ -188,7 +187,7 @@ const ProfilePage: React.FC = () => {
                             </p>
                             <Flame size={16} className="text-cozy-warmOrange" />
                         </div>
-                        <p className="text-2xl font-bold text-slate-900 font-heading">
+                        <p className="text-2xl md:text-4xl font-bold text-slate-900 font-heading">
                             {summary.topTheme[0]}
                         </p>
                         <p className="text-sm font-bold text-slate-400 mt-1 tabular-nums">
@@ -245,8 +244,6 @@ const ProfilePage: React.FC = () => {
                     ))}
                 </div>
             </main>
-
-            <BottomNav />
         </div>
     );
 };

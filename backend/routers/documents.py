@@ -6,7 +6,7 @@ from ..database import get_db
 from .. import schemas, models
 from ..services.document_service import document_service
 from .users import get_current_user_id
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
@@ -80,12 +80,30 @@ async def get_document_file(
     storage_key = getattr(document, "storage_key", None)
     if storage_key:
         from ..services.storage_service import storage_service
-        from fastapi.responses import RedirectResponse
         try:
-            download_url = storage_service.get_presigned_download_url(str(storage_key))
+            obj_response, content_type, content_length = storage_service.get_object_stream(str(storage_key))
         except Exception:
             raise HTTPException(status_code=503, detail="Document storage temporarily unavailable")
-        return RedirectResponse(download_url)
+
+        def iter_chunks():
+            try:
+                for chunk in obj_response.stream(64 * 1024):
+                    yield chunk
+            finally:
+                obj_response.close()
+                obj_response.release_conn()
+
+        headers = {}
+        if content_length is not None:
+            headers["Content-Length"] = str(content_length)
+        filename = getattr(document, "filename", None)
+        if filename:
+            from urllib.parse import quote
+            ascii_fallback = filename.encode("ascii", errors="replace").decode("ascii").replace('"', "")
+            headers["Content-Disposition"] = (
+                f'inline; filename="{ascii_fallback}"; filename*=UTF-8\'\'{quote(filename, safe="")}'
+            )
+        return StreamingResponse(iter_chunks(), media_type=content_type, headers=headers)
         
     file_path = getattr(document, "file_path", None)
     if not file_path:

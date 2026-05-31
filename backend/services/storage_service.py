@@ -62,5 +62,21 @@ class StorageService:
     def delete_object(self, object_name: str):
         self.client.remove_object(self.bucket_name, object_name)
 
+    def get_object_stream(self, object_name: str):
+        """
+        通过内部 endpoint 直接拉对象，返回 (urllib3 response, content_type, content_length)。
+        调用方负责 close()/release_conn()。
+        用于后端流式转发，避免把 MinIO 私有地址暴露给客户端（手机访问 localhost:9000 不通的根因）。
+        """
+        response = self.client.get_object(self.bucket_name, object_name)
+        headers = getattr(response, "headers", {}) or {}
+        content_type = headers.get("Content-Type") or headers.get("content-type") or "application/octet-stream"
+        length_raw = headers.get("Content-Length") or headers.get("content-length")
+        try:
+            content_length = int(length_raw) if length_raw is not None else None
+        except (TypeError, ValueError):
+            content_length = None
+        return response, content_type, content_length
+
 
 storage_service = StorageService()

@@ -78,7 +78,7 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
                     </div>
                     <div className="flex-grow flex flex-col justify-between items-start min-w-0 w-full">
                         <div className="text-theme-text-muted text-[9px] md:text-xs font-bold uppercase tracking-wider mb-1 truncate w-full">{item.label}</div>
-                        <div className="text-lg md:text-3xl font-bold text-theme-text mb-1 truncate w-full">{item.value}</div>
+                        <div className="text-2xl md:text-4xl font-black text-theme-text mb-1 truncate w-full">{item.value}</div>
                         <div className="text-theme-text-muted/60 text-[10px] md:text-sm mt-auto w-full">{item.sub}</div>
                     </div>
                 </motion.div>

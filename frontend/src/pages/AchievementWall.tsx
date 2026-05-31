@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom';
 import { getAchievements } from '../api/client';
 import type { UserAchievementBackend } from '../api/client';
 import AmbientBackground from '../components/AmbientBackground';
-import BottomNav from '../components/BottomNav';
 import { ACHIEVEMENT_TO_ICON } from '../constants/achievementIcons';
 
 type Filter = 'all' | 'unlocked' | 'in_progress';
@@ -66,8 +65,9 @@ const AchievementWall: React.FC = () => {
         <div className="min-h-screen bg-cozy-cream relative overflow-hidden flex flex-col items-center">
             <AmbientBackground />
 
-            <div className="sticky top-0 z-[100] w-full bg-white/60 backdrop-blur-2xl border-b border-white/10 shadow-sm py-3 md:py-4 px-3 md:px-6 mb-6 md:mb-12">
-                <div className="max-w-4xl mx-auto flex items-center justify-between">
+            {/* 移动端：紧凑顶栏 */}
+            <div className="md:hidden sticky top-0 z-[100] w-full bg-white/60 backdrop-blur-2xl border-b border-white/10 shadow-sm py-3 px-3 mb-6">
+                <div className="max-w-5xl mx-auto flex items-center justify-between">
                     <motion.button
                         whileHover={{ x: -2 }}
                         whileTap={{ scale: 0.98 }}
@@ -75,18 +75,37 @@ const AchievementWall: React.FC = () => {
                         className="flex items-center gap-2 text-cozy-text-light hover:text-cozy-text transition-colors font-bold uppercase tracking-widest text-[10px]"
                     >
                         <ArrowLeft size={16} />
-                        <span>{t('common.back')}</span>
                     </motion.button>
 
-                    <h1 className="text-xl font-bold text-cozy-text uppercase tracking-widest font-heading">
+                    <h1 className="text-base font-extrabold text-cozy-text uppercase tracking-wider font-heading flex items-center gap-2">
+                        <Trophy size={18} className="text-amber-500" />
                         {t('achievements.title', 'Achievement Wall')}
                     </h1>
 
-                    <div className="w-20" />
+                    <div className="w-6" />
                 </div>
             </div>
 
-            <main className="w-full max-w-4xl px-3 md:px-8 pb-32 relative z-10">
+            {/* 桌面端：浮动卡片式返回按钮（对齐专注分析） */}
+            <motion.button
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                whileHover={{ x: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate('/')}
+                className="hidden md:flex fixed top-8 left-8 py-3 px-6 bg-white/70 backdrop-blur-2xl border border-white/80 shadow-xl rounded-2xl items-center gap-2 group z-50 text-cozy-text-light hover:text-cozy-text transition-colors font-bold uppercase tracking-widest text-[10px]"
+            >
+                <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                <span>{t('common.back')}</span>
+            </motion.button>
+
+            <main className="w-full max-w-5xl mx-auto px-4 md:px-8 pt-6 md:pt-12 pb-32 relative z-10">
+                {/* 桌面端：大号页面标题 */}
+                <h1 className="hidden md:flex text-2xl md:text-4xl font-extrabold text-cozy-text tracking-tight items-center gap-4 font-heading mb-6">
+                    <Trophy className="text-amber-500" size={32} />
+                    {t('achievements.title', 'Achievement Wall')}
+                </h1>
+
                 {loading ? (
                     <div className="flex justify-center items-center h-64">
                         <div className="w-8 h-8 border-4 border-cozy-orange border-t-transparent rounded-full animate-spin" />
@@ -341,8 +360,6 @@ const AchievementWall: React.FC = () => {
                     </>
                 )}
             </main>
-
-            <BottomNav />
         </div>
     );
 };

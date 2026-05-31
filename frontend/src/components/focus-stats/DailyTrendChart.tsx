@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -20,6 +20,8 @@ interface DailyTrendChartProps {
     activeVisualTheme: { colors: { primary: string } };
     /** 卡片底部追加节点（嵌入主题分布等附加图表） */
     footer?: React.ReactNode;
+    /** 从外部传入要高亮的日期（YYYY-MM-DD），用于从主页日期条跳转后聚焦那天 */
+    highlightDate?: string;
 }
 
 const buildYAxisTicks = (maxValue: number): number[] => {
@@ -59,11 +61,19 @@ export const DailyTrendChart: React.FC<DailyTrendChartProps> = ({
     getChartColorForTheme,
     formatDuration,
     footer,
+    highlightDate,
 }) => {
     const { t, i18n } = useTranslation();
     const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 
     const dailyStats = stats?.daily_stats || [];
+
+    // 数据加载后，根据外部 highlightDate 自动聚焦那天柱子（设 hoverIdx 触发 tooltip + 不透明度）
+    useEffect(() => {
+        if (!highlightDate || dailyStats.length === 0) return;
+        const idx = dailyStats.findIndex(d => d.date === highlightDate);
+        if (idx >= 0) setHoverIdx(idx);
+    }, [highlightDate, dailyStats]);
     const themes = pieStats?.sessions_by_theme || {};
 
     const maxValue = dailyStats.reduce((m, d) => Math.max(m, d.total_focus_minutes), 0);
@@ -121,7 +131,7 @@ export const DailyTrendChart: React.FC<DailyTrendChartProps> = ({
             className="bg-white/70 backdrop-blur-2xl p-8 rounded-[40px] border border-white/80 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.05)]"
         >
             <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-                <h3 className="text-xl font-bold text-theme-text flex items-center gap-2">
+                <h3 className="text-lg md:text-2xl font-bold text-theme-text flex items-center gap-2">
                     <Calendar size={20} className="text-theme-text-muted/40" />
                     {t('stats.dailyTrend', 'Daily Trend')}
                 </h3>

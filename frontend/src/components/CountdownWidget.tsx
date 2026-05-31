@@ -8,12 +8,22 @@ import type { CountdownEvent } from '../types/pomodoro';
 interface CountdownWidgetProps {
     variant?: 'full' | 'minimal';
     textColor?: string;
+    /** 外层自己渲染标题与添加按钮时，隐藏组件内部的 header */
+    hideHeader?: boolean;
+    /** 受控的"添加表单"开关；不传则组件内部自管 */
+    isAdding?: boolean;
+    onIsAddingChange?: (value: boolean) => void;
 }
 
-const CountdownWidget: React.FC<CountdownWidgetProps> = ({ variant = 'full', textColor }) => {
+const CountdownWidget: React.FC<CountdownWidgetProps> = ({ variant = 'full', textColor, hideHeader = false, isAdding: isAddingProp, onIsAddingChange }) => {
     const { t } = useTranslation();
     const [countdowns, setCountdowns] = useState<CountdownEvent[]>([]);
-    const [isAdding, setIsAdding] = useState(false);
+    const [internalIsAdding, setInternalIsAdding] = useState(false);
+    const isAdding = isAddingProp !== undefined ? isAddingProp : internalIsAdding;
+    const setIsAdding = (value: boolean) => {
+        if (isAddingProp === undefined) setInternalIsAdding(value);
+        onIsAddingChange?.(value);
+    };
     const [newTitle, setNewTitle] = useState('');
     const [newDate, setNewDate] = useState('');
     const [isLoading, setIsLoading] = useState(true);
@@ -102,21 +112,23 @@ const CountdownWidget: React.FC<CountdownWidgetProps> = ({ variant = 'full', tex
 
     return (
         <div className="flex flex-col space-y-4 w-full select-none">
-            <div className="flex items-center justify-between px-1">
-                <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 flex items-center">
-                    <Calendar className="w-3 h-3 mr-2 text-indigo-500" />
-                    {t('countdown.title')}
-                </h3>
-                <motion.button
-                    whileHover={{ scale: 1.1, backgroundColor: '#f8fafc' }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setIsAdding(true)}
-                    className="p-1.5 rounded-xl text-slate-400 hover:text-indigo-500 transition-colors border border-transparent hover:border-slate-100"
-                    aria-label={`Add ${t('countdown.title')}`}
-                >
-                    <Plus className="w-4 h-4" />
-                </motion.button>
-            </div>
+            {!hideHeader && (
+                <div className="flex items-center justify-between px-1">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 flex items-center">
+                        <Calendar className="w-3 h-3 mr-2 text-indigo-500" />
+                        {t('countdown.title')}
+                    </h3>
+                    <motion.button
+                        whileHover={{ scale: 1.1, backgroundColor: '#f8fafc' }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => setIsAdding(true)}
+                        className="p-1.5 rounded-xl text-slate-400 hover:text-indigo-500 transition-colors border border-transparent hover:border-slate-100"
+                        aria-label={`Add ${t('countdown.title')}`}
+                    >
+                        <Plus className="w-4 h-4" />
+                    </motion.button>
+                </div>
+            )}
 
             <div className="space-y-2.5">
                 <AnimatePresence mode="popLayout">

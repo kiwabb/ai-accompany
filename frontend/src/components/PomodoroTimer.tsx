@@ -23,7 +23,6 @@ const PomodoroTimer: React.FC = () => {
     initialLoaded
   } = useTimerContext();
 
-  const isShinchanTheme = state.activeVisualThemeId === 'shinchan';
   const { phase, completedSessions, settings } = state;
   const soundEnabled = settings.enableSounds !== false;
 
@@ -133,9 +132,6 @@ const PomodoroTimer: React.FC = () => {
               const cyclePos = phase === 'focus'
                 ? (completedSessions % interval) + 1
                 : ((completedSessions - 1 + interval) % interval) + 1;
-              const roundNum = Math.floor(
-                phase === 'focus' ? completedSessions / interval : (completedSessions - 1) / interval
-              ) + 1;
               const dotColor = (i: number) => {
                 if (i < cyclePos - 1) return 'bg-slate-300';
                 if (i === cyclePos - 1) {

@@ -17,7 +17,7 @@ export const StatsHeader: React.FC = () => {
                 <Activity size={12} strokeWidth={3} />
                 {t('stats.weeklyReport', 'Weekly Report')}
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-theme-text mb-2 font-heading">
+            <h1 className="text-2xl md:text-4xl font-extrabold text-theme-text mb-2 font-heading">
                 {t('stats.focusInsights', 'Focus Insights')}
             </h1>
             <p className="text-theme-text-muted">

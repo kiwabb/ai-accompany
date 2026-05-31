@@ -30,7 +30,7 @@ const describeDonutSlice = (
     rInner: number,
     startAngle: number,
     endAngle: number,
-) => {
+): string => {
     const sweep = endAngle - startAngle;
     if (sweep <= 0) return '';
     if (sweep >= 360 - 0.0001) {
@@ -175,7 +175,7 @@ export const ThemeDistributionChart: React.FC<ThemeDistributionChartProps> = ({
                             ))}
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                            <span className="text-2xl md:text-3xl font-black text-theme-text tabular-nums">{totalSessions}</span>
+                            <span className="text-2xl md:text-4xl font-black text-theme-text tabular-nums">{totalSessions}</span>
                             <span className="text-[10px] font-bold text-theme-text-muted uppercase tracking-widest">
                                 {t('stats.completed', '次专注')}
                             </span>

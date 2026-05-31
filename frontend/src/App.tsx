@@ -16,6 +16,7 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import ProfilePage from './pages/ProfilePage';
 import TasksPage from './pages/TasksPage';
+import BottomNav from './components/BottomNav';
 import FloatingTimer from './components/FloatingTimer';
 import CozyPal from './components/CozyPal';
 import AchievementToast from './components/AchievementToast';
@@ -35,6 +36,11 @@ const AppContent: React.FC = () => {
   });
 
   const hideCozyPal = ['/login', '/signup'].includes(location.pathname);
+  // BottomNav 在沉浸式页面（Timer / Reader）和鉴权页隐藏，其他路由都显示
+  const hideBottomNav =
+    location.pathname.startsWith('/timer/') ||
+    location.pathname.startsWith('/read/') ||
+    ['/login', '/signup'].includes(location.pathname);
   const [cozyPalWidth, setCozyPalWidth] = useState(0);
   const isMobile = useIsMobile();
 
@@ -129,6 +135,8 @@ const AppContent: React.FC = () => {
         achievement={unlockedAchievement}
         onDismiss={() => setUnlockedAchievement(null)}
       />
+
+      {!hideBottomNav && <BottomNav />}
     </div>
   );
 };

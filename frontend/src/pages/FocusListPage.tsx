@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useTimerContext } from '../contexts/TimerContext';
 import { Book as BookIcon, Rocket as RocketIcon, Brain as BrainIcon, Coffee as CoffeeIcon, Sparkles as SparklesIcon, CheckCircle2 } from 'lucide-react';
-import BottomNav from '../components/BottomNav';
 import { getStatsRange } from '../api/client';
 import type { FocusTheme } from '../types/pomodoro';
 
@@ -12,7 +11,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import AmbientBackground from '../components/AmbientBackground';
 
 const FocusListPage: React.FC = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { state, isActive, timeLeft, totalTimeValue, reset } = useTimerContext();
     const { themes } = state;
@@ -278,10 +277,10 @@ const FocusListPage: React.FC = () => {
     };
 
     return (
-        <main className="min-h-screen w-full bg-[#FCFAF7] flex flex-col items-center md:justify-center p-3 pt-8 md:p-6 pb-28 md:pb-36 selection:bg-cozy-orange/30 relative overflow-hidden">
+        <main className="min-h-screen w-full bg-[#FCFAF7] flex flex-col items-center md:justify-center pt-8 md:pt-16 pb-32 selection:bg-cozy-orange/30 relative overflow-hidden">
             <AmbientBackground />
 
-            <div className="relative z-10 w-full max-w-[1100px] flex flex-col items-center">
+            <div className="relative z-10 w-full max-w-5xl px-4 md:px-8 flex flex-col items-center">
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -298,16 +297,111 @@ const FocusListPage: React.FC = () => {
                         {t('timer.focusCompanion')}
                     </motion.div>
 
-                    <h1 className="text-4xl md:text-8xl font-bold tracking-normal text-slate-900 mb-3 md:mb-8 font-heading leading-tight">
+                    <h1 className="text-3xl md:text-5xl font-black tracking-normal text-slate-900 mb-3 md:mb-6 font-heading leading-tight">
                         {t('timer.studyBuddy')}
                     </h1>
-                    <p className="hidden md:block text-slate-500 text-lg font-medium max-w-lg mx-auto leading-relaxed">
+                    {(() => {
+                        // 每日一句：根据本年第几天选取，每天稳定显示同一句
+                        const quotes = [
+                            '你来人间一趟，你要看看太阳',
+                            '面朝大海，春暖花开',
+                            '黑夜给了我黑色的眼睛，我却用它寻找光明',
+                            '卑微如尘土，自由如风',
+                            '愿你眼里有星辰，胸中有沟壑',
+                            '心里有光，何惧路长',
+                            '山川湖海，皆在心怀',
+                            '把日子过成诗',
+                            '一寸时光，一寸自己',
+                            '愿你被世界温柔以待',
+                            '安静下来，听见自己',
+                            '不必着急，所有花朵都按自己的节奏盛开',
+                            '阳光会照进窗台',
+                            '留一页白纸，写自己的故事',
+                            '走慢一点，看看身边的风景',
+                            '万物可爱，皆值得期待',
+                            '心若清澈，处处皆光',
+                            '你正在过的，是别人羡慕的日子',
+                            '心定，所以从容',
+                            '把热爱写进每一天',
+                            '平凡的日子里，藏着不平凡的我',
+                            '与其完美，不如真实',
+                            '愿你出走半生，归来仍是少年',
+                            '把今天过好，就是对未来的温柔',
+                            '一切美好，都值得等待',
+                            '不被定义，就是答案',
+                            '春风十里，不如此刻的你',
+                            '慢慢来，比较快',
+                            '今天也要好好生活',
+                            '我有所念人，隔在远远乡',
+                        ];
+                        const now = new Date();
+                        const start = new Date(now.getFullYear(), 0, 0);
+                        const dayOfYear = Math.floor((now.getTime() - start.getTime()) / 86400000);
+                        const quote = quotes[dayOfYear % quotes.length];
+                        return (
+                            <motion.p
+                                key={quote}
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.3, duration: 0.6 }}
+                                className="text-slate-500 text-sm md:text-base font-medium italic max-w-md mx-auto leading-relaxed mb-1 md:mb-2"
+                            >
+                                「{quote}」
+                            </motion.p>
+                        );
+                    })()}
+                    <p className="hidden md:block text-slate-400 text-sm font-medium max-w-lg mx-auto leading-relaxed">
                         开启沉浸式学习体验，选择一个您想要深入探索的领域
                     </p>
                 </motion.div>
 
+                {/* 日期条：本周日 → 周六，今日高亮 */}
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4, duration: 0.6 }}
+                    className="flex items-center justify-center gap-1.5 md:gap-2 mb-6 md:mb-10 w-full max-w-md md:max-w-xl mx-auto px-2"
+                >
+                    {(() => {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const todayYmd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                        // 找到本周日（getDay: 0=周日）作为起点
+                        const sunday = new Date(today);
+                        sunday.setDate(today.getDate() - today.getDay());
+                        const labels = (i18n.language || '').startsWith('zh')
+                            ? ['日', '一', '二', '三', '四', '五', '六']
+                            : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                        return Array.from({ length: 7 }).map((_, idx) => {
+                            const d = new Date(sunday);
+                            d.setDate(sunday.getDate() + idx);
+                            const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                            const isToday = ymd === todayYmd;
+                            return (
+                                <motion.button
+                                    key={ymd}
+                                    whileHover={{ y: -2 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => navigate(`/stats?date=${ymd}`)}
+                                    className={`shrink-0 flex flex-col items-center justify-center gap-0.5 px-2.5 md:px-3 py-2 md:py-2.5 rounded-xl md:rounded-2xl transition-all ${isToday
+                                        ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/15'
+                                        : 'text-slate-400 hover:text-slate-700 hover:bg-white/60'
+                                        }`}
+                                    title={`${ymd} ${t('common.viewStats', '查看分析')}`}
+                                >
+                                    <span className={`font-black tabular-nums leading-none ${isToday ? 'text-xl md:text-2xl' : 'text-base md:text-lg'}`}>
+                                        {d.getDate()}
+                                    </span>
+                                    <span className="text-[9px] font-bold uppercase tracking-widest leading-none">
+                                        {labels[d.getDay()]}
+                                    </span>
+                                </motion.button>
+                            );
+                        });
+                    })()}
+                </motion.div>
 
-                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-10 w-full px-1 md:px-4">
+                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-10 w-full">
                     {themes.map((theme, index) => {
                         const style = getCardTheme(theme.id);
                         return (
@@ -381,7 +475,6 @@ const FocusListPage: React.FC = () => {
                     })}
                 </div>
 
-                <BottomNav />
             </div>
 
             <ConfirmModal

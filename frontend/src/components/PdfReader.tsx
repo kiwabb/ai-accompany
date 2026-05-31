@@ -673,7 +673,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
     const [flashHighlightId, setFlashHighlightId] = useState<string | null>(null);
     const [flashBookmarkPage, setFlashBookmarkPage] = useState<number | null>(null);
     const [showShortcuts, setShowShortcuts] = useState(false);
-    const [sessionSeconds, setSessionSeconds] = useState(0);
+    // const [sessionSeconds, setSessionSeconds] = useState(0);
     // 荧光笔拖动预览：选区改变时实时计算的临时高亮 rect
     const [highlighterPreview, setHighlighterPreview] = useState<{ page: number; rects: HighlightRect[] } | null>(null);
     const [currentHighlightColor, setCurrentHighlightColor] = useState<HighlightColor>(() => {
@@ -687,37 +687,37 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
     }, [currentHighlightColor]);
 
     // 阅读时长计时：仅在 tab 处于可见状态时累计
-    useEffect(() => {
-        let intervalId: number | undefined;
-        const start = () => {
-            if (intervalId !== undefined) return;
-            intervalId = window.setInterval(() => setSessionSeconds((s) => s + 1), 1000);
-        };
-        const stop = () => {
-            if (intervalId !== undefined) {
-                window.clearInterval(intervalId);
-                intervalId = undefined;
-            }
-        };
-        const handleVisibility = () => {
-            if (document.hidden) stop(); else start();
-        };
-        start();
-        document.addEventListener('visibilitychange', handleVisibility);
-        return () => {
-            stop();
-            document.removeEventListener('visibilitychange', handleVisibility);
-        };
-    }, []);
+    // useEffect(() => {
+    //     let intervalId: number | undefined;
+    //     const start = () => {
+    //         if (intervalId !== undefined) return;
+    //         intervalId = window.setInterval(() => setSessionSeconds((s) => s + 1), 1000);
+    //     };
+    //     const stop = () => {
+    //         if (intervalId !== undefined) {
+    //             window.clearInterval(intervalId);
+    //             intervalId = undefined;
+    //         }
+    //     };
+    //     const handleVisibility = () => {
+    //         if (document.hidden) stop(); else start();
+    //     };
+    //     start();
+    //     document.addEventListener('visibilitychange', handleVisibility);
+    //     return () => {
+    //         stop();
+    //         document.removeEventListener('visibilitychange', handleVisibility);
+    //     };
+    // }, []);
 
-    const formatReadingTime = (totalSec: number) => {
-        const h = Math.floor(totalSec / 3600);
-        const m = Math.floor((totalSec % 3600) / 60);
-        const s = totalSec % 60;
-        if (h > 0) return `${h}h${String(m).padStart(2, '0')}m`;
-        if (m > 0) return `${m}m${String(s).padStart(2, '0')}s`;
-        return `${s}s`;
-    };
+    // const formatReadingTime = (totalSec: number) => {
+    //     const h = Math.floor(totalSec / 3600);
+    //     const m = Math.floor((totalSec % 3600) / 60);
+    //     const s = totalSec % 60;
+    //     if (h > 0) return `${h}h${String(m).padStart(2, '0')}m`;
+    //     if (m > 0) return `${m}m${String(s).padStart(2, '0')}s`;
+    //     return `${s}s`;
+    // };
 
     useEffect(() => {
         try {
@@ -2666,7 +2666,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                 const page = await pdf.getPage(p);
                 const content = await page.getTextContent();
                 const text = content.items
-                    .map((item: { str?: string }) => item.str || '')
+                    .map((item: any) => item.str || '')
                     .join(' ');
                 const textLower = text.toLowerCase();
                 let idx = 0;
@@ -3817,7 +3817,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                     </button>
                     <button
                         onMouseDown={(e) => e.preventDefault()}
-                        onClick={addHighlightFromSelection}
+                        onClick={() => addHighlightFromSelection()}
                         className="text-xs font-semibold tracking-wide px-2 py-1 rounded hover:bg-slate-700"
                     >
                         {t('reader.highlight', '高亮')}
@@ -3887,7 +3887,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                 >
                     <button
                         onMouseDown={(e) => e.preventDefault()}
-                        onClick={addAreaHighlight}
+                        onClick={() => addAreaHighlight()}
                         className="text-xs font-semibold tracking-wide px-2 py-1 rounded hover:bg-slate-700"
                     >
                         {t('reader.highlightArea', '整体高亮（含OCR）')}

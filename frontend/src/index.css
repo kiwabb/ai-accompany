@@ -548,6 +548,25 @@ body.theme-chiikawa .ach-summary-card {
   border-radius: 16px !important;
 }
 
+/* BottomNav 容器和按钮：用类自己定义圆角，避免 Tailwind rounded-* 触发 chiikawa 主题全局覆盖。 */
+.bottomnav-root {
+  border-radius: 16px;
+}
+@media (min-width: 768px) {
+  .bottomnav-root {
+    border-radius: 28px;
+  }
+}
+.bottomnav-btn {
+  border-radius: 12px;
+}
+body.theme-chiikawa .bottomnav-root {
+  border-radius: 24px !important;
+}
+body.theme-chiikawa .bottomnav-btn {
+  border-radius: 12px !important;
+}
+
 /* Extra rounded corners for main containers */
 body.theme-chiikawa main>div,
 body.theme-chiikawa .bg-white,

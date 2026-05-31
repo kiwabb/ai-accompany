@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTimerContext } from '../contexts/TimerContext';
 import PomodoroTimer from '../components/PomodoroTimer';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft as ChevronLeftIcon, BookOpen as BookOpenIcon, Calendar, X } from 'lucide-react';
+import { ChevronLeft as ChevronLeftIcon, BookOpen as BookOpenIcon, Calendar, Plus } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 import { useTranslation } from 'react-i18next';
 import AmbientBackground from '../components/AmbientBackground';
@@ -25,6 +25,7 @@ const TimerPage: React.FC = () => {
     const [pendingThemeId, setPendingThemeId] = React.useState<string | null>(null);
     const lastHandledThemeIdRef = React.useRef<string | null>(null);
     const [countdownOpen, setCountdownOpen] = useState(false);
+    const [countdownAdding, setCountdownAdding] = useState(false);
     const countdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -122,7 +123,7 @@ const TimerPage: React.FC = () => {
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 exit={{ opacity: 0, y: -8, scale: 0.96 }}
                                 transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-                                className="absolute top-full right-0 mt-3 w-[min(320px,90vw)] bg-white/90 backdrop-blur-2xl rounded-3xl border border-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.18)] p-4"
+                                className="fixed top-[60px] right-3 z-[60] md:absolute md:top-full md:right-0 md:mt-3 w-[min(320px,calc(100vw-24px))] bg-white/90 backdrop-blur-2xl rounded-3xl border border-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.18)] p-4"
                             >
                                 <div className="flex items-center justify-between mb-3 px-1">
                                     <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500 flex items-center gap-2">
@@ -130,13 +131,14 @@ const TimerPage: React.FC = () => {
                                         {t('countdown.title', '倒数日')}
                                     </h3>
                                     <button
-                                        onClick={() => setCountdownOpen(false)}
-                                        className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                                        onClick={() => setCountdownAdding(true)}
+                                        className="p-1 rounded-lg text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 transition-colors"
+                                        aria-label={t('countdown.addCountdown', '添加倒数日')}
                                     >
-                                        <X className="w-4 h-4" />
+                                        <Plus className="w-4 h-4" />
                                     </button>
                                 </div>
-                                <CountdownWidget />
+                                <CountdownWidget hideHeader isAdding={countdownAdding} onIsAddingChange={setCountdownAdding} />
                             </motion.div>
                         )}
                     </AnimatePresence>
@@ -166,7 +168,7 @@ const TimerPage: React.FC = () => {
                 )}
             </div>
 
-            <div className="relative z-10 w-full max-w-6xl flex items-center justify-center py-12">
+            <div className="relative z-10 w-full max-w-5xl flex items-center justify-center py-12">
                 <PomodoroTimer />
             </div>
 

@@ -110,7 +110,7 @@ const TodoWidget: React.FC<TodoWidgetProps> = ({ isShinchanTheme = false }) => {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -8, scale: 0.96 }}
                         transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-                        className="absolute top-full right-0 mt-3 w-[320px] bg-white/90 backdrop-blur-2xl rounded-3xl border border-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.18)] p-4"
+                        className="fixed top-[60px] right-3 z-[60] md:absolute md:top-full md:right-0 md:mt-3 w-[min(320px,calc(100vw-24px))] bg-white/90 backdrop-blur-2xl rounded-3xl border border-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.18)] p-4"
                     >
                         <div className="flex items-center justify-between mb-3 px-1">
                             <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500 flex items-center gap-2">
