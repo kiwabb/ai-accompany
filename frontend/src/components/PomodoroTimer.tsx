@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { TimerDisplay } from './TimerDisplay';
 import TimerControls from './TimerControls';
 import CountdownWidget from './CountdownWidget';
-import { useTimerContext } from '../contexts/TimerContext';
+import { useTimerContext } from '../contexts/useTimerContext';
 
 const PomodoroTimer: React.FC = () => {
   const { t } = useTranslation();

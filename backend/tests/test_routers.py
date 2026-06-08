@@ -1,6 +1,7 @@
 # backend/tests/test_routers.py
 import pytest
 from datetime import datetime, timezone, timedelta
+from unittest.mock import AsyncMock, patch
 
 
 @pytest.mark.asyncio
@@ -51,16 +52,22 @@ async def test_create_and_update_session_via_api(async_client):
 @pytest.mark.asyncio
 async def test_chat_completions_streaming(async_client):
     """Test streaming chat completions via the API."""
-    # Mocking the AI response is usually preferred, but here we test the endpoint's streaming capability.
-    # We expect a mock response if Google API Key is not set, which is handled in the service.
-    chat_data = {"message": "Hello AI"}
-    response = await async_client.post("/api/chat/completions", json=chat_data)
-    assert response.status_code == 200
+    async def mock_gen(*args, **kwargs):
+        yield "Mock AI response"
 
-    # Verify streaming response
-    content = ""
-    async for chunk in response.aiter_text():
-        content += chunk
+    with patch("backend.routers.sessions.chat_service.stream_chat") as mock_chat:
+        mock_chat.return_value = mock_gen()
+        with patch(
+            "backend.routers.sessions.memory_service.process_exchange",
+            new_callable=AsyncMock,
+        ):
+            chat_data = {"message": "Hello AI"}
+            response = await async_client.post("/api/chat/completions", json=chat_data)
+            assert response.status_code == 200
 
-    # Depending on whether an actual API call is made or a mock is triggered
-    assert len(content) > 0
+            # Verify streaming response
+            content = ""
+            async for chunk in response.aiter_text():
+                content += chunk
+
+            assert content == "Mock AI response"

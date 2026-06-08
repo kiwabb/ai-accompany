@@ -8,6 +8,16 @@ interface UseCozyPalDiagnosticsOptions {
   t: TFunction;
 }
 
+interface SavedPomodoroContext {
+  activeThemeId?: string;
+  phase?: string;
+  timeLeft?: number;
+  themes?: Array<{ id: string; name: string }>;
+  settings?: {
+    aiPersona?: string;
+  };
+}
+
 export interface CozyPalDiagnosticsState {
   diagnostics: DiagnosticData | null;
   memoryFragments: { id: number; content: string; created_at: string }[];
@@ -46,15 +56,15 @@ export const useCozyPalDiagnostics = ({ t }: UseCozyPalDiagnosticsOptions): Cozy
       const profile = getUserProfile();
       
       // Load current timer context to build visual preview of system prompt
-      let savedContext = null;
+      let savedContext: SavedPomodoroContext | null = null;
       try {
         const raw = localStorage.getItem('pomodoro_context_state');
-        if (raw) savedContext = JSON.parse(raw);
-      } catch (e) {
+        if (raw) savedContext = JSON.parse(raw) as SavedPomodoroContext;
+      } catch {
         // ignore
       }
 
-      const activeThemeName = savedContext?.themes?.find((t: any) => t.id === savedContext.activeThemeId)?.name || 'Focus';
+      const activeThemeName = savedContext?.themes?.find((theme) => theme.id === savedContext?.activeThemeId)?.name || 'Focus';
       const promptContext = {
         themeName: activeThemeName,
         phase: savedContext?.phase || 'focus',
@@ -101,7 +111,7 @@ export const useCozyPalDiagnostics = ({ t }: UseCozyPalDiagnosticsOptions): Cozy
     setEditingFragment(null);
   };
 
-  const handleDeleteFragment = async (_id: number) => {
+  const handleDeleteFragment = async () => {
     // No-op
   };
 

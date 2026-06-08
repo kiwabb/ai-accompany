@@ -7,6 +7,7 @@ import CozyPalMainTabs from './CozyPalMainTabs';
 import CozyPalResizeHandle from './CozyPalResizeHandle';
 import CozyPalTopicTabs from './CozyPalTopicTabs';
 import type { Topic } from './types';
+import type { VisualTheme, VisualThemeCharacter } from '../../types/pomodoro';
 
 interface CozyPalDrawerProps {
   width: number;
@@ -30,8 +31,8 @@ interface CozyPalDrawerProps {
   inputArea: ReactNode;
   profileEditOverlay: ReactNode;
   t: TFunction;
-  isChiikawaTheme?: boolean;
-  isShinchanTheme?: boolean;
+  visualTheme?: VisualTheme;
+  activeCharacter?: VisualThemeCharacter;
 }
 
 const CozyPalDrawer = ({
@@ -56,8 +57,8 @@ const CozyPalDrawer = ({
   inputArea,
   profileEditOverlay,
   t,
-  isChiikawaTheme,
-  isShinchanTheme,
+  visualTheme,
+  activeCharacter,
 }: CozyPalDrawerProps) => (
   <motion.div
     aria-label={t('cozyPal.chatDescription')}
@@ -66,13 +67,23 @@ const CozyPalDrawer = ({
     animate={{ x: 0 }}
     exit={{ x: '100%' }}
     transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-    style={{ width }}
-    className={`fixed top-0 right-0 h-full backdrop-blur-3xl shadow-2xl z-40 border-l flex flex-col ${isShinchanTheme ? 'bg-[#FFFDE7]/95 border-l-4 border-white shadow-[0_0_0_8px_rgba(255,241,118,0.2)_inset]' : 'bg-white/80 border-white/40'}`}
+    style={{
+      width,
+      ...(visualTheme ? {
+        backgroundColor: visualTheme.colors.surface,
+        borderColor: visualTheme.colors.border,
+        boxShadow: visualTheme.shadows.elevated,
+      } : {}),
+    }}
+    className="fixed top-0 right-0 h-full backdrop-blur-3xl shadow-2xl z-40 border-l flex flex-col bg-white/80 border-white/40"
   >
     <CozyPalResizeHandle isResizing={isResizing} onStartResizing={onStartResizing} />
 
-    <div className={`flex-none p-5 pb-3 border-b backdrop-blur-md ${isShinchanTheme ? 'border-[#FFF176]/50 bg-white/40' : 'border-indigo-50 bg-white/40'}`}>
-      <CozyPalHeader avatarState={avatarState} onClose={onClose} t={t} isChiikawaTheme={isChiikawaTheme} isShinchanTheme={isShinchanTheme} />
+    <div
+      className="flex-none p-5 pb-3 border-b backdrop-blur-md border-indigo-50 bg-white/40"
+      style={visualTheme ? { borderColor: visualTheme.colors.border, backgroundColor: visualTheme.colors.glass } : undefined}
+    >
+      <CozyPalHeader avatarState={avatarState} onClose={onClose} t={t} visualTheme={visualTheme} activeCharacter={activeCharacter} />
       <CozyPalMainTabs mainTab={mainTab} onChange={onMainTabChange} t={t} />
     </div>
 

@@ -66,9 +66,9 @@ const DocumentEditModal: React.FC<DocumentEditModalProps> = ({
 
       onUpdateComplete();
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Update failed:', err);
-      setError(err.message || '更新书籍元数据失败');
+      setError(err instanceof Error && err.message ? err.message : '更新书籍元数据失败');
     } finally {
       setIsUpdating(false);
     }

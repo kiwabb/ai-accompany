@@ -87,7 +87,8 @@ const AISettings: React.FC<AISettingsProps> = ({
                 value={
                   settings.aiProvider === 'gemini' ? settings.googleApiKey :
                     settings.aiProvider === 'gpt' ? settings.openaiApiKey :
-                      (settings as any)[`${settings.aiProvider}ApiKey`] || ''
+                      settings.aiProvider === 'deepseek' ? settings.deepseekApiKey :
+                        settings.aiProvider === 'zhipu' ? settings.zhipuApiKey : ''
                 }
                 onChange={(e) => {
                   const key = settings.aiProvider === 'gemini' ? 'googleApiKey' :

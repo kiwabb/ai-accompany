@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { VISUAL_THEMES, DEFAULT_VISUAL_THEME_ID } from '../constants/themes';
+import { DEFAULT_VISUAL_THEME_ID, isOriginalCartoonThemeId, resolveVisualTheme } from '../constants/themes';
 import type { VisualTheme } from '../types/pomodoro';
 
 interface UseVisualThemeProps {
@@ -10,7 +10,7 @@ export const useVisualTheme = ({ activeVisualThemeId }: UseVisualThemeProps) => 
   const themeId = activeVisualThemeId || DEFAULT_VISUAL_THEME_ID;
 
   const activeTheme = useMemo(() => {
-    return VISUAL_THEMES.find(t => t.id === themeId) || VISUAL_THEMES[0];
+    return resolveVisualTheme(themeId);
   }, [themeId]);
 
   // Apply theme CSS variables to document root
@@ -35,7 +35,18 @@ export const useVisualTheme = ({ activeVisualThemeId }: UseVisualThemeProps) => 
     root.style.setProperty('--font-sans', fontSans);
 
     // Apply theme-specific body class
-    document.body.classList.remove('theme-cozy', 'theme-chiikawa', 'theme-shinchan', 'theme-dark');
+    document.body.classList.remove(
+      'theme-cozy',
+      'theme-mochi-camp',
+      'theme-stationery-town',
+      'theme-cloud-academy',
+      'theme-bean-planet',
+      'theme-forest-lighthouse',
+      'theme-moon-library',
+      'theme-chiikawa',
+      'theme-shinchan',
+      'theme-dark',
+    );
     document.body.classList.add(`theme-${activeTheme.id}`);
 
     // Update background color immediately
@@ -44,15 +55,13 @@ export const useVisualTheme = ({ activeVisualThemeId }: UseVisualThemeProps) => 
 
   }, [activeTheme]);
 
-  const isChiikawaTheme = activeTheme.id === 'chiikawa';
-  const isShinchanTheme = activeTheme.id === 'shinchan';
+  const isOriginalCartoonTheme = isOriginalCartoonThemeId(activeTheme.id);
   const showDecorations = activeTheme.decorations?.enabled ?? false;
   const showFloatingElements = activeTheme.decorations?.floatingElements ?? false;
 
   return {
     activeTheme,
-    isChiikawaTheme,
-    isShinchanTheme,
+    isOriginalCartoonTheme,
     showDecorations,
     showFloatingElements,
     themeColors: activeTheme.colors,
@@ -60,5 +69,5 @@ export const useVisualTheme = ({ activeVisualThemeId }: UseVisualThemeProps) => 
 };
 
 export const getThemeById = (id: string): VisualTheme => {
-  return VISUAL_THEMES.find(t => t.id === id) || VISUAL_THEMES[0];
+  return resolveVisualTheme(id);
 };

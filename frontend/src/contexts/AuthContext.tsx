@@ -1,15 +1,6 @@
-import React, { createContext, useContext, useState, type ReactNode } from 'react';
+import React, { useState, type ReactNode } from 'react';
 import { getUserProfile } from '../lib/storage/userProfile';
-
-interface AuthContextType {
-  token: string | null;
-  username: string | null;
-  isAuthenticated: boolean;
-  login: (token: string, username: string) => void;
-  logout: () => void;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import { AuthContext } from './AuthContextValue';
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [username, setUsername] = useState<string | null>(() => getUserProfile().name || '学子');
@@ -44,12 +35,4 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 };

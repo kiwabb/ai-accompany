@@ -23,7 +23,7 @@ const getHighlightedPromptParts = (
 ): (string | React.ReactNode)[] | string => {
   if (!diagnostics || !diagnostics.full_prompt) return 'No prompt data.';
 
-  let content = diagnostics.full_prompt;
+  const content = diagnostics.full_prompt;
   const fragments = diagnostics.memory_fragments || [];
   const sortedFragments = [...fragments].sort((a, b) => b.content.length - a.content.length);
   let parts: (string | React.ReactNode)[] = [content];

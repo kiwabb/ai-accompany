@@ -29,91 +29,77 @@ interface ShinchanDecorationsProps {
   enabled: boolean;
 }
 
+const selectCornerStickers = () => [...SHINCHAN_STICKERS]
+  .sort(() => Math.random() - 0.5)
+  .slice(0, 4);
+
+const createFloatingElements = (): FloatingElement[] => {
+  const items: FloatingElement[] = [];
+
+  // Floating character sticker images
+  for (let i = 0; i < 6; i++) {
+    items.push({
+      id: i,
+      content: SHINCHAN_STICKERS[i % SHINCHAN_STICKERS.length],
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: 44 + Math.random() * 28,
+      duration: 18 + Math.random() * 12,
+      delay: Math.random() * 6,
+      type: 'sticker',
+      isImage: true,
+    });
+  }
+
+  // Action stars and symbols
+  for (let i = 6; i < 16; i++) {
+    items.push({
+      id: i,
+      content: SHINCHAN_ELEMENTS.actionSymbols[i % SHINCHAN_ELEMENTS.actionSymbols.length],
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: 14 + Math.random() * 12,
+      duration: 8 + Math.random() * 6,
+      delay: Math.random() * 3,
+      type: 'action',
+    });
+  }
+
+  // Chocobi snack emojis
+  for (let i = 16; i < 24; i++) {
+    items.push({
+      id: i,
+      content: SHINCHAN_ELEMENTS.chocobiSnacks[i % SHINCHAN_ELEMENTS.chocobiSnacks.length],
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: 16 + Math.random() * 14,
+      duration: 12 + Math.random() * 8,
+      delay: Math.random() * 4,
+      type: 'chocobi',
+    });
+  }
+
+  // Floating stars
+  for (let i = 24; i < 30; i++) {
+    items.push({
+      id: i,
+      content: ['⭐', '🌟', '💫', '✨', '⚡', '🔥'][i % 6],
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: 14 + Math.random() * 10,
+      duration: 10 + Math.random() * 6,
+      delay: Math.random() * 3,
+      type: 'star',
+    });
+  }
+
+  return items;
+};
+
 const ShinchanDecorations: React.FC<ShinchanDecorationsProps> = ({ enabled }) => {
-  const [elements, setElements] = useState<FloatingElement[]>([]);
+  const [elements, setElements] = useState<FloatingElement[]>(createFloatingElements);
   const [mouseTrail, setMouseTrail] = useState<{ id: number; x: number; y: number; emoji: string }[]>([]);
-  const [cornerStickers, setCornerStickers] = useState<string[]>([]);
-
-  // Generate random corner stickers
-  useEffect(() => {
-    if (enabled) {
-      const shuffled = [...SHINCHAN_STICKERS].sort(() => Math.random() - 0.5);
-      setCornerStickers(shuffled.slice(0, 4));
-    }
-  }, [enabled]);
-
-  // Generate initial floating elements
-  useEffect(() => {
-    if (!enabled) {
-      setElements([]);
-      return;
-    }
-
-    const generateElements = (): FloatingElement[] => {
-      const items: FloatingElement[] = [];
-
-      // Floating character sticker images
-      for (let i = 0; i < 6; i++) {
-        items.push({
-          id: i,
-          content: SHINCHAN_STICKERS[i % SHINCHAN_STICKERS.length],
-          x: Math.random() * 100,
-          y: Math.random() * 100,
-          size: 44 + Math.random() * 28,
-          duration: 18 + Math.random() * 12,
-          delay: Math.random() * 6,
-          type: 'sticker',
-          isImage: true,
-        });
-      }
-
-      // Action stars and symbols
-      for (let i = 6; i < 16; i++) {
-        items.push({
-          id: i,
-          content: SHINCHAN_ELEMENTS.actionSymbols[i % SHINCHAN_ELEMENTS.actionSymbols.length],
-          x: Math.random() * 100,
-          y: Math.random() * 100,
-          size: 14 + Math.random() * 12,
-          duration: 8 + Math.random() * 6,
-          delay: Math.random() * 3,
-          type: 'action',
-        });
-      }
-
-      // Chocobi snack emojis
-      for (let i = 16; i < 24; i++) {
-        items.push({
-          id: i,
-          content: SHINCHAN_ELEMENTS.chocobiSnacks[i % SHINCHAN_ELEMENTS.chocobiSnacks.length],
-          x: Math.random() * 100,
-          y: Math.random() * 100,
-          size: 16 + Math.random() * 14,
-          duration: 12 + Math.random() * 8,
-          delay: Math.random() * 4,
-          type: 'chocobi',
-        });
-      }
-
-      // Floating stars
-      for (let i = 24; i < 30; i++) {
-        items.push({
-          id: i,
-          content: ['⭐', '🌟', '💫', '✨', '⚡', '🔥'][i % 6],
-          x: Math.random() * 100,
-          y: Math.random() * 100,
-          size: 14 + Math.random() * 10,
-          duration: 10 + Math.random() * 6,
-          delay: Math.random() * 3,
-          type: 'star',
-        });
-      }
-
-      return items;
-    };
-
-    setElements(generateElements());
-  }, [enabled]);
+  const [cornerStickers] = useState<string[]>(selectCornerStickers);
 
   // Mouse trail effect
   const handleMouseMove = useCallback((e: MouseEvent) => {

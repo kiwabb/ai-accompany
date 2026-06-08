@@ -79,7 +79,8 @@ export const deleteUserTheme = async (themeId: string): Promise<void> => {
 };
 
 // AI Models API
-export const getProviderModels = async (provider: string, _apiKey?: string): Promise<string[]> => {
+export const getProviderModels = async (provider: string, apiKey?: string): Promise<string[]> => {
+  void apiKey;
   return listModels(provider);
 };
 
@@ -97,11 +98,13 @@ export const deleteCountdown = async (id: number): Promise<void> => {
 };
 
 // Auth API stub
-export const login = async (_formData: FormData): Promise<{ access_token: string; token_type: string }> => {
+export const login = async (formData: FormData): Promise<{ access_token: string; token_type: string }> => {
+  void formData;
   return { access_token: 'guest-token', token_type: 'bearer' };
 };
 
-export const signup = async (_userData: any): Promise<any> => {
+export const signup = async (userData: unknown): Promise<{ success: boolean }> => {
+  void userData;
   return { success: true };
 };
 
@@ -112,7 +115,8 @@ export const getAchievements = async (): Promise<UserAchievementResponse[]> => {
 };
 
 // Detect and return newly unlocked achievements using local storage cache comparison
-export const getLatestUnlocks = async (_minutes: number = 5): Promise<UserAchievementResponse[]> => {
+export const getLatestUnlocks = async (minutes: number = 5): Promise<UserAchievementResponse[]> => {
+  void minutes;
   const allAchievements = await getAchievements();
   const unlocked = allAchievements.filter(a => a.status === 'unlocked');
 

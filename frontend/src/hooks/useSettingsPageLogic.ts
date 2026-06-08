@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useTimerContext } from '../contexts/TimerContext';
+import { useTimerContext } from '../contexts/useTimerContext';
 import { updateUserTheme } from '../api/client';
 import type { TimerSettings, FocusTheme } from '../types/pomodoro';
 

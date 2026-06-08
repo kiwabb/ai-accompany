@@ -2,13 +2,26 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useTimerContext } from '../contexts/TimerContext';
+import { useTimerContext } from '../contexts/useTimerContext';
 import { Book as BookIcon, Rocket as RocketIcon, Brain as BrainIcon, Coffee as CoffeeIcon, Sparkles as SparklesIcon, CheckCircle2 } from 'lucide-react';
 import { getStatsRange } from '../api/client';
 import type { FocusTheme } from '../types/pomodoro';
 
 import ConfirmModal from '../components/ConfirmModal';
 import AmbientBackground from '../components/AmbientBackground';
+import OriginalMascot from '../components/OriginalMascot';
+import OriginalProjectCardArt from '../components/OriginalProjectCardArt';
+import { ICON_BY_KEY } from '../constants/achievementIcons';
+import { isOriginalCartoonThemeId, resolveThemeCharacterForProject, resolveVisualTheme } from '../constants/themes';
+
+const completionBursts = [
+    { symbol: '🎉', y: [-92, -148] },
+    { symbol: '✨', y: [-116, -172] },
+    { symbol: '🌟', y: [-98, -154] },
+    { symbol: '💫', y: [-126, -188] },
+    { symbol: '🎊', y: [-104, -164] },
+    { symbol: '⭐', y: [-134, -198] },
+];
 
 const FocusListPage: React.FC = () => {
     const { t, i18n } = useTranslation();
@@ -80,16 +93,27 @@ const FocusListPage: React.FC = () => {
         };
     }, [menuState]);
 
-    const isChiikawaTheme = state.activeVisualThemeId === 'chiikawa';
-    const isShinchanTheme = state.activeVisualThemeId === 'shinchan';
     const useDefaultIcon = state.settings.useDefaultThemeIcon !== false;
+    const visualTheme = resolveVisualTheme(state.activeVisualThemeId);
+    const isChiikawaTheme = visualTheme.id === 'chiikawa';
+    const isShinchanTheme = visualTheme.id === 'shinchan';
+    const isOriginalTheme = isOriginalCartoonThemeId(visualTheme.id);
 
-    const getIcon = (theme: any) => {
+    const getIcon = (theme: FocusTheme) => {
         const id = theme.id;
         const iconType = theme.iconType;
+        const effectiveIcon = useDefaultIcon ? id : (iconType || id);
+        const customIcon = ICON_BY_KEY[effectiveIcon];
+
+        if (customIcon?.img) {
+            return <img src={customIcon.img} alt={customIcon.iconKey} className="w-10 h-10 object-contain" />;
+        }
+
+        if (customIcon?.themeId) {
+            return <OriginalMascot theme={resolveVisualTheme(customIcon.themeId)} size={46} />;
+        }
 
         if (isChiikawaTheme) {
-            const effectiveIcon = useDefaultIcon ? id : (iconType || id);
             switch (effectiveIcon) {
                 case 'english':
                 case 'hachiware': return <img src="/assets/chiikawa/sticker-1.png" alt="Hachiware" className="w-10 h-10 object-contain" />;
@@ -106,7 +130,6 @@ const FocusListPage: React.FC = () => {
         }
 
         if (isShinchanTheme) {
-            const effectiveIcon = useDefaultIcon ? id : (iconType || id);
             switch (effectiveIcon) {
                 case 'english':
                 case 'kazama': return <img src="/assets/shinchan/kazama.png" alt="Kazama" className="w-10 h-10 object-contain" />;
@@ -122,7 +145,10 @@ const FocusListPage: React.FC = () => {
             }
         }
 
-        const effectiveIcon = useDefaultIcon ? id : (iconType || id);
+        if (isOriginalTheme) {
+            return <OriginalMascot character={resolveThemeCharacterForProject(visualTheme, theme)} theme={visualTheme} size={46} />;
+        }
+
         switch (effectiveIcon) {
             case 'english': return <BrainIcon size={28} />;
             case '408': return <RocketIcon size={28} />;
@@ -208,6 +234,7 @@ const FocusListPage: React.FC = () => {
                 };
             }
         }
+
         switch (id) {
             case 'english': return {
                 bg: 'bg-indigo-500/10',
@@ -434,6 +461,10 @@ const FocusListPage: React.FC = () => {
                                     <div className={`absolute inset-0 pointer-events-none ${style.pattern}`} />
                                 )}
 
+                                {isOriginalTheme && (
+                                    <div className="absolute inset-0 pointer-events-none opacity-40" style={{ backgroundColor: visualTheme.colors.glass }} />
+                                )}
+
                                 {/* Inner Gradient Glow - Desktop Only */}
                                 <div className={`hidden md:block absolute inset-0 bg-gradient-to-br ${style.grad} translate-y-full group-hover:translate-y-0 transition-transform duration-700 ease-out opacity-40`} />
 
@@ -453,13 +484,30 @@ const FocusListPage: React.FC = () => {
                                     </div>
                                 )}
 
+                                {isOriginalTheme && (
+                                    <div className="absolute bottom-[-18px] right-[-18px] opacity-[0.08] pointer-events-none group-hover:opacity-20 group-hover:scale-110 transition-all duration-500">
+                                        <div className="scale-[4] rotate-[-10deg]">
+                                            {getIcon(theme)}
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Icon Wrapper - Animation on hover only */}
-                                <motion.div
-                                    whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
-                                    className={`relative z-10 p-3 md:p-8 rounded-xl md:rounded-[40px] ${style.icon} flex-shrink-0 mb-3 md:mb-10 shadow-inner border border-white/60 transition-all duration-300`}
-                                >
-                                    {getIcon(theme)}
-                                </motion.div>
+                                {isOriginalTheme ? (
+                                    <motion.div
+                                        whileHover={{ y: -4, rotate: [0, -2, 2, 0], scale: 1.03 }}
+                                        className="relative z-10 mb-3 md:mb-10 w-full flex justify-center transition-all duration-300"
+                                    >
+                                        <OriginalProjectCardArt focusTheme={theme} visualTheme={visualTheme} />
+                                    </motion.div>
+                                ) : (
+                                    <motion.div
+                                        whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
+                                        className={`relative z-10 p-3 md:p-8 rounded-xl md:rounded-[40px] ${style.icon} flex-shrink-0 mb-3 md:mb-10 shadow-inner border border-white/60 transition-all duration-300`}
+                                    >
+                                        {getIcon(theme)}
+                                    </motion.div>
+                                )}
 
                                 <div className="relative z-10 text-center flex-grow w-full min-w-0">
                                     <h3 className="text-sm md:text-3xl font-bold text-slate-800 mb-2 md:mb-4 group-hover:text-black transition-colors truncate">{theme.name}</h3>
@@ -527,13 +575,13 @@ const FocusListPage: React.FC = () => {
                             className="relative bg-white rounded-[40px] shadow-2xl border border-white px-12 py-14 max-w-md w-full text-center overflow-hidden"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            {['🎉', '✨', '🌟', '💫', '🎊', '⭐'].map((emoji, i) => (
+                            {completionBursts.map((burst, i) => (
                                 <motion.span
                                     key={i}
                                     initial={{ opacity: 0, y: 0, x: 0, scale: 0 }}
                                     animate={{
                                         opacity: [0, 1, 1, 0],
-                                        y: [0, -80 - Math.random() * 60, -120 - Math.random() * 80],
+                                        y: [0, burst.y[0], burst.y[1]],
                                         x: [(i - 2.5) * 10, (i - 2.5) * 40, (i - 2.5) * 80],
                                         scale: [0, 1.2, 0.8],
                                         rotate: [0, 180, 360],
@@ -542,7 +590,7 @@ const FocusListPage: React.FC = () => {
                                     className="absolute top-1/2 left-1/2 text-3xl pointer-events-none"
                                     style={{ transformOrigin: 'center' }}
                                 >
-                                    {emoji}
+                                    {burst.symbol}
                                 </motion.span>
                             ))}
 

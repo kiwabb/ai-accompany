@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { useState } from 'react';
 import type { TFunction } from 'i18next';
 import { Copy, Check, RefreshCw } from 'lucide-react';
-import type { DiagnosticData } from './types';
+import type { DiagnosticData, EditingFragment } from './types';
 
 interface CozyPalDebugTabProps {
   diagnostics: DiagnosticData | null;
@@ -10,13 +10,13 @@ interface CozyPalDebugTabProps {
   onRefresh: () => void;
   t: TFunction;
   // Optional legacy props to satisfy TypeScript and CozyPal.tsx
-  onStartEditFragment?: any;
-  editingFragment?: any;
-  editValue?: any;
-  onEditValueChange?: any;
-  onCloseEdit?: any;
-  onSaveEdit?: any;
-  isSavingEdit?: any;
+  onStartEditFragment?: (id: number, content: string) => void;
+  editingFragment?: EditingFragment | null;
+  editValue?: string;
+  onEditValueChange?: (value: string) => void;
+  onCloseEdit?: () => void;
+  onSaveEdit?: () => void | Promise<void>;
+  isSavingEdit?: boolean;
 }
 
 const CozyPalDebugTab = ({

@@ -2,7 +2,9 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import type { Phase } from '../types/pomodoro';
-import { useTimerContext } from '../contexts/TimerContext';
+import { useTimerContext } from '../contexts/useTimerContext';
+import { isOriginalCartoonThemeId, resolveThemeCharacterForProject, resolveVisualTheme } from '../constants/themes';
+import OriginalMascot from './OriginalMascot';
 
 interface TimerDisplayProps {
   timeLeft: number;
@@ -49,8 +51,14 @@ const shinchanEmojis: Record<Phase, string> = {
 export const TimerDisplay = React.memo(({ timeLeft, totalTime, phase }: TimerDisplayProps) => {
   const { t } = useTranslation();
   const { state } = useTimerContext();
-  const isChiikawaTheme = state.activeVisualThemeId === 'chiikawa';
-  const isShinchanTheme = state.activeVisualThemeId === 'shinchan';
+  const visualTheme = resolveVisualTheme(state.activeVisualThemeId);
+  const isChiikawaTheme = visualTheme.id === 'chiikawa';
+  const isShinchanTheme = visualTheme.id === 'shinchan';
+  const isOriginalTheme = isOriginalCartoonThemeId(visualTheme.id);
+  const activeFocusTheme = state.themes.find((theme) => theme.id === state.activeThemeId);
+  const activeCharacter = isOriginalTheme && activeFocusTheme
+    ? resolveThemeCharacterForProject(visualTheme, activeFocusTheme)
+    : visualTheme.character;
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
@@ -61,13 +69,17 @@ export const TimerDisplay = React.memo(({ timeLeft, totalTime, phase }: TimerDis
     ? (phase === 'focus' ? '#FFB5C5' : phase === 'shortBreak' ? '#B8E6F0' : '#FFFACD')
     : isShinchanTheme
       ? (phase === 'focus' ? '#FF4D4D' : phase === 'shortBreak' ? '#FFEB3B' : '#2196F3')
-      : phaseColors[phase];
+      : isOriginalTheme
+        ? visualTheme.colors.primary
+        : phaseColors[phase];
 
   const emoji = isChiikawaTheme
     ? chiikawaPhaseEmojis[phase]
     : isShinchanTheme
       ? shinchanEmojis[phase]
-      : phaseEmojis[phase];
+      : isOriginalTheme
+        ? activeCharacter?.phaseSymbols[phase] ?? phaseEmojis[phase]
+        : phaseEmojis[phase];
 
   const label = t(`common.${phase}`);
 
@@ -100,9 +112,10 @@ export const TimerDisplay = React.memo(({ timeLeft, totalTime, phase }: TimerDis
           stroke={
             isChiikawaTheme ? 'rgba(255, 181, 197, 0.15)' :
               isShinchanTheme ? (phase === 'focus' ? 'rgba(255, 77, 77, 0.15)' : phase === 'shortBreak' ? 'rgba(255, 235, 59, 0.15)' : 'rgba(33, 150, 243, 0.15)') :
-                "var(--color-cozy-cream)"
+                isOriginalTheme ? visualTheme.colors.border :
+                  "var(--color-cozy-cream)"
           }
-          strokeWidth={isChiikawaTheme || isShinchanTheme ? "12" : "10"}
+          strokeWidth={isChiikawaTheme || isShinchanTheme || isOriginalTheme ? "12" : "10"}
         />
         <motion.circle
           cx="160"
@@ -110,13 +123,19 @@ export const TimerDisplay = React.memo(({ timeLeft, totalTime, phase }: TimerDis
           r="120"
           fill="transparent"
           stroke={color}
-          strokeWidth={isChiikawaTheme || isShinchanTheme ? "14" : "10"}
+          strokeWidth={isChiikawaTheme || isShinchanTheme || isOriginalTheme ? "14" : "10"}
           strokeDasharray={circumference}
           animate={{ strokeDashoffset: circumference * (1 - progress) }}
           transition={{ duration: 1, ease: "linear" }}
           strokeLinecap="round"
           className="transition-colors duration-500"
-          style={isShinchanTheme ? { stroke: color, filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.1))', strokeDashoffset: (circumference * (1 - progress)) } : {}}
+          style={
+            isShinchanTheme
+              ? { stroke: color, filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.1))', strokeDashoffset: (circumference * (1 - progress)) }
+              : isOriginalTheme
+                ? { stroke: color, filter: `drop-shadow(0 4px 8px ${visualTheme.colors.primary}33)`, strokeDashoffset: (circumference * (1 - progress)) }
+                : {}
+          }
         />
 
         {isChiikawaTheme && (
@@ -150,6 +169,18 @@ export const TimerDisplay = React.memo(({ timeLeft, totalTime, phase }: TimerDis
             />
           </motion.g>
         )}
+
+        {isOriginalTheme && (
+          <motion.g
+            animate={{ x: charX, y: charY }}
+            transition={{ duration: 1, ease: "linear" }}
+          >
+            <circle cx="0" cy="0" r="18" fill="white" stroke={color} strokeWidth="2" />
+            <text x="0" y="5" textAnchor="middle" fontSize="12" fontWeight="800" fill={visualTheme.colors.text}>
+              {emoji}
+            </text>
+          </motion.g>
+        )}
       </svg>
 
       <div className="absolute flex flex-col items-center justify-center text-center">
@@ -161,7 +192,9 @@ export const TimerDisplay = React.memo(({ timeLeft, totalTime, phase }: TimerDis
             exit={{ opacity: 0, scale: 0.5, rotate: 20 }}
             className="mb-2 lg:mb-4 drop-shadow-sm flex justify-center items-center h-12 md:h-16 lg:h-20"
           >
-            {emoji.startsWith('/') ? (
+            {isOriginalTheme ? (
+              <OriginalMascot character={activeCharacter} theme={visualTheme} state={phase === 'focus' ? 'focused' : 'resting'} size={86} />
+            ) : emoji.startsWith('/') ? (
               <img
                 src={emoji}
                 alt={phase}
@@ -173,7 +206,10 @@ export const TimerDisplay = React.memo(({ timeLeft, totalTime, phase }: TimerDis
           </motion.div>
         </AnimatePresence>
 
-        <div className={`flex items-baseline font-sans font-bold ${isChiikawaTheme || isShinchanTheme ? 'text-[#5D4037]' : 'text-cozy-text'}`}>
+        <div
+          className={`flex items-baseline font-sans font-bold ${isChiikawaTheme || isShinchanTheme ? 'text-[#5D4037]' : 'text-cozy-text'}`}
+          style={isOriginalTheme ? { color: visualTheme.colors.text } : undefined}
+        >
           <span className="text-5xl md:text-7xl lg:text-8xl tracking-tighter">{String(minutes).padStart(2, '0')}</span>
           <motion.span
             animate={{ opacity: [1, 0.4, 1] }}
@@ -190,6 +226,7 @@ export const TimerDisplay = React.memo(({ timeLeft, totalTime, phase }: TimerDis
           initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
           className={`text-[10px] md:text-xs lg:text-sm font-bold uppercase tracking-[0.3em] mt-3 lg:mt-6 ml-1 ${isChiikawaTheme || isShinchanTheme ? 'text-[#8D6E63]' : 'text-cozy-text-light/70'}`}
+          style={isOriginalTheme ? { color: visualTheme.colors.textMuted } : undefined}
         >
           {label}
         </motion.span>
@@ -211,6 +248,17 @@ export const TimerDisplay = React.memo(({ timeLeft, totalTime, phase }: TimerDis
             className="mt-4 text-[10px] text-[#FF6B6B] font-bold tracking-widest bg-white/50 px-3 py-1 rounded-full border border-[#FF6B6B]/30"
           >
             SHIN-CHAN MODE ★
+          </motion.div>
+        )}
+
+        {isOriginalTheme && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mt-4 text-[10px] font-bold tracking-widest bg-white/50 px-3 py-1 rounded-full border"
+            style={{ color: visualTheme.colors.primary, borderColor: visualTheme.colors.border, backgroundColor: visualTheme.colors.glass }}
+          >
+            {activeCharacter?.focusLabel}
           </motion.div>
         )}
       </div>

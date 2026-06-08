@@ -100,7 +100,7 @@ export function computeAchievements(sessions: SessionResponse[]): UserAchievemen
     let unlockedAt: string | undefined = undefined;
     if (isUnlocked) {
       // Find the specific session that triggered this achievement
-      let sortedFocus = [...focusSessions].sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+      const sortedFocus = [...focusSessions].sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
       
       if (ach.target_type === 'session_count') {
         const index = ach.target_value - 1;

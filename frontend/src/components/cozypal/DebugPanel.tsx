@@ -116,7 +116,7 @@ const DebugPanel: React.FC<DebugPanelProps> = ({
         });
 
         return parts;
-    }, [diagnostics, t, fetchDiagnostics, fetchMemoryFragments]);
+    }, [diagnostics, t]);
 
     return (
         <motion.div

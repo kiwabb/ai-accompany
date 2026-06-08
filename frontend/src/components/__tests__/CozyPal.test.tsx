@@ -1,5 +1,5 @@
 // frontend/src/components/__tests__/CozyPal.test.tsx
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import CozyPal from '../CozyPal';
 import { I18nextProvider } from 'react-i18next';
@@ -30,13 +30,17 @@ vi.mock('react-i18next', async (importOriginal) => {
         if (key === 'cozyPal.placeholder') return 'Type your message...';
         if (key === 'cozyPal.disclaimer') return 'AI can make mistakes. Please verify important info.';
         if (key === 'cozyPal.greeting') return 'Hello, how can I help you today?';
+        if (key === 'cozyPal.chatDescription') return 'Cozy Pal Chat Window';
+        if (key === 'cozyPal.avatarDescription') return 'Cozy Pal AI Avatar';
+        if (key === 'cozyPal.errorMessage') return 'Oops! Something went wrong. Please try again.';
+        return key;
       },
       i18n: testI18n,
     }),
   };
 });
 
-vi.mock('../hooks/cozypal/useCozyPalTopics', () => ({
+vi.mock('../../hooks/cozypal/useCozyPalTopics', () => ({
   useCozyPalTopics: vi.fn(() => ({
     topics: [{ id: 1, name: 'Default' }],
     activeTopicId: 1,
@@ -45,6 +49,13 @@ vi.mock('../hooks/cozypal/useCozyPalTopics', () => ({
     handleSelectTopic: vi.fn(),
     handleCreateTopic: vi.fn(),
   })),
+}));
+
+vi.mock('../../lib/ai/providers', () => ({
+  streamChatDirect: vi.fn(async function* () {
+    yield 'Hello';
+    yield ' World';
+  }),
 }));
 
 const defaultProps = {
@@ -57,9 +68,17 @@ const defaultProps = {
   totalFocusMinutes: 0
 };
 
+const renderCozyPal = () => render(
+  <I18nextProvider i18n={testI18n}>
+    <CozyPal {...defaultProps} />
+  </I18nextProvider>
+);
+
 describe('CozyPal', () => {
   vi.setConfig({ testTimeout: 10000 });
   beforeEach(() => {
+    localStorage.clear();
+
     const mockFetch = vi.fn((url: string) => {
       if (url.includes('/api/diagnostics/latest-memory-update')) {
         return Promise.resolve({
@@ -95,45 +114,29 @@ describe('CozyPal', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
-  it('renders the avatar initially', async () => {
-    await act(async () => {
-      render(
-        <I18nextProvider i18n={testI18n}>
-          <CozyPal {...defaultProps} />
-        </I18nextProvider>
-      );
-    });
+  it('renders the avatar initially', () => {
+    renderCozyPal();
+
     expect(screen.getByTestId("cozypal-avatar-button")).toBeInTheDocument();
   });
 
   it('opens the chat window when avatar is clicked', async () => {
-    await act(async () => {
-      render(
-        <I18nextProvider i18n={testI18n}>
-          <CozyPal {...defaultProps} />
-        </I18nextProvider>
-      );
-    });
+    renderCozyPal();
+
     const avatar = screen.getByTestId("cozypal-avatar-button");
     fireEvent.click(avatar);
     await waitFor(() => {
       expect(screen.getByRole('dialog', { name: "Cozy Pal Chat Window" })).toBeInTheDocument();
     });
-    expect(screen.getByText((_, element) => {
-      return element?.textContent === 'Hello, how can I help you today?';
-    })).toBeInTheDocument();
+    expect(screen.getByText('Hello, how can I help you today?')).toBeInTheDocument();
   });
 
   it('sends a message and receives a streaming response', async () => {
-    await act(async () => {
-      render(
-        <I18nextProvider i18n={testI18n}>
-          <CozyPal {...defaultProps} />
-        </I18nextProvider>
-      );
-    });
+    renderCozyPal();
+
     fireEvent.click(screen.getByTestId("cozypal-avatar-button"));
 
     const input = screen.getByPlaceholderText("Type your message...");
@@ -152,13 +155,8 @@ describe('CozyPal', () => {
   });
 
   it('closes the chat window when avatar is clicked again', async () => {
-    await act(async () => {
-      render(
-        <I18nextProvider i18n={testI18n}>
-          <CozyPal {...defaultProps} />
-        </I18nextProvider>
-      );
-    });
+    renderCozyPal();
+
     const avatar = screen.getByTestId("cozypal-avatar-button");
     fireEvent.click(avatar); // Open
     

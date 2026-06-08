@@ -1,6 +1,9 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import type { TFunction } from 'i18next';
 import CozyAvatar from '../CozyAvatar';
+import OriginalMascot from '../OriginalMascot';
+import type { VisualTheme, VisualThemeCharacter } from '../../types/pomodoro';
+import { isOriginalCartoonThemeId } from '../../constants/themes';
 
 const CHIIKAWA_AVATARS = [
   '/assets/chiikawa/sticker-0.png',
@@ -10,10 +13,10 @@ const CHIIKAWA_AVATARS = [
 ];
 
 const SHINCHAN_AVATARS = [
-  '/assets/shinchan/shinchan-animated.gif',  // idle
-  '/assets/shinchan/shinchan-dance.gif',     // thinking
-  '/assets/shinchan/action-mask.png',        // speaking
-  '/assets/shinchan/shiro-animated.gif',     // focused
+  '/assets/shinchan/shinchan-animated.gif',
+  '/assets/shinchan/shinchan-dance.gif',
+  '/assets/shinchan/action-mask.png',
+  '/assets/shinchan/shiro-animated.gif',
 ];
 
 interface CozyPalAvatarButtonProps {
@@ -21,17 +24,19 @@ interface CozyPalAvatarButtonProps {
   hasUnread: boolean;
   onToggle: () => void;
   t: TFunction;
-  isChiikawaTheme?: boolean;
-  isShinchanTheme?: boolean;
+  visualTheme?: VisualTheme;
+  activeCharacter?: VisualThemeCharacter;
 }
 
-const CozyPalAvatarButton = ({ avatarState, hasUnread, onToggle, t, isChiikawaTheme, isShinchanTheme }: CozyPalAvatarButtonProps) => {
+const CozyPalAvatarButton = ({ avatarState, hasUnread, onToggle, t, visualTheme, activeCharacter }: CozyPalAvatarButtonProps) => {
+  const isChiikawaTheme = visualTheme?.id === 'chiikawa';
+  const isShinchanTheme = visualTheme?.id === 'shinchan';
+  const isOriginalTheme = isOriginalCartoonThemeId(visualTheme?.id);
   const chiikawaAvatar = CHIIKAWA_AVATARS[
     avatarState === 'thinking' ? 1 :
       avatarState === 'speaking' ? 2 :
         avatarState === 'focused' ? 3 : 0
   ];
-
   const shinchanAvatar = SHINCHAN_AVATARS[
     avatarState === 'thinking' ? 1 :
       avatarState === 'speaking' ? 2 :
@@ -42,13 +47,22 @@ const CozyPalAvatarButton = ({ avatarState, hasUnread, onToggle, t, isChiikawaTh
     <motion.button
       data-testid="cozypal-avatar-button"
       aria-label={t('cozyPal.avatarDescription')}
-      className={`w-20 h-20 rounded-full shadow-2xl flex items-center justify-center cursor-pointer transition-shadow relative ${isChiikawaTheme
-        ? 'bg-gradient-to-br from-pink-100 to-pink-200 hover:shadow-pink-300/50 border-4 border-white'
-        : isShinchanTheme
-          ? 'bg-[#FF6B6B] border-4 border-white shadow-[0_10px_25px_-5px_rgba(255,107,107,0.4)]'
-          : 'hover:shadow-cozy-orange/50 shadow-cozy'
-        }`}
-      whileHover={{ scale: 1.1, rotate: isChiikawaTheme ? [-5, 5, -5] : (isShinchanTheme ? -5 : 5) }}
+      className={`w-20 h-20 rounded-full shadow-2xl flex items-center justify-center cursor-pointer transition-shadow relative overflow-visible ${
+        isChiikawaTheme
+          ? 'bg-gradient-to-br from-pink-100 to-pink-200 hover:shadow-pink-300/50 border-4 border-white'
+          : isShinchanTheme
+            ? 'bg-[#FF6B6B] border-4 border-white shadow-[0_10px_25px_-5px_rgba(255,107,107,0.4)]'
+            : 'hover:shadow-cozy-orange/50 shadow-cozy'
+      }`}
+      style={isOriginalTheme ? {
+        background: visualTheme?.colors.surface,
+        boxShadow: visualTheme?.shadows.elevated,
+        border: '4px solid rgba(255,255,255,0.92)',
+      } : undefined}
+      whileHover={{
+        scale: 1.1,
+        rotate: isOriginalTheme || isChiikawaTheme ? [-4, 4, -4] : isShinchanTheme ? -5 : 5,
+      }}
       whileTap={{ scale: 0.9, x: 0, y: 0 }}
       onClick={onToggle}
     >
@@ -84,6 +98,8 @@ const CozyPalAvatarButton = ({ avatarState, hasUnread, onToggle, t, isChiikawaTh
           }
           draggable={false}
         />
+      ) : isOriginalTheme && visualTheme ? (
+        <OriginalMascot character={activeCharacter} theme={visualTheme} state={avatarState} size={76} />
       ) : (
         <CozyAvatar state={avatarState} size={80} />
       )}
@@ -94,8 +110,10 @@ const CozyPalAvatarButton = ({ avatarState, hasUnread, onToggle, t, isChiikawaTh
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             exit={{ scale: 0 }}
-            className={`absolute top-0 right-0 w-6 h-6 rounded-full border-2 border-white shadow-lg flex items-center justify-center ${isChiikawaTheme ? 'bg-pink-400' : isShinchanTheme ? 'bg-yellow-500' : 'bg-red-500'
-              }`}
+            className={`absolute top-0 right-0 w-6 h-6 rounded-full border-2 border-white shadow-lg flex items-center justify-center ${
+              isChiikawaTheme ? 'bg-pink-400' : isShinchanTheme ? 'bg-yellow-500' : 'bg-red-500'
+            }`}
+            style={isOriginalTheme ? { backgroundColor: visualTheme?.colors.accent } : undefined}
           >
             <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
           </motion.div>
@@ -136,6 +154,25 @@ const CozyPalAvatarButton = ({ avatarState, hasUnread, onToggle, t, isChiikawaTh
             transition={{ duration: 2, repeat: Infinity }}
           >
             ⚡
+          </motion.span>
+        </>
+      )}
+
+      {isOriginalTheme && (
+        <>
+          <motion.span
+            className="absolute -top-1 -right-1 text-sm"
+            animate={{ scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          >
+            {(activeCharacter ?? visualTheme?.character)?.phaseSymbols.focus}
+          </motion.span>
+          <motion.span
+            className="absolute -bottom-1 -left-1 text-sm"
+            animate={{ scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
+          >
+            {(activeCharacter ?? visualTheme?.character)?.phaseSymbols.shortBreak}
           </motion.span>
         </>
       )}

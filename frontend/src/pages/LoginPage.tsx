@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth';
 import { login as apiLogin } from '../api/client';
 import { motion } from 'framer-motion';
 import { User, Lock, Loader2 } from 'lucide-react';

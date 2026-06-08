@@ -3,7 +3,7 @@ import { ArrowLeft, Save, Check, Palette, User, ChevronRight } from 'lucide-reac
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth';
 import AmbientBackground from '../components/AmbientBackground';
 import TimerSettingsSection from '../components/settings/TimerSettings';
 import AISettings from '../components/settings/AISettings';

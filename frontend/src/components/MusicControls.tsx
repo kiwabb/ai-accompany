@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Music, Volume2, ChevronDown, Play, Pause } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useTimerContext } from '../contexts/TimerContext';
+import { useTimerContext } from '../contexts/useTimerContext';
 import { FOCUS_TRACKS, BREAK_TRACKS } from '../constants/pomodoro';
 import CustomSelect from './ui/CustomSelect';
 

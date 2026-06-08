@@ -1,21 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 
 const MOBILE_QUERY = '(max-width: 767px)';
 
+const getSnapshot = () => {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia(MOBILE_QUERY).matches;
+};
+
+const subscribe = (onStoreChange: () => void) => {
+  if (typeof window === 'undefined') return () => undefined;
+
+  const mql = window.matchMedia(MOBILE_QUERY);
+  mql.addEventListener('change', onStoreChange);
+  return () => mql.removeEventListener('change', onStoreChange);
+};
+
 export function useIsMobile(): boolean {
-  const [isMobile, setIsMobile] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return window.matchMedia(MOBILE_QUERY).matches;
-  });
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const mql = window.matchMedia(MOBILE_QUERY);
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    setIsMobile(mql.matches);
-    mql.addEventListener('change', handler);
-    return () => mql.removeEventListener('change', handler);
-  }, []);
-
-  return isMobile;
+  return useSyncExternalStore(subscribe, getSnapshot, () => false);
 }

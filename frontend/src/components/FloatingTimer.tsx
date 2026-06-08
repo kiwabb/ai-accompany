@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, useMotionValue, useDragControls } from 'framer-motion';
 import { Play, Pause, Square, SkipForward, Maximize2 } from 'lucide-react';
-import { useTimerContext } from '../contexts/TimerContext';
+import { useTimerContext } from '../contexts/useTimerContext';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { resolveVisualTheme } from '../constants/themes';
 
 const POSITION_STORAGE_KEY = 'floating_timer_position';
 const SIZE_STORAGE_KEY = 'floating_timer_size';
@@ -15,8 +16,9 @@ const MAX_SIZE = 200;
 const EDGE_BAND = 12;
 
 const FloatingTimer: React.FC = () => {
-    const { state, timeLeft, isActive, handleToggle, handleReset, handleSkip, activeTheme } = useTimerContext();
+    const { state, timeLeft, isActive, hasStarted, handleToggle, handleReset, handleSkip, activeTheme } = useTimerContext();
     const { phase, activeVisualThemeId } = state;
+    const visualTheme = resolveVisualTheme(activeVisualThemeId);
     const { t } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
@@ -40,13 +42,6 @@ const FloatingTimer: React.FC = () => {
     const dragControls = useDragControls();
     const resizeStartRef = useRef<{ cx: number; cy: number } | null>(null);
     const circleRef = useRef<HTMLDivElement | null>(null);
-
-    // 一旦 session 启动过，就锁定浮动器显示——阶段切换/Stop 重置后 timeLeft 回到 totalDuration
-    // 不应让它消失。只有用户从未启动过任何 session 时才隐藏（避免一打开 app 就看到漂浮）。
-    const [hasEverStarted, setHasEverStarted] = useState(false);
-    useEffect(() => {
-        if (isActive) setHasEverStarted(true);
-    }, [isActive]);
 
     useEffect(() => {
         try {
@@ -73,45 +68,34 @@ const FloatingTimer: React.FC = () => {
     const timeObj = formatTime(timeLeft);
 
     const getTheme = () => {
-        const isShinchan = activeVisualThemeId === 'shinchan';
-        const isChiikawa = activeVisualThemeId === 'chiikawa';
-
         switch (phase) {
             case 'focus': return {
-                text: isShinchan ? 'text-[#5D4037]' : isChiikawa ? 'text-[#5D4037]' : 'text-orange-500',
-                bg: isShinchan ? 'bg-[#FF6B6B]' : isChiikawa ? 'bg-[#FFB5C5]' : 'bg-orange-500',
+                text: 'text-orange-500',
+                color: visualTheme.colors.primary,
+                bg: 'bg-orange-500',
                 border: 'border-white/40',
-                lightBg: isShinchan ? 'bg-[#FF6B6B]/10' : isChiikawa ? 'bg-[#FFB5C5]/10' : 'bg-orange-500/10',
-                shadow: isShinchan
-                    ? 'shadow-[0_20px_50px_-10px_rgba(255,107,107,0.25)]'
-                    : isChiikawa
-                        ? 'shadow-[0_20px_50px_-10px_rgba(255,181,197,0.25)]'
-                        : 'shadow-[0_20px_50px_-10px_rgba(249,115,22,0.15)]'
+                lightBg: 'bg-orange-500/10',
+                shadow: 'shadow-[0_20px_50px_-10px_rgba(249,115,22,0.15)]'
             };
             case 'shortBreak': return {
-                text: isShinchan ? 'text-[#5D4037]' : isChiikawa ? 'text-[#5D4037]' : 'text-emerald-500',
-                bg: isShinchan ? 'bg-[#FFF176]' : isChiikawa ? 'bg-[#B8E6F0]' : 'bg-emerald-500',
+                text: 'text-emerald-500',
+                color: visualTheme.colors.secondary,
+                bg: 'bg-emerald-500',
                 border: 'border-white/40',
-                lightBg: isShinchan ? 'bg-[#FFF176]/20' : isChiikawa ? 'bg-[#B8E6F0]/20' : 'bg-emerald-500/10',
-                shadow: isShinchan
-                    ? 'shadow-[0_20px_50px_-10px_rgba(255,241,118,0.25)]'
-                    : isChiikawa
-                        ? 'shadow-[0_20px_50px_-10px_rgba(184,230,240,0.25)]'
-                        : 'shadow-[0_20px_50px_-10px_rgba(16,185,129,0.15)]'
+                lightBg: 'bg-emerald-500/10',
+                shadow: 'shadow-[0_20px_50px_-10px_rgba(16,185,129,0.15)]'
             };
             case 'longBreak': return {
-                text: isShinchan ? 'text-[#5D4037]' : isChiikawa ? 'text-[#5D4037]' : 'text-indigo-500',
-                bg: isShinchan ? 'bg-[#4FC3F7]' : isChiikawa ? 'bg-[#FFFACD]' : 'bg-indigo-500',
+                text: 'text-indigo-500',
+                color: visualTheme.colors.accent,
+                bg: 'bg-indigo-500',
                 border: 'border-white/40',
-                lightBg: isShinchan ? 'bg-[#4FC3F7]/10' : isChiikawa ? 'bg-[#FFFACD]/20' : 'bg-indigo-500/10',
-                shadow: isShinchan
-                    ? 'shadow-[0_20px_50px_-10px_rgba(79,195,247,0.25)]'
-                    : isChiikawa
-                        ? 'shadow-[0_20px_50px_-10px_rgba(255,250,205,0.25)]'
-                        : 'shadow-[0_20px_50px_-10px_rgba(99,102,241,0.15)]'
+                lightBg: 'bg-indigo-500/10',
+                shadow: 'shadow-[0_20px_50px_-10px_rgba(99,102,241,0.15)]'
             };
             default: return {
                 text: 'text-slate-600',
+                color: visualTheme.colors.textMuted,
                 bg: 'bg-slate-600',
                 border: 'border-white/40',
                 lightBg: 'bg-slate-600/10',
@@ -136,7 +120,9 @@ const FloatingTimer: React.FC = () => {
     const progress = timeLeft / totalDuration;
 
     const isTimerPage = location.pathname.startsWith('/timer/');
-    const isFresh = !isActive && timeLeft === totalDuration && !hasEverStarted;
+    // 一旦 session 启动过，就锁定浮动器显示——阶段切换/Stop 重置后 timeLeft 回到 totalDuration
+    // 不应让它消失。只有用户从未启动过任何 session 时才隐藏（避免一打开 app 就看到漂浮）。
+    const isFresh = !isActive && timeLeft === totalDuration && !hasStarted;
 
     if (isTimerPage || isFresh) {
         return null;
@@ -291,6 +277,7 @@ const FloatingTimer: React.FC = () => {
                                 strokeWidth={stroke}
                                 strokeLinecap="round"
                                 className={theme.text}
+                                style={{ color: theme.color }}
                                 stroke="currentColor"
                                 strokeDasharray={circ}
                                 animate={{ strokeDashoffset: dashOffset }}
@@ -308,7 +295,7 @@ const FloatingTimer: React.FC = () => {
                             </span>
                             <span
                                 className={`font-black tracking-tight tabular-nums ${theme.text} leading-none pointer-events-none`}
-                                style={{ fontSize: timeFontPx }}
+                                style={{ fontSize: timeFontPx, color: theme.color }}
                             >
                                 {timeObj.m}:{timeObj.s}
                             </span>

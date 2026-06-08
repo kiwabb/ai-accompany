@@ -1,5 +1,12 @@
 import type { UserProfile } from '../storage/userProfile';
 
+interface SystemPromptContext {
+  aiPersona?: string;
+  themeName?: string;
+  phase?: string;
+  timeLeft?: number;
+}
+
 function getPhaseDescription(phase: string): string {
   const descriptions: Record<string, string> = {
     focus: 'working hard in a FOCUS session',
@@ -32,7 +39,7 @@ function getProactiveContext(userMessage: string): string {
 }
 
 export function constructSystemPrompt(
-  context: any,
+  context: SystemPromptContext,
   dailyFocus: number, // in minutes
   dailySessions: number,
   language: string,

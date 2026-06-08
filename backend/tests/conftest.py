@@ -2,9 +2,17 @@ import pytest
 import os
 import asyncio
 from typing import AsyncGenerator
+from fastapi import Header
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
+
+# Set the test database before importing backend.database. That module creates
+# its engine at import time, so this keeps pytest independent of asyncpg/Postgres.
+DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+os.environ["DATABASE_URL"] = DATABASE_URL
+
 from backend.database import Base, get_db as original_get_db
+from backend.routers.users import get_current_user_id
 from backend.models import (
     LearningSession,
     ChatHistory,
@@ -18,7 +26,6 @@ from backend.main import app
 from httpx import AsyncClient, ASGITransport
 
 # Use a file-based SQLite database for testing
-DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 test_engine = create_async_engine(DATABASE_URL, echo=False)
 AsyncTestingSessionLocal = sessionmaker(
     autocommit=False,
@@ -54,6 +61,7 @@ async def setup_database():
 
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+    await test_engine.dispose()
 
 
 @pytest.fixture(scope="function")
@@ -68,6 +76,15 @@ async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 app.dependency_overrides[original_get_db] = override_get_db
+
+
+async def override_get_current_user_id(authorization: str | None = Header(None)) -> str:
+    if authorization and authorization.lower().startswith("bearer "):
+        return authorization.split(" ", 1)[1]
+    return "default_user"
+
+
+app.dependency_overrides[get_current_user_id] = override_get_current_user_id
 
 # Monkeypatch AsyncSessionLocal in routers and services to use the test engine
 import backend.routers.sessions

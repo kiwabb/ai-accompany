@@ -101,4 +101,25 @@ describe('useTimer', () => {
     });
     expect(result.current.timeLeft).toBe(10);
   });
+
+  it('should remember that the timer has started after reset', () => {
+    const onComplete = vi.fn();
+    const { result } = renderHook(() => useTimer({ initialSeconds: 10, onComplete }));
+
+    expect(result.current.hasStarted).toBe(false);
+
+    act(() => {
+      result.current.start();
+    });
+
+    expect(result.current.hasStarted).toBe(true);
+
+    act(() => {
+      result.current.reset();
+    });
+
+    expect(result.current.hasStarted).toBe(true);
+    expect(result.current.isActive).toBe(false);
+    expect(result.current.timeLeft).toBe(10);
+  });
 });

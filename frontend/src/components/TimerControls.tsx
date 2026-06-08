@@ -2,7 +2,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Play, Pause, Square, SkipForward } from 'lucide-react';
-import { useTimerContext } from '../contexts/TimerContext';
+import { useTimerContext } from '../contexts/useTimerContext';
+import { isOriginalCartoonThemeId, resolveVisualTheme } from '../constants/themes';
 
 interface TimerControlsProps {
   isActive: boolean;
@@ -19,8 +20,10 @@ const TimerControls: React.FC<TimerControlsProps> = ({
 }) => {
   const { t } = useTranslation();
   const { state } = useTimerContext();
-  const isChiikawaTheme = state.activeVisualThemeId === 'chiikawa';
-  const isShinchanTheme = state.activeVisualThemeId === 'shinchan';
+  const visualTheme = resolveVisualTheme(state.activeVisualThemeId);
+  const isChiikawaTheme = visualTheme.id === 'chiikawa';
+  const isShinchanTheme = visualTheme.id === 'shinchan';
+  const isOriginalTheme = isOriginalCartoonThemeId(visualTheme.id);
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -35,6 +38,20 @@ const TimerControls: React.FC<TimerControlsProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onStartPause, onReset]);
+
+  const iconButtonStyle = isOriginalTheme ? {
+    backgroundColor: visualTheme.colors.surface,
+    color: visualTheme.colors.textMuted,
+    borderColor: visualTheme.colors.border,
+    boxShadow: visualTheme.shadows.cozy,
+  } : undefined;
+
+  const primaryButtonStyle = isOriginalTheme ? {
+    background: isActive ? visualTheme.colors.surface : visualTheme.colors.primary,
+    color: isActive ? visualTheme.colors.primary : '#fff',
+    borderColor: isActive ? visualTheme.colors.primary : 'rgba(255,255,255,0.92)',
+    boxShadow: isActive ? 'inset 0 3px 14px rgba(0,0,0,0.08)' : visualTheme.shadows.elevated,
+  } : undefined;
 
   const chiikawaButtonStyles = isActive
     ? 'bg-white text-[#FFB5C5] border-4 md:border-[6px] border-[#FFB5C5] shadow-inner'
@@ -52,10 +69,12 @@ const TimerControls: React.FC<TimerControlsProps> = ({
         whileHover={{ scale: 1.15, y: -4 }}
         whileTap={{ scale: 0.9, y: 0 }}
         onClick={onReset}
-        className={`p-4 md:p-5 lg:p-6 rounded-3xl md:rounded-[2rem] transition-all duration-300 flex items-center justify-center group ${isChiikawaTheme ? chiikawaResetStyle :
+        className={`p-4 md:p-5 lg:p-6 rounded-3xl md:rounded-[2rem] transition-all duration-300 flex items-center justify-center group ${
+          isChiikawaTheme ? chiikawaResetStyle :
             isShinchanTheme ? `bg-[#4FC3F7] text-white ${shinchanBaseStyle.replace('rgba(33,150,243,0.3)', 'rgba(79,195,247,0.4)')} ${shinchanActiveStyle}` :
-              'glass-surface text-cozy-text-light hover:text-cozy-red shadow-sm'
-          }`}
+              'glass-surface text-cozy-text-light hover:text-cozy-red shadow-sm border'
+        }`}
+        style={iconButtonStyle}
         aria-label={`${t('common.stop', '结束')} (Ctrl+R)`}
         title="Ctrl+R"
       >
@@ -76,6 +95,7 @@ const TimerControls: React.FC<TimerControlsProps> = ({
                   : 'bg-gradient-to-br from-[#FFB766] to-[#FF9A33] text-white shadow-xl hover:shadow-2xl glow-hover'
               )}
         `}
+        style={primaryButtonStyle}
         aria-label={`${isActive ? t('common.pause') : t('common.start')} (Space)`}
         aria-pressed={isActive}
         title="Space"
@@ -94,6 +114,15 @@ const TimerControls: React.FC<TimerControlsProps> = ({
               ✨
             </motion.span>
           )}
+          {isOriginalTheme && !isActive && (
+            <motion.span
+              animate={{ scale: [1, 1.2, 1], opacity: [1, 0.8, 1] }}
+              transition={{ repeat: Infinity, duration: 2 }}
+              className="absolute -top-6 -right-6 text-2xl"
+            >
+              {visualTheme.character?.phaseSymbols.focus}
+            </motion.span>
+          )}
         </div>
       </motion.button>
 
@@ -101,13 +130,15 @@ const TimerControls: React.FC<TimerControlsProps> = ({
         whileHover={{ scale: 1.15, rotate: 15, y: -4 }}
         whileTap={{ scale: 0.9, y: 0 }}
         onClick={onSkip}
-        className={`p-4 md:p-5 lg:p-6 rounded-3xl md:rounded-[2rem] transition-all duration-300 flex items-center justify-center group ${isChiikawaTheme ? chiikawaSkipStyle :
+        className={`p-4 md:p-5 lg:p-6 rounded-3xl md:rounded-[2rem] transition-all duration-300 flex items-center justify-center group ${
+          isChiikawaTheme ? chiikawaSkipStyle :
             isShinchanTheme ? `bg-[#FFF176] text-[#5D4037] ${shinchanBaseStyle.replace('rgba(33,150,243,0.3)', 'rgba(255,241,118,0.5)')} ${shinchanActiveStyle}` :
-              'glass-surface text-cozy-text-light hover:text-cozy-blue shadow-sm'
-          }`}
+              'glass-surface text-cozy-text-light hover:text-cozy-blue shadow-sm border'
+        }`}
+        style={isOriginalTheme ? { ...iconButtonStyle, color: visualTheme.colors.accent } : undefined}
         aria-label={t('common.skip')}
       >
-        <SkipForward className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8" strokeWidth={isChiikawaTheme || isShinchanTheme ? 3 : 2.5} />
+        <SkipForward className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8" strokeWidth={isChiikawaTheme || isShinchanTheme || isOriginalTheme ? 3 : 2.5} />
       </motion.button>
 
     </div>
