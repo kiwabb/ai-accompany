@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AuthProvider } from './contexts/AuthContext';
-import { TimerProvider, useTimerContext } from './contexts/TimerContext';
+import { TimerProvider } from './contexts/TimerContext';
+import { useTimerContext } from './contexts/useTimerContext';
 import { useVisualTheme } from './hooks/useVisualTheme';
 import { useIsMobile } from './hooks/useIsMobile';
 import FocusListPage from './pages/FocusListPage';
@@ -18,6 +19,7 @@ import BottomNav from './components/BottomNav';
 import FloatingTimer from './components/FloatingTimer';
 import CozyPal from './components/CozyPal';
 import AchievementToast from './components/AchievementToast';
+import OriginalThemeDecorations from './components/OriginalThemeDecorations';
 import ChiikawaDecorations from './components/ChiikawaDecorations';
 import ShinchanDecorations from './components/ShinchanDecorations';
 import { getLatestUnlocks, type UserAchievementBackend } from './api/client';
@@ -29,9 +31,12 @@ const AppContent: React.FC = () => {
   const [unlockedAchievement, setUnlockedAchievement] = useState<UserAchievementBackend | null>(null);
 
   // Apply visual theme
-  const { isChiikawaTheme, isShinchanTheme, showFloatingElements, themeColors } = useVisualTheme({
+  const { activeTheme, isOriginalCartoonTheme, showFloatingElements, themeColors } = useVisualTheme({
     activeVisualThemeId: state.activeVisualThemeId,
   });
+  const activeFocusTheme = state.themes.find((theme) => theme.id === state.activeThemeId);
+  const isChiikawaTheme = activeTheme.id === 'chiikawa';
+  const isShinchanTheme = activeTheme.id === 'shinchan';
 
   const hideCozyPal = false;
   // BottomNav 在沉浸式页面（Timer / Reader）隐藏，其他路由都显示
@@ -72,7 +77,7 @@ const AppContent: React.FC = () => {
           setUnlockedAchievement(latest[0]);
           setTimeout(() => setUnlockedAchievement(null), 8000);
         }
-      } catch (e) {
+      } catch {
         // ignore
       }
     };
@@ -89,6 +94,10 @@ const AppContent: React.FC = () => {
         color: themeColors.text,
       }}
     >
+      <OriginalThemeDecorations
+        theme={activeTheme}
+        enabled={isOriginalCartoonTheme && showFloatingElements}
+      />
       <ChiikawaDecorations enabled={isChiikawaTheme && showFloatingElements} />
       <ShinchanDecorations enabled={isShinchanTheme && showFloatingElements} />
 
@@ -119,8 +128,8 @@ const AppContent: React.FC = () => {
           documentId={state.documentContext?.id}
           documentTitle={state.documentContext?.title}
           documentContent={state.documentContext?.content}
-          isChiikawaTheme={isChiikawaTheme}
-          isShinchanTheme={isShinchanTheme}
+          visualTheme={activeTheme}
+          activeFocusTheme={activeFocusTheme}
           onDimensionsChange={setCozyPalWidth}
         />
       )}

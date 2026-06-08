@@ -44,6 +44,45 @@ export interface CountdownEvent {
   targetDate: string;
 }
 
+export type VisualThemeAccentShape =
+  | 'sprout'
+  | 'pencil'
+  | 'cloud'
+  | 'planet'
+  | 'lamp'
+  | 'moon'
+  | 'cozy'
+  | 'night';
+
+export type VisualThemeCharacterScene =
+  | 'language'
+  | 'code'
+  | 'math'
+  | 'review'
+  | 'rest'
+  | 'default';
+
+export type VisualThemeCharacterTone =
+  | 'steady'
+  | 'bright'
+  | 'curious'
+  | 'quiet'
+  | 'restful';
+
+export interface VisualThemeCharacter {
+  variantId: string;
+  displayName: string;
+  companionTitle: string;
+  companionSubtitle: string;
+  mascot: string;
+  focusLabel: string;
+  accentShape: VisualThemeAccentShape;
+  projectIds?: string[];
+  scene?: VisualThemeCharacterScene;
+  tone?: VisualThemeCharacterTone;
+  phaseSymbols: Record<Phase, string>;
+}
+
 export interface VisualTheme {
   id: string;
   name: string;
@@ -65,11 +104,12 @@ export interface VisualTheme {
   borderRadius: string;
   fontHeading: string;
   fontSans: string;
-  // Chiikawa specific
   decorations?: {
     enabled: boolean;
     pattern?: string;
     floatingElements?: boolean;
     cursorStyle?: string;
   };
+  character?: VisualThemeCharacter;
+  characterVariants?: VisualThemeCharacter[];
 }

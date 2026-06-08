@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useTimerContext } from '../contexts/TimerContext';
+import { useTimerContext } from '../contexts/useTimerContext';
 import PomodoroTimer from '../components/PomodoroTimer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft as ChevronLeftIcon, BookOpen as BookOpenIcon, Calendar, Plus } from 'lucide-react';
@@ -17,7 +17,7 @@ const TimerPage: React.FC = () => {
     const { t } = useTranslation();
     const { handleThemeChange, state, isActive, timeLeft, totalTimeValue, reset, activeTheme } = useTimerContext();
 
-    const { isShinchanTheme } = useVisualTheme({
+    const { activeTheme: activeVisualTheme } = useVisualTheme({
         activeVisualThemeId: state.activeVisualThemeId,
     });
 
@@ -40,6 +40,12 @@ const TimerPage: React.FC = () => {
     }, [countdownOpen]);
 
     const isOngoing = isActive || (timeLeft > 0 && timeLeft < totalTimeValue);
+    const floatingButtonStyle = {
+        borderColor: activeVisualTheme.colors.border,
+        color: activeVisualTheme.colors.textMuted,
+        backgroundColor: activeVisualTheme.colors.glass,
+        boxShadow: activeVisualTheme.shadows.cozy,
+    };
 
     useEffect(() => {
         if (!themeId) return;
@@ -88,10 +94,8 @@ const TimerPage: React.FC = () => {
                 whileHover={{ x: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => navigate('/')}
-                className={`fixed top-3 left-3 md:top-8 md:left-8 py-2 px-3 md:py-3 md:px-6 bg-white/60 backdrop-blur-2xl shadow-xl rounded-2xl flex items-center gap-2 group z-50 transition-colors font-bold uppercase tracking-widest text-[10px] ${isShinchanTheme
-                        ? 'border border-[#FF6B6B]/20 text-[#8D6E63] hover:text-[#5D4037] hover:bg-[#FF6B6B]/10'
-                        : 'border border-white text-slate-400 hover:text-slate-900'
-                    }`}
+                className="fixed top-3 left-3 md:top-8 md:left-8 py-2 px-3 md:py-3 md:px-6 bg-white/60 backdrop-blur-2xl shadow-xl rounded-2xl flex items-center gap-2 group z-50 transition-colors font-bold uppercase tracking-widest text-[10px] border hover:text-slate-900"
+                style={floatingButtonStyle}
             >
                 <ChevronLeftIcon size={16} className="group-hover:-translate-x-1 transition-transform" />
                 <span className="hidden md:inline">返回列表</span>
@@ -106,10 +110,8 @@ const TimerPage: React.FC = () => {
                         whileHover={{ x: 2 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => setCountdownOpen(prev => !prev)}
-                        className={`py-2 px-3 md:py-3 md:px-5 bg-white/60 backdrop-blur-2xl shadow-xl rounded-2xl flex items-center gap-2 group transition-colors font-bold uppercase tracking-widest text-[10px] ${isShinchanTheme
-                                ? 'border border-[#FF6B6B]/20 text-[#8D6E63] hover:text-[#5D4037] hover:bg-[#FF6B6B]/10'
-                                : 'border border-white text-slate-400 hover:text-slate-900'
-                            }`}
+                        className="py-2 px-3 md:py-3 md:px-5 bg-white/60 backdrop-blur-2xl shadow-xl rounded-2xl flex items-center gap-2 group transition-colors font-bold uppercase tracking-widest text-[10px] border hover:text-slate-900"
+                        style={floatingButtonStyle}
                         aria-label={t('countdown.title', '倒数日')}
                     >
                         <Calendar size={16} className="group-hover:scale-110 transition-transform" />
@@ -144,7 +146,7 @@ const TimerPage: React.FC = () => {
                     </AnimatePresence>
                 </div>
 
-                <TodoWidget isShinchanTheme={isShinchanTheme} />
+                <TodoWidget visualTheme={activeVisualTheme} />
                 {activeTheme && (
                     <motion.button
                         initial={{ opacity: 0, x: 20 }}
@@ -152,10 +154,8 @@ const TimerPage: React.FC = () => {
                         whileHover={{ x: 2 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => navigate(`/library?theme=${activeTheme.id}`)}
-                        className={`py-2 px-3 md:py-3 md:px-6 bg-white/60 backdrop-blur-2xl shadow-xl rounded-2xl flex items-center gap-2 group transition-colors font-bold uppercase tracking-widest text-[10px] ${isShinchanTheme
-                                ? 'border border-[#FF6B6B]/20 text-[#8D6E63] hover:text-[#5D4037] hover:bg-[#FF6B6B]/10'
-                                : 'border border-white text-slate-400 hover:text-slate-900'
-                            }`}
+                        className="py-2 px-3 md:py-3 md:px-6 bg-white/60 backdrop-blur-2xl shadow-xl rounded-2xl flex items-center gap-2 group transition-colors font-bold uppercase tracking-widest text-[10px] border hover:text-slate-900"
+                        style={floatingButtonStyle}
                     >
                         <BookOpenIcon size={16} className="group-hover:scale-110 transition-transform" />
                         <span className="hidden md:inline">

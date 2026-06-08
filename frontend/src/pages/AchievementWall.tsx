@@ -7,6 +7,8 @@ import { getAchievements } from '../api/client';
 import type { UserAchievementBackend } from '../api/client';
 import AmbientBackground from '../components/AmbientBackground';
 import { ACHIEVEMENT_TO_ICON } from '../constants/achievementIcons';
+import OriginalMascot from '../components/OriginalMascot';
+import { resolveVisualTheme } from '../constants/themes';
 
 type Filter = 'all' | 'unlocked' | 'in_progress';
 
@@ -296,11 +298,19 @@ const AchievementWall: React.FC = () => {
                                                                 }
                                                                 return (
                                                                     <>
-                                                                        <img
-                                                                            src={iconDef.img}
-                                                                            alt={iconDef.iconKey}
-                                                                            className={`w-full h-full object-contain transition-all ${isUnlocked ? '' : 'grayscale opacity-40'}`}
-                                                                        />
+                                                                        {iconDef.img ? (
+                                                                            <img
+                                                                                src={iconDef.img}
+                                                                                alt={iconDef.iconKey}
+                                                                                className={`w-full h-full object-contain transition-all ${isUnlocked ? '' : 'grayscale opacity-40'}`}
+                                                                            />
+                                                                        ) : (
+                                                                            <OriginalMascot
+                                                                                theme={resolveVisualTheme(iconDef.themeId)}
+                                                                                size={72}
+                                                                                className={`transition-all ${isUnlocked ? '' : 'grayscale opacity-40'}`}
+                                                                            />
+                                                                        )}
                                                                         {!isUnlocked && (
                                                                             <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center shadow-sm">
                                                                                 <Lock size={10} className="text-slate-500" />

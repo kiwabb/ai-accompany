@@ -6,8 +6,8 @@ import {
     ArrowLeft, User, Trophy, BarChart3, Settings as SettingsIcon,
     LogOut, Clock, Flame, Calendar, Sparkles
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { useTimerContext } from '../contexts/TimerContext';
+import { useAuth } from '../contexts/useAuth';
+import { useTimerContext } from '../contexts/useTimerContext';
 import { getStatsRange, getAchievements } from '../api/client';
 import type { StatsRangeResponse, UserAchievementBackend } from '../api/client';
 import AmbientBackground from '../components/AmbientBackground';

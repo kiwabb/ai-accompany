@@ -124,8 +124,8 @@ export const useAudio = (options: UseAudioOptions = {}) => {
             try {
                 // @ts-expect-error - Web Audio node type mismatch with HTMLAudioElement, known issue in this mock impl
                 (backgroundMusicRef.current).stop();
-            } catch (_e) {
-        // Ignore errors if already stopped
+            } catch {
+                // Ignore errors if already stopped
             }
             backgroundMusicRef.current = null;
             isMusicPlayingRef.current = false;

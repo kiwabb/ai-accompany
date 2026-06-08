@@ -1,37 +1,13 @@
-import React, { createContext, useContext, useCallback, useRef, useState, useEffect } from 'react';
+import React, { useCallback, useRef, useState, useEffect } from 'react';
 import { useTimer } from '../hooks/useTimer';
 import { useAudio } from '../hooks/useAudio';
-import type { FocusTheme, TimerSettings } from '../types/pomodoro';
 import type { DailyStats } from '../api/client';
-import { usePomodoroState, type PomodoroState, type PomodoroAction } from '../hooks/usePomodoroState';
+import type { TimerSettings } from '../types/pomodoro';
+import { usePomodoroState } from '../hooks/usePomodoroState';
 import { usePomodoroData } from '../hooks/usePomodoroData';
 import { useTimerActions } from './timerActions';
 import { useSessionHandlers } from './timerSessionHandlers';
-
-export interface TimerContextType {
-    state: PomodoroState;
-    dispatch: React.Dispatch<PomodoroAction>;
-    timeLeft: number;
-    isActive: boolean;
-    totalTimeValue: number;
-    todayStats: DailyStats | null;
-    start: () => void;
-    pause: () => void;
-    reset: () => void;
-    handleToggle: () => void;
-    handleReset: () => void;
-    handleSkip: () => void;
-    handleThemeChange: (themeId: string) => void;
-    handleVisualThemeChange: (themeId: string) => void;
-    handleSaveSettings: (s: TimerSettings) => void;
-    handleUpdateSetting: (s: Partial<TimerSettings>) => void;
-    handleThemesChange: (newThemes: FocusTheme[]) => void;
-    setDocumentContext: (context?: PomodoroState['documentContext']) => void;
-    activeTheme: FocusTheme | undefined;
-    initialLoaded: boolean;
-}
-
-const TimerContext = createContext<TimerContextType | undefined>(undefined);
+import { TimerContext, type TimerContextType } from './TimerContextValue';
 
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { state, dispatch, activeTheme, totalTimeValue } = usePomodoroState();
@@ -75,7 +51,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
     }, [sessionStartTime, saveLearningSession, totalTimeValue, phase, playEndSound, stopBackgroundMusic, activeTheme, settings, dispatch]);
 
-    const { timeLeft, isActive, start, pause, reset } = useTimer({
+    const { timeLeft, isActive, hasStarted, start, pause, reset } = useTimer({
         initialSeconds: totalTimeValue,
         onComplete: handleTimerComplete,
     });
@@ -141,6 +117,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         dispatch,
         timeLeft,
         isActive,
+        hasStarted,
         totalTimeValue,
         todayStats,
         start: timerActions.handleStart,
@@ -164,12 +141,4 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             {children}
         </TimerContext.Provider>
     );
-};
-
-export const useTimerContext = () => {
-    const context = useContext(TimerContext);
-    if (!context) {
-        throw new Error('useTimerContext must be used within a TimerProvider');
-    }
-    return context;
 };

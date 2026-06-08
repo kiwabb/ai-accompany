@@ -26,9 +26,17 @@ async def create_learning_session(
     session = await crud.create_session(db, session_in, current_user_id)
 
     if session.phase_type == "focus" and session.status == "completed":
+        async def check_achievements_task(user_id: str, event_type: str, context: dict):
+            async with AsyncSessionLocal() as achievement_db:
+                await achievement_service.check_achievements(
+                    db=achievement_db,
+                    user_id=user_id,
+                    event_type=event_type,
+                    context=context,
+                )
+
         background_tasks.add_task(
-            achievement_service.check_achievements,
-            db=AsyncSessionLocal(),
+            check_achievements_task,
             user_id=current_user_id,
             event_type="session_complete",
             context={

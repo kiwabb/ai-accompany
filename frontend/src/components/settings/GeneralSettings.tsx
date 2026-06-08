@@ -1,8 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import type { i18n as I18n } from 'i18next';
 
 interface GeneralSettingsProps {
-  i18n: any; // i18n instance from react-i18next
+  i18n: I18n;
 }
 
 const GeneralSettings: React.FC<GeneralSettingsProps> = ({

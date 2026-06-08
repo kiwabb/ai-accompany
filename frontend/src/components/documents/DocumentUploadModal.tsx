@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { X, Upload, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CustomSelect from '../ui/CustomSelect';
-import { useTimerContext } from '../../contexts/TimerContext';
+import { useTimerContext } from '../../contexts/useTimerContext';
 import { saveDocumentFile, saveDocumentMetadata } from '../../lib/storage/documents';
 
 interface DocumentUploadModalProps {
@@ -142,9 +142,9 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
           onClose();
         }, 1500);
       }, 200);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Upload failed:', err);
-      setError(err.message || '保存书籍文件失败');
+      setError(err instanceof Error && err.message ? err.message : '保存书籍文件失败');
       setStep('info');
     } finally {
       setIsUploading(false);

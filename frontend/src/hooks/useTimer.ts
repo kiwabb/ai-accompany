@@ -63,6 +63,16 @@ export function useTimer({ initialSeconds, onComplete }: UseTimerProps) {
     }
     return false;
   });
+  const [hasStarted, setHasStarted] = useState(() => {
+    try {
+      if (typeof window === 'undefined') return false;
+      const savedState = localStorage.getItem(STORAGE_KEY);
+      return Boolean(savedState);
+    } catch (error) {
+      console.error(error);
+    }
+    return false;
+  });
 
   const onCompleteRef = useRef(onComplete);
   // Ref to track previous initialSeconds to avoid reset on refresh
@@ -185,6 +195,7 @@ export function useTimer({ initialSeconds, onComplete }: UseTimerProps) {
     if (timeLeftRef.current <= 0) {
       setTimeLeft(initialSecondsRef.current);
     }
+    setHasStarted(true);
     setIsActive(true);
     saveState(tl, true, initialSecondsRef.current);
   }, [saveState]);
@@ -200,5 +211,5 @@ export function useTimer({ initialSeconds, onComplete }: UseTimerProps) {
     localStorage.removeItem(STORAGE_KEY);
   }, [initialSeconds]);
 
-  return { timeLeft, isActive, start, pause, reset, setTimeLeft };
+  return { timeLeft, isActive, hasStarted, start, pause, reset, setTimeLeft };
 }

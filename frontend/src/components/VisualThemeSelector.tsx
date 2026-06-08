@@ -1,9 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { VISUAL_THEMES } from '../constants/themes';
-import { useTimerContext } from '../contexts/TimerContext';
+import { isOriginalCartoonThemeId, VISUAL_THEMES } from '../constants/themes';
+import { useTimerContext } from '../contexts/useTimerContext';
 import { Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import OriginalMascot from './OriginalMascot';
 
 
 const VisualThemeSelector: React.FC = () => {
@@ -15,43 +16,56 @@ const VisualThemeSelector: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      {VISUAL_THEMES.map((theme) => (
-        <motion.button
-          key={theme.id}
-          whileHover={{ y: -4, scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => handleVisualThemeChange(theme.id)}
-          className={`
-            relative p-4 rounded-3xl border-2 transition-all duration-300 flex flex-col items-start gap-3
-            ${activeVisualThemeId === theme.id
-              ? 'border-cozy-orange bg-white shadow-xl'
-              : 'border-transparent bg-slate-50 hover:bg-white hover:shadow-md'}
-          `}
-        >
-          <div className="flex items-center justify-between w-full">
-            <span className={`text-sm font-bold ${activeVisualThemeId === theme.id ? 'text-slate-900' : 'text-slate-500'}`}>
-              {theme.name}
-            </span>
-            {activeVisualThemeId === theme.id && (
-              <div className="w-5 h-5 rounded-full bg-cozy-orange flex items-center justify-center">
-                <Check size={12} className="text-white" strokeWidth={3} />
-              </div>
-            )}
-          </div>
-          
-          <div className="flex gap-1.5">
-            <div className="w-6 h-6 rounded-full border border-black/5" style={{ backgroundColor: theme.colors.bg }} />
-            <div className="w-6 h-6 rounded-full border border-black/5" style={{ backgroundColor: theme.colors.primary }} />
-            <div className="w-6 h-6 rounded-full border border-black/5" style={{ backgroundColor: theme.colors.accent }} />
-          </div>
+        {VISUAL_THEMES.map((theme) => {
+          const isOriginalTheme = isOriginalCartoonThemeId(theme.id);
 
-          {theme.id === 'chiikawa' && (
-             <div className="absolute -top-2 -right-2 bg-pink-400 text-white text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter animate-bounce-gentle">
-               New
-             </div>
-          )}
-        </motion.button>
-      ))}
+          return (
+            <motion.button
+              key={theme.id}
+              whileHover={{ y: -4, scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => handleVisualThemeChange(theme.id)}
+              className={`
+                relative p-4 rounded-3xl border-2 transition-all duration-300 flex flex-col items-start gap-3 overflow-hidden
+                ${activeVisualThemeId === theme.id
+                  ? 'border-cozy-orange bg-white shadow-xl'
+                  : 'border-transparent bg-slate-50 hover:bg-white hover:shadow-md'}
+              `}
+            >
+              <div className="flex items-center justify-between w-full relative z-10">
+                <span className={`text-sm font-bold ${activeVisualThemeId === theme.id ? 'text-slate-900' : 'text-slate-500'}`}>
+                  {theme.name}
+                </span>
+                {activeVisualThemeId === theme.id && (
+                  <div className="w-5 h-5 rounded-full bg-cozy-orange flex items-center justify-center">
+                    <Check size={12} className="text-white" strokeWidth={3} />
+                  </div>
+                )}
+              </div>
+
+              {isOriginalTheme && (
+                <div
+                  data-testid={`original-theme-preview-${theme.id}`}
+                  className="relative z-10 w-full min-h-[86px] rounded-2xl border border-white/80 overflow-hidden flex items-center justify-center shadow-inner"
+                  style={{
+                    background: `linear-gradient(135deg, ${theme.colors.bg} 0%, ${theme.colors.surface} 48%, ${theme.colors.glass} 100%)`,
+                  }}
+                >
+                  <div className="absolute inset-x-3 bottom-3 h-5 rounded-full opacity-50" style={{ backgroundColor: theme.colors.secondary }} />
+                  <div className="absolute left-4 top-4 w-3 h-3 rounded-full opacity-80" style={{ backgroundColor: theme.colors.accent }} />
+                  <div className="absolute right-5 top-5 w-5 h-1.5 rounded-full opacity-70" style={{ backgroundColor: theme.colors.primary }} />
+                  <OriginalMascot theme={theme} size={72} />
+                </div>
+              )}
+
+              <div className="flex gap-1.5 relative z-10">
+                <div className="w-6 h-6 rounded-full border border-black/5" style={{ backgroundColor: theme.colors.bg }} />
+                <div className="w-6 h-6 rounded-full border border-black/5" style={{ backgroundColor: theme.colors.primary }} />
+                <div className="w-6 h-6 rounded-full border border-black/5" style={{ backgroundColor: theme.colors.accent }} />
+              </div>
+            </motion.button>
+          );
+        })}
       </div>
 
       <div className="bg-white/60 backdrop-blur-xl rounded-[24px] p-5 border border-white shadow-sm flex items-center gap-6">

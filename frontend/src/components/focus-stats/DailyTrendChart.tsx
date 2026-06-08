@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -68,14 +68,13 @@ export const DailyTrendChart: React.FC<DailyTrendChartProps> = ({
     const [hoverIdx, setHoverIdx] = useState<number | null>(null);
     const isMobile = useIsMobile();
 
-    const dailyStats = stats?.daily_stats || [];
-
-    // 数据加载后，根据外部 highlightDate 自动聚焦那天柱子（设 hoverIdx 触发 tooltip + 不透明度）
-    useEffect(() => {
-        if (!highlightDate || dailyStats.length === 0) return;
+    const dailyStats = useMemo(() => stats?.daily_stats || [], [stats?.daily_stats]);
+    const highlightedIdx = useMemo(() => {
+        if (!highlightDate || dailyStats.length === 0) return null;
         const idx = dailyStats.findIndex(d => d.date === highlightDate);
-        if (idx >= 0) setHoverIdx(idx);
+        return idx >= 0 ? idx : null;
     }, [highlightDate, dailyStats]);
+    const activeIdx = hoverIdx ?? highlightedIdx;
     const themes = pieStats?.sessions_by_theme || {};
 
     const maxValue = dailyStats.reduce((m, d) => Math.max(m, d.total_focus_minutes), 0);
@@ -238,7 +237,7 @@ export const DailyTrendChart: React.FC<DailyTrendChartProps> = ({
                                     const totalMin = day.total_focus_minutes;
                                     const heightPct = yMax > 0 ? (totalMin / yMax) * 100 : 0;
                                     const isToday = day.date === todayStr;
-                                    const isHover = hoverIdx === idx;
+                                    const isHover = activeIdx === idx;
                                     // 按全局顺序排序当天的主题，保持跨天一致的堆叠
                                     const themeEntries = Object.entries(day.sessions_by_theme)
                                         .sort(([a], [b]) => {
@@ -353,30 +352,30 @@ export const DailyTrendChart: React.FC<DailyTrendChartProps> = ({
 
                         {/* tooltip */}
                         <AnimatePresence>
-                            {hoverIdx !== null && dailyStats[hoverIdx] && dailyStats[hoverIdx].total_focus_minutes > 0 && (
+                            {activeIdx !== null && dailyStats[activeIdx] && dailyStats[activeIdx].total_focus_minutes > 0 && (
                                 <motion.div
                                     initial={{ opacity: 0, y: 4 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: 4 }}
                                     className="absolute pointer-events-none z-20 bg-slate-900 text-white text-xs font-bold rounded-xl px-3 py-2 shadow-2xl border border-slate-700"
                                     style={{
-                                        left: `${((hoverIdx + 0.5) / dailyStats.length) * 100}%`,
+                                        left: `${((activeIdx + 0.5) / dailyStats.length) * 100}%`,
                                         top: -8,
                                         transform: 'translate(-50%, -100%)',
                                     }}
                                 >
                                     <div className="flex flex-col items-center gap-1 min-w-[90px]">
                                         <span className="tabular-nums">
-                                            {formatDuration(dailyStats[hoverIdx].total_focus_minutes)}
+                                            {formatDuration(dailyStats[activeIdx].total_focus_minutes)}
                                         </span>
-                                        {Object.keys(dailyStats[hoverIdx].sessions_by_theme).length > 0 && (
+                                        {Object.keys(dailyStats[activeIdx].sessions_by_theme).length > 0 && (
                                             <span className="text-[10px] font-normal text-slate-300 border-t border-slate-700 pt-1 mt-0.5 w-full text-center">
-                                                {Object.entries(dailyStats[hoverIdx].sessions_by_theme)
+                                                {Object.entries(dailyStats[activeIdx].sessions_by_theme)
                                                     .sort(([, a], [, b]) => b - a)
                                                     .slice(0, 2)
                                                     .map(([theme]) => theme)
                                                     .join(', ')}
-                                                {Object.keys(dailyStats[hoverIdx].sessions_by_theme).length > 2 && '…'}
+                                                {Object.keys(dailyStats[activeIdx].sessions_by_theme).length > 2 && '…'}
                                             </span>
                                         )}
                                     </div>

@@ -43,22 +43,20 @@ const describeDonutSlice = (
 const MiniDonut: React.FC<MiniDonutProps> = ({ data, getColor, size = 80, thickness = 16, label }) => {
     const segments = useMemo(() => {
         const total = data.reduce((sum, d) => sum + d.value, 0);
-        let cum = 0;
         return data
             .filter(d => d.value > 0)
-            .map((d, i) => {
+            .reduce<Array<{ name: string; value: number; percentage: number; startAngle: number; endAngle: number; color: string }>>((acc, d, i) => {
                 const percentage = total > 0 ? (d.value / total) * 100 : 0;
-                const startAngle = cum;
-                const endAngle = cum + percentage * 3.6;
-                cum = endAngle;
-                return {
+                const startAngle = acc[acc.length - 1]?.endAngle ?? 0;
+                const endAngle = startAngle + percentage * 3.6;
+                return [...acc, {
                     ...d,
                     percentage,
                     startAngle,
                     endAngle,
                     color: getColor(d.name, i),
-                };
-            });
+                }];
+            }, []);
     }, [data, getColor]);
 
     const total = data.reduce((sum, d) => sum + d.value, 0);

@@ -100,7 +100,7 @@ class MemoryService:
             current_diag["memory_fragments"].append({"id": fragment.id, "content": fragment.content, "score": 1.0})
             self.store_diagnostics(user_id, current_diag)
 
-    async def _extract_memory(self, client: genai.Client, user_id: str, user_msg: str, ai_msg: str, language: str) -> Dict:
+    async def _extract_memory(self, client: genai.Client, user_id: str, user_msg: str, ai_msg: str, language: str = "en") -> Dict:
         prompt = build_extraction_prompt(user_msg, ai_msg, language)
         try:
             response = await client.aio.models.generate_content(

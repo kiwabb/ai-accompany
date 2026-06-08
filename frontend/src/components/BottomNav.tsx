@@ -11,7 +11,7 @@ import {
     Settings as SettingsIcon,
     LogIn as LogInIcon,
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth';
 
 /**
  * 全站底部固定导航：主页 / 待办 / 书架 / 专注分析 / 成就墙 / 设置 / 个人。

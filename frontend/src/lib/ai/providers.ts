@@ -10,6 +10,15 @@ interface StreamChatOptions {
   model?: string;
 }
 
+type ChatMessageParam = {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+};
+
+const formatError = (error: unknown): string => {
+  return error instanceof Error ? error.message : String(error);
+};
+
 export async function* streamChatDirect(options: StreamChatOptions): AsyncIterable<string> {
   const { message, systemPrompt, history, apiKey, provider, model } = options;
 
@@ -47,9 +56,9 @@ export async function* streamChatDirect(options: StreamChatOptions): AsyncIterab
           yield chunkText;
         }
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('Gemini API error:', e);
-      yield `Error generating response from Gemini: ${e.message || e}`;
+      yield `Error generating response from Gemini: ${formatError(e)}`;
     }
   } else {
     // OpenAI-compatible providers
@@ -86,7 +95,7 @@ export async function* streamChatDirect(options: StreamChatOptions): AsyncIterab
 
       const isZhipu = provider === 'zhipu';
       const targetModel = model || defaultModel;
-      const messages: any[] = [];
+      const messages: ChatMessageParam[] = [];
 
       if (isZhipu) {
         messages.push({
@@ -126,9 +135,9 @@ export async function* streamChatDirect(options: StreamChatOptions): AsyncIterab
           yield chunkText;
         }
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(`${provider} API error:`, e);
-      yield `Error generating response: ${e.message || e}`;
+      yield `Error generating response: ${formatError(e)}`;
     }
   }
 }

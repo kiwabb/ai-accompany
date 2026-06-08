@@ -34,77 +34,65 @@ interface ChiikawaDecorationsProps {
   enabled: boolean;
 }
 
+const MOUSE_SPARKLE_SYMBOLS = ['✦', '✧', '★', '☆', '💖', '🩷'];
+
+const selectCornerStickers = () => [...CHIIKAWA_STICKERS]
+  .sort(() => Math.random() - 0.5)
+  .slice(0, 4);
+
+const createFloatingElements = (): FloatingElement[] => {
+  const items: FloatingElement[] = [];
+
+  // Add floating sticker images
+  for (let i = 0; i < 8; i++) {
+    items.push({
+      id: i,
+      content: CHIIKAWA_STICKERS[i % CHIIKAWA_STICKERS.length],
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: 48 + Math.random() * 32,
+      duration: 18 + Math.random() * 12,
+      delay: Math.random() * 6,
+      type: 'sticker',
+      isImage: true,
+    });
+  }
+
+  // Add sparkles
+  for (let i = 8; i < 20; i++) {
+    items.push({
+      id: i,
+      content: CHIIKAWA_ELEMENTS.sparkles[i % CHIIKAWA_ELEMENTS.sparkles.length],
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: 14 + Math.random() * 12,
+      duration: 8 + Math.random() * 6,
+      delay: Math.random() * 3,
+      type: 'sparkle',
+    });
+  }
+
+  // Add floating hearts
+  for (let i = 20; i < 28; i++) {
+    items.push({
+      id: i,
+      content: ['♡', '♥', '❤', '💕', '💖', '💗', '🩷', '🩵'][i % 8],
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: 16 + Math.random() * 14,
+      duration: 12 + Math.random() * 8,
+      delay: Math.random() * 4,
+      type: 'heart',
+    });
+  }
+
+  return items;
+};
+
 const ChiikawaDecorations: React.FC<ChiikawaDecorationsProps> = ({ enabled }) => {
-  const [elements, setElements] = useState<FloatingElement[]>([]);
-  const [mouseSparkles, setMouseSparkles] = useState<{ id: number; x: number; y: number }[]>([]);
-  const [cornerStickers, setCornerStickers] = useState<string[]>([]);
-
-  // Generate random corner stickers
-  useEffect(() => {
-    if (enabled) {
-      const shuffled = [...CHIIKAWA_STICKERS].sort(() => Math.random() - 0.5);
-      setCornerStickers(shuffled.slice(0, 4));
-    }
-  }, [enabled]);
-
-  // Generate initial floating elements
-  useEffect(() => {
-    if (!enabled) {
-      setElements([]);
-      return;
-    }
-
-    const generateElements = (): FloatingElement[] => {
-      const items: FloatingElement[] = [];
-
-      // Add floating sticker images
-      for (let i = 0; i < 8; i++) {
-        items.push({
-          id: i,
-          content: CHIIKAWA_STICKERS[i % CHIIKAWA_STICKERS.length],
-          x: Math.random() * 100,
-          y: Math.random() * 100,
-          size: 48 + Math.random() * 32,
-          duration: 18 + Math.random() * 12,
-          delay: Math.random() * 6,
-          type: 'sticker',
-          isImage: true,
-        });
-      }
-
-      // Add sparkles
-      for (let i = 8; i < 20; i++) {
-        items.push({
-          id: i,
-          content: CHIIKAWA_ELEMENTS.sparkles[i % CHIIKAWA_ELEMENTS.sparkles.length],
-          x: Math.random() * 100,
-          y: Math.random() * 100,
-          size: 14 + Math.random() * 12,
-          duration: 8 + Math.random() * 6,
-          delay: Math.random() * 3,
-          type: 'sparkle',
-        });
-      }
-
-      // Add floating hearts
-      for (let i = 20; i < 28; i++) {
-        items.push({
-          id: i,
-          content: ['♡', '♥', '❤', '💕', '💖', '💗', '🩷', '🩵'][i % 8],
-          x: Math.random() * 100,
-          y: Math.random() * 100,
-          size: 16 + Math.random() * 14,
-          duration: 12 + Math.random() * 8,
-          delay: Math.random() * 4,
-          type: 'heart',
-        });
-      }
-
-      return items;
-    };
-
-    setElements(generateElements());
-  }, [enabled]);
+  const [elements, setElements] = useState<FloatingElement[]>(createFloatingElements);
+  const [mouseSparkles, setMouseSparkles] = useState<{ id: number; x: number; y: number; symbol: string }[]>([]);
+  const [cornerStickers] = useState<string[]>(selectCornerStickers);
 
   // Mouse sparkle trail effect
   const handleMouseMove = useCallback((e: MouseEvent) => {
@@ -114,6 +102,7 @@ const ChiikawaDecorations: React.FC<ChiikawaDecorationsProps> = ({ enabled }) =>
       id: Date.now() + Math.random(),
       x: e.clientX,
       y: e.clientY,
+      symbol: MOUSE_SPARKLE_SYMBOLS[Math.floor(Math.random() * MOUSE_SPARKLE_SYMBOLS.length)],
     };
 
     setMouseSparkles(prev => [...prev.slice(-10), sparkle]);
@@ -257,7 +246,7 @@ const ChiikawaDecorations: React.FC<ChiikawaDecorationsProps> = ({ enabled }) =>
             <span className="text-xl" style={{
               filter: 'drop-shadow(0 0 4px rgba(255, 215, 0, 0.8))',
             }}>
-              {['✦', '✧', '★', '☆', '💖', '🩷'][Math.floor(Math.random() * 6)]}
+              {sparkle.symbol}
             </span>
           </motion.div>
         ))}

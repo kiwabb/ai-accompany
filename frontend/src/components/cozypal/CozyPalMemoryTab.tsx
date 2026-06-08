@@ -3,29 +3,37 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { TFunction } from 'i18next';
 import { User, Target, Plus, X, Award, Heart } from 'lucide-react';
 import { getUserProfile, saveUserProfile, type UserProfile } from '../../lib/storage/userProfile';
+import type { DiagnosticData } from './types';
+
+type MemorySection = 'basic' | 'facts' | 'prefs';
 
 interface CozyPalMemoryTabProps {
   onResetMemory: () => void;
   isSavingEdit: boolean;
   t: TFunction;
   // Optional legacy props to satisfy TypeScript and CozyPal.tsx
-  diagnostics?: any;
-  memoryFragments?: any;
-  onEditProfileItem?: any;
-  onDeleteProfileItem?: any;
-  onEditFragment?: any;
-  onDeleteFragment?: any;
+  diagnostics?: DiagnosticData | null;
+  memoryFragments?: Array<{ id: number; content: string; created_at: string }>;
+  onEditProfileItem?: (category: 'facts' | 'preferences', value: string) => void;
+  onDeleteProfileItem?: (category: 'facts' | 'preferences', value: string) => void | Promise<void>;
+  onEditFragment?: (id: number, content: string) => void;
+  onDeleteFragment?: (id: number) => void | Promise<void>;
 }
+
+const memorySections: Array<{ id: MemorySection; label: string; icon: React.ReactNode }> = [
+  { id: 'basic', label: '基本资料', icon: <User size={14} /> },
+  { id: 'facts', label: '我的事实', icon: <Award size={14} /> },
+  { id: 'prefs', label: '偏好特征', icon: <Heart size={14} /> },
+];
 
 const CozyPalMemoryTab = ({
   onResetMemory,
   isSavingEdit,
-  t: _t,
 }: CozyPalMemoryTabProps) => {
   const [profile, setProfile] = useState<UserProfile>(() => getUserProfile());
   const [newFact, setNewFact] = useState('');
   const [newPref, setNewPref] = useState('');
-  const [activeSection, setActiveSection] = useState<'basic' | 'facts' | 'prefs'>('basic');
+  const [activeSection, setActiveSection] = useState<MemorySection>('basic');
 
   // Load latest state
   const reloadProfile = () => {
@@ -33,14 +41,13 @@ const CozyPalMemoryTab = ({
   };
 
   useEffect(() => {
-    reloadProfile();
     // Watch for resets
     const handleReset = () => reloadProfile();
     window.addEventListener('storage', handleReset);
     return () => window.removeEventListener('storage', handleReset);
   }, []);
 
-  const updateProfileField = (key: keyof UserProfile, value: any) => {
+  const updateProfileField = <K extends keyof UserProfile>(key: K, value: UserProfile[K]) => {
     const updated = {
       ...profile,
       [key]: value
@@ -90,14 +97,10 @@ const CozyPalMemoryTab = ({
     >
       {/* Category Tabs */}
       <div className="flex bg-slate-100/60 p-1 rounded-2xl border border-slate-200/50">
-        {[
-          { id: 'basic', label: '基本资料', icon: <User size={14} /> },
-          { id: 'facts', label: '我的事实', icon: <Award size={14} /> },
-          { id: 'prefs', label: '偏好特征', icon: <Heart size={14} /> }
-        ].map(tab => (
+        {memorySections.map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveSection(tab.id as any)}
+            onClick={() => setActiveSection(tab.id)}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all ${
               activeSection === tab.id
                 ? 'bg-white text-indigo-600 shadow-sm'

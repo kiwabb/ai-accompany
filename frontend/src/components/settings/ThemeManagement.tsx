@@ -4,7 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { v4 as uuidv4 } from 'uuid';
 import { createUserTheme, deleteUserTheme, getAchievements } from '../../api/client';
 import type { FocusTheme } from '../../types/pomodoro';
-import { ACHIEVEMENT_ICONS, FREE_ICONS, ICON_BY_KEY } from '../../constants/achievementIcons';
+import { ACHIEVEMENT_ICONS, FREE_ICONS, ICON_BY_KEY, type AchievementIcon, type FreeIcon, type IconSet } from '../../constants/achievementIcons';
+import { ORIGINAL_CARTOON_THEME_IDS, resolveVisualTheme } from '../../constants/themes';
+import OriginalMascot from '../OriginalMascot';
 
 interface ThemeManagementProps {
   themes: FocusTheme[];
@@ -48,26 +50,38 @@ const ThemeManagement: React.FC<ThemeManagementProps> = ({
     [unlockedAchievements]
   );
 
-  const chiikawaIcons = useMemo(
-    () => [
-      ...ACHIEVEMENT_ICONS.filter((i) => i.set === 'chiikawa').map((i) => ({ id: i.iconKey, img: i.img, achievementKey: i.achievementKey })),
-      ...FREE_ICONS.filter((i) => i.set === 'chiikawa').map((i) => ({ id: i.iconKey, img: i.img, achievementKey: undefined as string | undefined })),
-    ],
-    []
-  );
+  const iconGroups = useMemo(() => {
+    const sets: IconSet[] = ['chiikawa', 'shinchan', ...ORIGINAL_CARTOON_THEME_IDS];
+    return sets.map((set) => ({
+      set,
+      icons: [
+        ...FREE_ICONS.filter((i) => i.set === set),
+        ...ACHIEVEMENT_ICONS.filter((i) => i.set === set),
+      ],
+    })).filter((group) => group.icons.length > 0);
+  }, []);
 
-  const shinchanIcons = useMemo(
-    () => [
-      ...ACHIEVEMENT_ICONS.filter((i) => i.set === 'shinchan').map((i) => ({ id: i.iconKey, img: i.img, achievementKey: i.achievementKey })),
-      ...FREE_ICONS.filter((i) => i.set === 'shinchan').map((i) => ({ id: i.iconKey, img: i.img, achievementKey: undefined as string | undefined })),
-    ],
-    []
-  );
+  const renderIconPreview = (iconDef: AchievementIcon | FreeIcon, locked = false, size = 46) => {
+    if (iconDef.img) {
+      return (
+        <img
+          src={iconDef.img}
+          alt={iconDef.iconKey}
+          className={`w-full h-full object-contain ${locked ? 'grayscale opacity-40' : ''}`}
+        />
+      );
+    }
 
-  const findIconImg = (key?: string) => (key ? ICON_BY_KEY[key]?.img : undefined);
+    return (
+      <OriginalMascot
+        theme={resolveVisualTheme(iconDef.themeId)}
+        size={size}
+        className={locked ? 'grayscale opacity-40' : ''}
+      />
+    );
+  };
 
-  const getThemeIconImg = (theme: FocusTheme) =>
-    findIconImg(theme.iconType) || findIconImg(theme.id);
+  const getIconDef = (key?: string) => (key ? ICON_BY_KEY[key] : undefined);
 
   const handleThemeNameChange = useCallback((id: string, name: string) => {
     setThemes((prev) => prev.map((theme) => (theme.id === id ? { ...theme, name } : theme)));
@@ -158,87 +172,48 @@ const ThemeManagement: React.FC<ThemeManagementProps> = ({
             </div>
 
             <div className="space-y-3">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-4">选择图标主题 (Chiikawa / Shin-chan)</label>
-              <div className="flex flex-wrap gap-3">
-                {chiikawaIcons.map((icon) => {
-                  const locked = isIconLocked(icon.id);
-                  const lockTitle = locked
-                    ? t('settings.iconLockedHint', { defaultValue: '解锁成就 "{{key}}" 后可用', key: icon.achievementKey || '' })
-                    : icon.id;
-                  return (
-                    <button
-                      key={icon.id}
-                      type="button"
-                      disabled={locked}
-                      onClick={() => !locked && setSelectedIcon(icon.id)}
-                      title={lockTitle}
-                      aria-disabled={locked}
-                      className={`
-                        relative w-14 h-14 rounded-2xl border-2 transition-all p-2
-                        ${locked ? 'border-slate-200 bg-slate-50 cursor-not-allowed' :
-                          selectedIcon === icon.id
-                          ? 'border-rose-400 bg-rose-50 ring-4 ring-rose-400/10'
-                          : 'border-white bg-white/50 hover:border-slate-300'}
-                      `}
-                    >
-                      <img
-                        src={icon.img}
-                        alt={icon.id}
-                        className={`w-full h-full object-contain ${locked ? 'grayscale opacity-40' : ''}`}
-                      />
-                      {locked && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-white/30 backdrop-blur-[1px] rounded-2xl">
-                          <Lock size={14} className="text-slate-400" />
-                        </div>
-                      )}
-                      {!locked && selectedIcon === icon.id && (
-                        <div className="absolute -top-2 -right-2 w-5 h-5 bg-rose-400 rounded-full flex items-center justify-center shadow-md">
-                          <div className="w-2 h-2 bg-white rounded-full" />
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-                <div className="w-px h-10 bg-slate-200 mx-2 self-center" />
-                {shinchanIcons.map((icon) => {
-                  const locked = isIconLocked(icon.id);
-                  const lockTitle = locked
-                    ? t('settings.iconLockedHint', { defaultValue: '解锁成就 "{{key}}" 后可用', key: icon.achievementKey || '' })
-                    : icon.id;
-                  return (
-                    <button
-                      key={icon.id}
-                      type="button"
-                      disabled={locked}
-                      onClick={() => !locked && setSelectedIcon(icon.id)}
-                      title={lockTitle}
-                      aria-disabled={locked}
-                      className={`
-                        relative w-14 h-14 rounded-2xl border-2 transition-all p-2
-                        ${locked ? 'border-slate-200 bg-slate-50 cursor-not-allowed' :
-                          selectedIcon === icon.id
-                          ? 'border-yellow-400 bg-yellow-50 ring-4 ring-yellow-400/10'
-                          : 'border-white bg-white/50 hover:border-slate-300'}
-                      `}
-                    >
-                      <img
-                        src={icon.img}
-                        alt={icon.id}
-                        className={`w-full h-full object-contain ${locked ? 'grayscale opacity-40' : ''}`}
-                      />
-                      {locked && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-white/30 backdrop-blur-[1px] rounded-2xl">
-                          <Lock size={14} className="text-slate-400" />
-                        </div>
-                      )}
-                      {!locked && selectedIcon === icon.id && (
-                        <div className="absolute -top-2 -right-2 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center shadow-md">
-                          <div className="w-2 h-2 bg-white rounded-full" />
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-4">选择卡通图标</label>
+              <div className="flex flex-wrap gap-4">
+                {iconGroups.map((group) => (
+                  <div key={group.set} className="flex flex-wrap items-center gap-2">
+                    {group.icons.map((icon) => {
+                      const locked = isIconLocked(icon.iconKey);
+                      const achievementKey = 'achievementKey' in icon ? icon.achievementKey : undefined;
+                      const lockTitle = locked
+                        ? t('settings.iconLockedHint', { defaultValue: '解锁成就 "{{key}}" 后可用', key: achievementKey || '' })
+                        : icon.iconKey;
+                      return (
+                        <button
+                          key={icon.iconKey}
+                          type="button"
+                          disabled={locked}
+                          onClick={() => !locked && setSelectedIcon(icon.iconKey)}
+                          title={lockTitle}
+                          aria-disabled={locked}
+                          className={`
+                            relative w-14 h-14 rounded-2xl border-2 transition-all p-1
+                            ${locked ? 'border-slate-200 bg-slate-50 cursor-not-allowed' :
+                              selectedIcon === icon.iconKey
+                              ? 'border-rose-400 bg-rose-50 ring-4 ring-rose-400/10'
+                              : 'border-white bg-white/50 hover:border-slate-300'}
+                          `}
+                        >
+                          {renderIconPreview(icon, locked)}
+                          {locked && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-white/30 backdrop-blur-[1px] rounded-2xl">
+                              <Lock size={14} className="text-slate-400" />
+                            </div>
+                          )}
+                          {!locked && selectedIcon === icon.iconKey && (
+                            <div className="absolute -top-2 -right-2 w-5 h-5 bg-rose-400 rounded-full flex items-center justify-center shadow-md">
+                              <div className="w-2 h-2 bg-white rounded-full" />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -250,8 +225,8 @@ const ThemeManagement: React.FC<ThemeManagementProps> = ({
             className="bg-white/60 backdrop-blur-xl rounded-2xl md:rounded-[32px] p-3 md:p-6 border border-white shadow-sm flex flex-row items-center gap-3 md:gap-6 group hover:shadow-xl transition-all duration-500"
           >
             <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-white/70 border border-white p-1.5 md:p-2 flex-shrink-0 flex items-center justify-center shadow-inner">
-              {getThemeIconImg(theme) ? (
-                <img src={getThemeIconImg(theme)!} alt={theme.iconType || theme.id} className="w-full h-full object-contain" />
+              {getIconDef(theme.iconType || theme.id) ? (
+                renderIconPreview(getIconDef(theme.iconType || theme.id)!, false, 44)
               ) : (
                 <span className="text-base md:text-xl font-bold text-slate-300 font-heading">
                   {theme.name.charAt(0).toUpperCase()}

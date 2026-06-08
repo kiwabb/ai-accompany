@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef, useDeferredValue, startTransition } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useDeferredValue, useCallback, startTransition } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -45,6 +45,29 @@ interface HighlightItem {
     linkedBookmarkId?: string;
     color?: HighlightColor;
 }
+
+interface PdfOutlineItem {
+    title: string;
+    dest?: unknown;
+    items?: PdfOutlineItem[];
+    pageNumber?: number;
+    pdfY?: number;
+}
+
+const getTextItemString = (item: unknown): string => {
+    if (typeof item !== 'object' || item === null || !('str' in item)) return '';
+    const value = (item as { str?: unknown }).str;
+    return typeof value === 'string' ? value : '';
+};
+
+const getPdfDestinationType = (value: unknown): unknown => {
+    if (typeof value !== 'object' || value === null || !('name' in value)) return value;
+    return (value as { name?: unknown }).name;
+};
+
+const getPdfDestinationCoordinate = (value: unknown): number | undefined => (
+    typeof value === 'number' ? value : undefined
+);
 
 // macOS Preview 风格：不透明饱和底色 + mix-blend-mode: multiply。
 // multiply 让纯白纸背景变成饱和色，但深色文字（接近黑）几乎不变（min×y ≈ 黑），
@@ -455,7 +478,9 @@ const LazyPage = React.memo(({
     const { t } = useTranslation();
     const [isVisible, setIsVisible] = useState(false);
     // 该页 canvas 是否已渲染完成 — 控制 overlay 显示，避免出现"白底+裸高亮"。
-    const [isRendered, setIsRendered] = useState(false);
+    const renderKey = `${pageWidth}:${rotation}`;
+    const [renderedKey, setRenderedKey] = useState<string | null>(null);
+    const isRendered = renderedKey === renderKey;
     const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -475,11 +500,6 @@ const LazyPage = React.memo(({
         return () => obs.disconnect();
     }, [pageNumber, onVisible]);
 
-    // 缩放/旋转：canvas 要重画，先收起 overlay 防止裸高亮；onRenderSuccess 回写 true。
-    useEffect(() => {
-        setIsRendered(false);
-    }, [pageWidth, rotation]);
-
     return (
         <div
             ref={containerRef}
@@ -489,6 +509,7 @@ const LazyPage = React.memo(({
         >
             {isVisible ? (
                 <Page
+                    key={renderKey}
                     pageNumber={pageNumber}
                     width={pageWidth}
                     rotate={rotation}
@@ -496,7 +517,7 @@ const LazyPage = React.memo(({
                     renderAnnotationLayer={true}
                     devicePixelRatio={typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1}
                     className="shadow-[0_4px_24px_rgba(0,0,0,0.06)] border border-[#e9e6da]"
-                    onRenderSuccess={() => setIsRendered(true)}
+                    onRenderSuccess={() => setRenderedKey(renderKey)}
                     loading={null}
                 />
             ) : (
@@ -551,8 +572,9 @@ const LazyPage = React.memo(({
     );
 });
 
-const OutlineItem: React.FC<{ item: any; onClick: (item: any) => void; level: number }> = ({ item, onClick, level }) => {
-    const hasChildren = item.items && item.items.length > 0;
+const OutlineItem: React.FC<{ item: PdfOutlineItem; onClick: (item: PdfOutlineItem) => void; level: number }> = ({ item, onClick, level }) => {
+    const childItems = item.items ?? [];
+    const hasChildren = childItems.length > 0;
     const [isOpen, setIsOpen] = useState(true);
 
     return (
@@ -580,7 +602,7 @@ const OutlineItem: React.FC<{ item: any; onClick: (item: any) => void; level: nu
             </div>
             {hasChildren && isOpen && (
                 <ul className="pl-4 border-l border-slate-200/80 ml-2">
-                    {item.items.map((child: any, index: number) => (
+                    {childItems.map((child, index) => (
                         <OutlineItem key={index} item={child} onClick={onClick} level={level + 1} />
                     ))}
                 </ul>
@@ -619,7 +641,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
     const [isManualZoom, setIsManualZoom] = useState(false);
     const [isLoaded, setIsLoaded] = useState(false);
     const [firstPageRendered, setFirstPageRendered] = useState(false);
-    const [outline, setOutline] = useState<any[] | null>(null);
+    const [outline, setOutline] = useState<PdfOutlineItem[] | null>(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [sidebarTab, setSidebarTab] = useState<'outline' | 'bookmarks' | 'search' | 'thumbnails'>('outline');
     const [bookmarks, setBookmarks] = useState<BookmarkType[]>([]);
@@ -767,7 +789,6 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
             document.removeEventListener('selectionchange', handler);
             setHighlighterPreview(null);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isPenMode, penTool]);
     const mainContainerRef = useRef<HTMLDivElement>(null);
     const selectedRangeRef = useRef<Range | null>(null);
@@ -1580,7 +1601,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
         setPenStrokes((prev) => prev.filter((stroke) => stroke.id !== targetId));
     };
 
-    const commitPenDraft = (draft: PenDraftState | null) => {
+    const commitPenDraft = useCallback((draft: PenDraftState | null) => {
         if (!draft) return;
         const beautified = beautifyPenPoints(draft.points);
         const path = buildPenPath(beautified);
@@ -1605,7 +1626,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
             bounds,
         };
         setPenStrokes((prev) => [...prev, stroke]);
-    };
+    }, [penColor, penTool, penWidth]);
 
     const hasSelectableTextAtPoint = (pageElement: HTMLElement, pointX: number, pointY: number): boolean => {
         const textLayer = pageElement.querySelector('.react-pdf__Page__textContent') as HTMLElement | null;
@@ -2359,7 +2380,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
         return () => {
             window.removeEventListener('scroll', onScroll, true);
         };
-    }, [selectionMenu.visible, areaSelection, areaDraft, highlightMenu.visible, penColor, penWidth]);
+    }, [selectionMenu.visible, areaSelection, areaDraft, highlightMenu.visible, penColor, penWidth, commitPenDraft]);
 
     useEffect(() => {
         if (!notice) return;
@@ -2514,7 +2535,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
     const onDocumentLoadSuccess = async (pdfDoc: PDFDocumentProxy) => {
         setPdf(pdfDoc);
         setNumPages(pdfDoc.numPages);
-        const outlineData = await pdfDoc.getOutline();
+        const outlineData = await pdfDoc.getOutline() as PdfOutlineItem[] | null;
         onOutlineLoadSuccess(outlineData);
         
         if (pageNumber > 1) {
@@ -2524,39 +2545,39 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
         }
     };
 
-    const onOutlineLoadSuccess = async (loadedOutline: any[] | null) => {
+    const onOutlineLoadSuccess = async (loadedOutline: PdfOutlineItem[] | null) => {
         if (loadedOutline && pdf) {
-            const resolveItems = async (items: any[]) => {
+            const resolveItems = async (items: PdfOutlineItem[]) => {
                 for (const item of items) {
                     try {
                         if (item.dest) {
-                            let dest = item.dest;
+                            let dest: unknown = item.dest;
                             if (typeof dest === 'string') {
                                 dest = await pdf.getDestination(dest);
                             }
                             if (Array.isArray(dest) && dest.length > 0) {
                                 const pageRef = dest[0];
                                 if (typeof pageRef === 'object' && pageRef !== null) {
-                                    item.pageNumber = (await pdf.getPageIndex(pageRef)) + 1;
+                                    item.pageNumber = (await pdf.getPageIndex(pageRef as Parameters<PDFDocumentProxy['getPageIndex']>[0])) + 1;
                                 } else if (typeof pageRef === 'number') {
                                     item.pageNumber = pageRef + 1;
                                 }
 
                                 if (dest.length >= 2) {
-                                    const typeObj = dest[1];
-                                    const type = typeof typeObj === 'object' && typeObj !== null ? typeObj.name : typeObj;
+                                    const type = getPdfDestinationType(dest[1]);
                                     
                                     if (type === 'XYZ' && dest.length >= 4) {
-                                        item.pdfY = dest[3];
+                                        item.pdfY = getPdfDestinationCoordinate(dest[3]);
                                     } else if (type === 'FitH' && dest.length >= 3) {
-                                        item.pdfY = dest[2];
+                                        item.pdfY = getPdfDestinationCoordinate(dest[2]);
                                     } else if (type === 'FitR' && dest.length >= 6) {
-                                        item.pdfY = dest[5];
+                                        item.pdfY = getPdfDestinationCoordinate(dest[5]);
                                     }
                                 }
                             }
                         }
-                    } catch (e) {
+                    } catch {
+                        // Some outline destinations cannot be resolved by pdf.js.
                     }
                     if (item.items && item.items.length > 0) {
                         await resolveItems(item.items);
@@ -2653,7 +2674,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                 const page = await pdf.getPage(p);
                 const content = await page.getTextContent();
                 const text = content.items
-                    .map((item: any) => item.str || '')
+                    .map(getTextItemString)
                     .join(' ');
                 const textLower = text.toLowerCase();
                 let idx = 0;
@@ -2950,7 +2971,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
         }
     };
 
-    const handleOutlineItemClick = async (item: any) => {
+    const handleOutlineItemClick = async (item: PdfOutlineItem) => {
         if (item.pageNumber) {
             goToPage(item.pageNumber, item.pdfY);
             return;
@@ -2959,7 +2980,7 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
         if (!item.dest || !pdf) return;
 
         try {
-            let dest = item.dest;
+            let dest: unknown = item.dest;
             if (typeof dest === 'string') {
                 dest = await pdf.getDestination(dest);
             }
@@ -2970,16 +2991,15 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
                 let pdfY: number | undefined;
 
                 if (typeof pageRef === 'object' && pageRef !== null) {
-                    pageIndex = await pdf.getPageIndex(pageRef);
+                    pageIndex = await pdf.getPageIndex(pageRef as Parameters<PDFDocumentProxy['getPageIndex']>[0]);
                 } else if (typeof pageRef === 'number') {
                     pageIndex = pageRef;
                 }
 
                 if (dest.length >= 2) {
-                    const typeObj = dest[1];
-                    const type = typeof typeObj === 'object' && typeObj !== null ? typeObj.name : typeObj;
-                    if (type === 'XYZ' && dest.length >= 4) pdfY = dest[3];
-                    else if (type === 'FitH' && dest.length >= 3) pdfY = dest[2];
+                    const type = getPdfDestinationType(dest[1]);
+                    if (type === 'XYZ' && dest.length >= 4) pdfY = getPdfDestinationCoordinate(dest[3]);
+                    else if (type === 'FitH' && dest.length >= 3) pdfY = getPdfDestinationCoordinate(dest[2]);
                 }
 
                 if (pageIndex !== -1) {
@@ -3945,11 +3965,6 @@ const PdfReader: React.FC<PdfReaderProps> = ({ fileUrl, documentId, title }) => 
 
                 .notes-flat-panel,
                 .notes-flat-panel * {
-                    border-radius: 0 !important;
-                }
-
-                body.theme-chiikawa .notes-flat-panel button:not([class*="rounded-full"]),
-                body.theme-shinchan .notes-flat-panel button:not([class*="rounded-full"]) {
                     border-radius: 0 !important;
                 }
 

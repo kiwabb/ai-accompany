@@ -17,6 +17,8 @@ import { useCozyPalDiagnostics, type CozyPalDiagnosticsState } from '../hooks/co
 import { useCozyPalTopics } from '../hooks/cozypal/useCozyPalTopics';
 import { useCozyPalChat } from '../hooks/cozypal/useCozyPalChat';
 import { useCozyPalCallbacks } from '../hooks/cozypal/useCozyPalCallbacks';
+import type { FocusTheme, VisualTheme, VisualThemeCharacter } from '../types/pomodoro';
+import { isOriginalCartoonThemeId, resolveThemeCharacterForProject } from '../constants/themes';
 
 interface CozyPalProps {
   themeName: string;
@@ -33,8 +35,8 @@ interface CozyPalProps {
   documentTitle?: string;
   documentContent?: string;
   onDimensionsChange?: (width: number) => void;
-  isChiikawaTheme?: boolean;
-  isShinchanTheme?: boolean;
+  visualTheme?: VisualTheme;
+  activeFocusTheme?: FocusTheme;
 }
 
 export interface CozyPalHandle {
@@ -44,7 +46,7 @@ export interface CozyPalHandle {
 const CozyPal = React.forwardRef<CozyPalHandle, CozyPalProps>(({
   themeName, phase, timeLeft, apiKey, currentLanguage, aiPersona,
   aiProvider, aiModel, dailyCompletedPomodoros, totalFocusMinutes,
-  documentId, documentTitle, documentContent, onDimensionsChange, isChiikawaTheme, isShinchanTheme,
+  documentId, documentTitle, documentContent, onDimensionsChange, visualTheme, activeFocusTheme,
 }, ref) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = React.useState(false);
@@ -56,6 +58,10 @@ const CozyPal = React.forwardRef<CozyPalHandle, CozyPalProps>(({
   const isMobile = useIsMobile();
   const diagnosticsState = useCozyPalDiagnostics({ t }) as CozyPalDiagnosticsState;
   const topicsState = useCozyPalTopics();
+  const activeCharacter: VisualThemeCharacter | undefined =
+    visualTheme && activeFocusTheme && isOriginalCartoonThemeId(visualTheme.id)
+      ? resolveThemeCharacterForProject(visualTheme, activeFocusTheme)
+      : visualTheme?.character;
 
   const chatState = useCozyPalChat({
     t, apiKey,
@@ -73,6 +79,8 @@ const CozyPal = React.forwardRef<CozyPalHandle, CozyPalProps>(({
     setIsOpen, setHasUnread: chatState.setHasUnread,
     sendMessage: chatState.sendMessage, inputRef,
   });
+  const { fetchDiagnostics, fetchMemoryFragments } = diagnosticsState;
+  const { handleOpenChange } = callbacks;
 
   React.useEffect(() => {
     if (isMobile) {
@@ -83,13 +91,13 @@ const CozyPal = React.forwardRef<CozyPalHandle, CozyPalProps>(({
   }, [isOpen, width, onDimensionsChange, isMobile]);
 
   React.useEffect(() => {
-    if (activeTab === 'debug' || activeTab === 'memory') diagnosticsState.fetchDiagnostics();
-    if (activeTab === 'memory') diagnosticsState.fetchMemoryFragments();
-  }, [activeTab, diagnosticsState.fetchDiagnostics, diagnosticsState.fetchMemoryFragments]);
+    if (activeTab === 'debug' || activeTab === 'memory') fetchDiagnostics();
+    if (activeTab === 'memory') fetchMemoryFragments();
+  }, [activeTab, fetchDiagnostics, fetchMemoryFragments]);
 
   React.useEffect(() => {
-    if (isOpen) callbacks.handleOpenChange();
-  }, [isOpen, callbacks.handleOpenChange]);
+    if (isOpen) handleOpenChange();
+  }, [isOpen, handleOpenChange]);
 
   React.useImperativeHandle(ref, () => ({
     triggerProactiveMessage: callbacks.triggerProactiveMessage,
@@ -103,8 +111,8 @@ const CozyPal = React.forwardRef<CozyPalHandle, CozyPalProps>(({
         hasUnread={chatState.hasUnread} 
         onToggle={callbacks.toggleChat} 
         t={t} 
-        isChiikawaTheme={isChiikawaTheme} 
-        isShinchanTheme={isShinchanTheme} 
+        visualTheme={visualTheme}
+        activeCharacter={activeCharacter}
       />
       {!isOpen && <CozyPalSpeechBubble speechBubble={chatState.speechBubble} />}
 
@@ -143,8 +151,8 @@ const CozyPal = React.forwardRef<CozyPalHandle, CozyPalProps>(({
                   onSave={diagnosticsState.handleUpdateProfileItem} isSavingEdit={diagnosticsState.isSavingEdit} t={t} />
               }
               t={t}
-              isChiikawaTheme={isChiikawaTheme}
-              isShinchanTheme={isShinchanTheme}
+              visualTheme={visualTheme}
+              activeCharacter={activeCharacter}
             />
           ) : (
             <CozyPalDrawer
@@ -179,8 +187,8 @@ const CozyPal = React.forwardRef<CozyPalHandle, CozyPalProps>(({
                   onSave={diagnosticsState.handleUpdateProfileItem} isSavingEdit={diagnosticsState.isSavingEdit} t={t} />
               }
               t={t}
-              isChiikawaTheme={isChiikawaTheme}
-              isShinchanTheme={isShinchanTheme}
+              visualTheme={visualTheme}
+              activeCharacter={activeCharacter}
             />
           )
         )}

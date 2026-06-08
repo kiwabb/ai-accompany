@@ -8,7 +8,7 @@ import {
   addPlaceholderAiMessage,
   addUserMessage,
 } from './cozypal/chatStreamingUtils';
-import { getChatHistory, saveChatMessage } from '../lib/storage/chatHistory';
+import { getChatHistory, saveChatMessage, type ChatMessage } from '../lib/storage/chatHistory';
 import { getUserProfile } from '../lib/storage/userProfile';
 import { constructSystemPrompt } from '../lib/ai/systemPrompt';
 import { streamChatDirect } from '../lib/ai/providers';
@@ -127,7 +127,7 @@ export const useChatLogic = ({
 
       // 2. Fetch history
       const historyData = await getChatHistory(activeTopicId, 10);
-      const history = (historyData.messages || []).map((m: any) => ({
+      const history = (historyData.messages || []).map((m: ChatMessage) => ({
         sender: m.role as 'user' | 'ai',
         text: m.content,
       }));

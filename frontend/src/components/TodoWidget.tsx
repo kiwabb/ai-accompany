@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckSquare, Plus, Trash2, X, Square, CheckCircle2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import type { VisualTheme } from '../types/pomodoro';
 
 interface TodoItem {
     id: string;
@@ -27,10 +28,10 @@ const loadFromStorage = (): TodoItem[] => {
 };
 
 interface TodoWidgetProps {
-    isShinchanTheme?: boolean;
+    visualTheme?: VisualTheme;
 }
 
-const TodoWidget: React.FC<TodoWidgetProps> = ({ isShinchanTheme = false }) => {
+const TodoWidget: React.FC<TodoWidgetProps> = ({ visualTheme }) => {
     const { t } = useTranslation();
     const [open, setOpen] = useState(false);
     const [todos, setTodos] = useState<TodoItem[]>(() => loadFromStorage());
@@ -78,6 +79,12 @@ const TodoWidget: React.FC<TodoWidgetProps> = ({ isShinchanTheme = false }) => {
     };
 
     const remaining = todos.filter(t => !t.done).length;
+    const buttonStyle = visualTheme ? {
+        borderColor: visualTheme.colors.border,
+        color: visualTheme.colors.textMuted,
+        backgroundColor: visualTheme.colors.glass,
+        boxShadow: visualTheme.shadows.cozy,
+    } : undefined;
 
     return (
         <div ref={containerRef} className="relative">
@@ -87,10 +94,8 @@ const TodoWidget: React.FC<TodoWidgetProps> = ({ isShinchanTheme = false }) => {
                 whileHover={{ x: 2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setOpen(prev => !prev)}
-                className={`py-2 px-3 md:py-3 md:px-5 bg-white/60 backdrop-blur-2xl shadow-xl rounded-2xl flex items-center gap-2 group transition-colors font-bold uppercase tracking-widest text-[10px] ${isShinchanTheme
-                        ? 'border border-[#FF6B6B]/20 text-[#8D6E63] hover:text-[#5D4037] hover:bg-[#FF6B6B]/10'
-                        : 'border border-white text-slate-400 hover:text-slate-900'
-                    }`}
+                className="py-2 px-3 md:py-3 md:px-5 bg-white/60 backdrop-blur-2xl shadow-xl rounded-2xl flex items-center gap-2 group transition-colors font-bold uppercase tracking-widest text-[10px] border hover:text-slate-900"
+                style={buttonStyle}
                 aria-label={t('todo.title', '待办')}
                 aria-expanded={open}
             >

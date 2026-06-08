@@ -107,18 +107,8 @@ export const ThemeDistributionChart: React.FC<ThemeDistributionChartProps> = ({
     const rOuter = 40;
     const rInner = 26;
 
-    const Wrapper = inline ? 'div' : motion.div;
-    const wrapperProps = inline
-        ? { className: 'mt-6 md:mt-8 pt-6 md:pt-8 border-t border-theme-text-muted/10 flex flex-col' }
-        : {
-            initial: { opacity: 0, y: 20 },
-            animate: { opacity: 1, y: 0 },
-            transition: { delay: 0.4 },
-            className: 'bg-white/70 backdrop-blur-2xl p-4 md:p-8 rounded-2xl md:rounded-[40px] border border-white/80 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.05)] flex flex-col',
-        };
-
-    return (
-        <Wrapper {...(wrapperProps as any)}>
+    const content = (
+        <>
             <div className="flex items-center justify-between mb-4 md:mb-8 flex-shrink-0 gap-2">
                 <h3 className="text-base md:text-xl font-bold text-theme-text flex items-center gap-2 min-w-0 truncate">
                     <PieChart size={18} className="text-theme-text-muted/40 shrink-0" />
@@ -224,6 +214,25 @@ export const ThemeDistributionChart: React.FC<ThemeDistributionChartProps> = ({
                 </div>
             )}
 
-        </Wrapper>
+        </>
+    );
+
+    if (inline) {
+        return (
+            <div className="mt-6 md:mt-8 pt-6 md:pt-8 border-t border-theme-text-muted/10 flex flex-col">
+                {content}
+            </div>
+        );
+    }
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="bg-white/70 backdrop-blur-2xl p-4 md:p-8 rounded-2xl md:rounded-[40px] border border-white/80 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.05)] flex flex-col"
+        >
+            {content}
+        </motion.div>
     );
 };

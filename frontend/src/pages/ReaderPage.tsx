@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import PdfReader from '../components/PdfReader';
 import AmbientBackground from '../components/AmbientBackground';
-import { useTimerContext } from '../contexts/TimerContext';
+import { useTimerContext } from '../contexts/useTimerContext';
 import { getDocuments, getDocumentFile } from '../lib/storage/documents';
 
 const ReaderPage: React.FC = () => {
@@ -28,30 +28,7 @@ const ReaderPage: React.FC = () => {
     // Ref to track current PDF URL for cleanup
     const pdfUrlRef = React.useRef<string>('');
 
-    useEffect(() => {
-        const abortController = new AbortController();
-
-        if (id) {
-            fetchDocumentContent(id, abortController.signal);
-            // 记录最近打开时间，用于书库展示
-            try {
-                localStorage.setItem(`doc_last_opened_${id}`, new Date().toISOString());
-            } catch {
-                // ignore
-            }
-        }
-
-        return () => {
-            abortController.abort();
-            setDocumentContext(undefined); // Clear context on exit
-            if (pdfUrlRef.current) {
-                URL.revokeObjectURL(pdfUrlRef.current);
-                pdfUrlRef.current = '';
-            }
-        };
-    }, [id, setDocumentContext]);
-
-    const fetchDocumentContent = async (docIdStr: string, signal: AbortSignal) => {
+    const fetchDocumentContent = useCallback(async (docIdStr: string, signal: AbortSignal) => {
         setIsLoading(true);
         try {
             const docId = parseInt(docIdStr, 10);
@@ -101,7 +78,30 @@ const ReaderPage: React.FC = () => {
                 setIsLoading(false);
             }
         }
-    };
+    }, [setDocumentContext, t]);
+
+    useEffect(() => {
+        const abortController = new AbortController();
+
+        if (id) {
+            fetchDocumentContent(id, abortController.signal);
+            // 记录最近打开时间，用于书库展示
+            try {
+                localStorage.setItem(`doc_last_opened_${id}`, new Date().toISOString());
+            } catch {
+                // ignore
+            }
+        }
+
+        return () => {
+            abortController.abort();
+            setDocumentContext(undefined); // Clear context on exit
+            if (pdfUrlRef.current) {
+                URL.revokeObjectURL(pdfUrlRef.current);
+                pdfUrlRef.current = '';
+            }
+        };
+    }, [id, setDocumentContext, fetchDocumentContent]);
 
     return (
         <div className="h-screen bg-[#FCFAF7] flex flex-col overflow-hidden relative">
